@@ -40,7 +40,7 @@ export default function Home() {
   };
 
   // Calculate position of each image relative to center
-  const getImagePosition = (imageIndex) => {
+  const getImagePosition = (imageIndex: number) => {
     const diff = imageIndex - centerIndex;
     if (diff > 2) return diff - demoImages.length;
     if (diff < -2) return diff + demoImages.length;
