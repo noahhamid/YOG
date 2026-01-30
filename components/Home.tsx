@@ -22,6 +22,17 @@ export default function Home() {
     };
   }, []);
 
+  // Auto-slide effect - starts after animation completes
+  useEffect(() => {
+    if (animationStage < 2) return; // Don't auto-slide until animation is done
+
+    const autoSlideInterval = setInterval(() => {
+      setCenterIndex((prev) => (prev === demoImages.length - 1 ? 0 : prev + 1));
+    }, 3500); // Slide every 3.5 seconds
+
+    return () => clearInterval(autoSlideInterval);
+  }, [animationStage, centerIndex]); // Reset timer when centerIndex changes (manual navigation)
+
   // High-quality fashion/workout images
   const demoImages = [
     "https://i.pinimg.com/736x/20/c6/59/20c65924540dfb04f838becaa011024f.jpg",
@@ -80,16 +91,15 @@ export default function Home() {
           ))}
         </p>
 
-        {/* Buttons - Fade in after text */}
+        {/* Buttons - Fade in after text with same speed as arrow buttons */}
         <div
           className="mt-5 flex flex-col sm:flex-row justify-center gap-4"
           style={{
             opacity: animationStage >= 2 ? 1 : 0,
             transform:
-              animationStage >= 2 ? "translateY(0)" : "translateY(30px)",
-            transition: "all 0.6s ease-out",
-            transitionDelay:
-              animationStage >= 2 ? `${words.length * 0.08 + 0.2}s` : "0s",
+              animationStage >= 2 ? "translateY(0)" : "translateY(100px)",
+            transition: "all 0.5s ease-out",
+            transitionDelay: animationStage >= 2 ? "0.4s" : "0s",
           }}
         >
           <a
@@ -206,8 +216,8 @@ export default function Home() {
                     ? "rotate(-8deg) translateY(0)"
                     : "rotate(-8deg) translateY(100px)",
                 opacity: animationStage >= 2 ? 1 : 0,
-                transition: "all 0.6s ease-out",
-                transitionDelay: animationStage >= 2 ? "0.3s" : "0s",
+                transition: "all 0.3s ease-out",
+                transitionDelay: animationStage >= 2 ? "0.6s" : "0s",
               }}
               aria-label="Previous image"
             >
@@ -228,8 +238,8 @@ export default function Home() {
                     ? "rotate(8deg) translateY(0)"
                     : "rotate(8deg) translateY(100px)",
                 opacity: animationStage >= 2 ? 1 : 0,
-                transition: "all 0.6s ease-out",
-                transitionDelay: animationStage >= 2 ? "0.4s" : "0s",
+                transition: "all 0.3s ease-out",
+                transitionDelay: animationStage >= 2 ? "0.6s" : "0s",
               }}
               aria-label="Next image"
             >
