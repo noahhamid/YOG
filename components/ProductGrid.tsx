@@ -5,7 +5,7 @@ import { ShoppingCart, Heart } from "lucide-react";
 
 export default function ProductGrid() {
   const [isVisible, setIsVisible] = useState(false);
-  const sectionRef = useRef(null);
+  const sectionRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -15,7 +15,7 @@ export default function ProductGrid() {
           observer.disconnect();
         }
       },
-      { threshold: 0.1, rootMargin: "50px" },
+      { threshold: 0.05, rootMargin: "100px" },
     );
 
     if (sectionRef.current) {
@@ -28,83 +28,83 @@ export default function ProductGrid() {
   const products = [
     {
       id: 1,
-      title: "Classic White Tee",
-      description: "Premium cotton essential",
-      price: "800 ETB",
+      title: "Essential White Tee",
+      description: "Premium organic cotton",
+      price: "800",
       image:
-        "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800&q=80",
+        "https://i.pinimg.com/1200x/6c/29/4d/6c294de767f1fc184ae4591d38662b49.jpg",
     },
     {
       id: 2,
-      title: "Black Denim Jacket",
-      description: "Timeless streetwear staple",
-      price: "2,500 ETB",
+      title: "Denim Jacket",
+      description: "Classic streetwear",
+      price: "2,500",
       image:
-        "https://images.unsplash.com/photo-1551028719-00167b16eac5?w=800&q=80",
+        "https://i.pinimg.com/736x/1b/7a/71/1b7a7199025f67791606841333ef70f5.jpg",
     },
     {
       id: 3,
-      title: "Cargo Pants",
-      description: "Urban utility meets comfort",
-      price: "1,800 ETB",
+      title: "Utility Cargo",
+      description: "Urban comfort",
+      price: "1,800",
       image:
-        "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=800&q=80",
+        "https://i.pinimg.com/736x/d1/7c/8d/d17c8d81022342185ae929271704f535.jpg",
     },
     {
       id: 4,
       title: "Oversized Hoodie",
-      description: "Cozy streetwear essential",
-      price: "1,500 ETB",
+      description: "Cozy essential",
+      price: "1,500",
       image:
-        "https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=800&q=80",
+        "https://i.pinimg.com/1200x/2e/da/3d/2eda3de39d654180908f3d87590ceb1b.jpg",
     },
     {
       id: 5,
-      title: "Slim Fit Joggers",
-      description: "Athleisure perfection",
-      price: "1,200 ETB",
+      title: "Slim Joggers",
+      description: "Athletic style",
+      price: "1,200",
       image:
-        "https://images.unsplash.com/photo-1555689502-c4b22d76c56f?w=800&q=80",
+        "https://i.pinimg.com/1200x/ed/73/47/ed73471bd6bc58afbf67fd11d1de9536.jpg",
     },
     {
       id: 6,
-      title: "Graphic Print Tee",
-      description: "Bold statement piece",
-      price: "900 ETB",
+      title: "Graphic Tee",
+      description: "Statement piece",
+      price: "900",
       image:
-        "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800&q=80",
+        "https://i.pinimg.com/736x/4f/99/be/4f99be2e372c30cf87d9a16d1f5b209a.jpg",
     },
     {
       id: 7,
       title: "Bomber Jacket",
-      description: "Aviation-inspired style",
-      price: "2,800 ETB",
+      description: "Aviation inspired",
+      price: "2,800",
       image:
-        "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=800&q=80",
+        "https://i.pinimg.com/736x/ba/2e/de/ba2ede82049f540aace10180acfbd8fa.jpg",
     },
     {
       id: 8,
       title: "Track Pants",
-      description: "Retro athletic vibes",
-      price: "1,400 ETB",
+      description: "Retro athletic",
+      price: "1,400",
       image:
-        "https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=800&q=80",
+        "https://i.pinimg.com/736x/6f/d7/6b/6fd76b54f6135a206f407700b0ca74b1.jpg",
     },
     {
       id: 9,
       title: "Flannel Shirt",
-      description: "Casual layering essential",
-      price: "1,600 ETB",
+      description: "Casual layering",
+      price: "1,600",
       image:
-        "https://images.unsplash.com/photo-1598032895325-d62e2f7a4b11?w=800&q=80",
+        "https://i.pinimg.com/1200x/56/b5/02/56b502ad1ab836436d590dc8895ac511.jpg",
     },
     {
       id: 10,
-      title: "Distressed Jeans",
-      description: "Edgy denim classic",
-      price: "2,000 ETB",
+      title: "baggy Jeans",
+      description: "Modern denim",
+      price: "2,000",
       image:
-        "https://images.unsplash.com/photo-1542272604-787c3835535d?w=800&q=80",
+        "https://i.pinimg.com/1200x/8b/e0/3c/8be03c3124b1ebb3a262357a00b87e5d.jpg",
     },
   ];
 
@@ -116,12 +116,12 @@ export default function ProductGrid() {
           <h2
             className="text-black font-light uppercase text-[56px] mb-3"
             style={{
-              fontFamily: "'Montserrat', 'Helvetica Neue', 'Arial', sans-serif",
+              fontFamily: "'Montserrat', sans-serif",
               letterSpacing: "0.08em",
               fontWeight: 300,
               opacity: isVisible ? 1 : 0,
               transform: isVisible ? "translateY(0)" : "translateY(40px)",
-              transition: "all 0.8s ease-out",
+              transition: "all 0.8s cubic-bezier(0.4, 0, 0.2, 1)",
             }}
           >
             Featured Products
@@ -130,9 +130,10 @@ export default function ProductGrid() {
             className="text-gray-600 text-lg"
             style={{
               fontFamily: "'Montserrat', sans-serif",
+              fontWeight: 400,
               opacity: isVisible ? 1 : 0,
               transform: isVisible ? "translateY(0)" : "translateY(30px)",
-              transition: "all 0.8s ease-out 0.2s",
+              transition: "all 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.1s",
             }}
           >
             Curated pieces for your unique style
@@ -155,51 +156,47 @@ export default function ProductGrid() {
   );
 }
 
-function ProductCard({ product, index, isVisible }) {
-  const [isHovered, setIsHovered] = useState(false);
+interface ProductCardProps {
+  product: {
+    id: number;
+    title: string;
+    description: string;
+    price: string;
+    image: string;
+  };
+  index: number;
+  isVisible: boolean;
+}
 
+function ProductCard({ product, index, isVisible }: ProductCardProps) {
   return (
     <div
-      className="group relative cursor-pointer"
+      className="group relative cursor-pointer will-change-transform"
       style={{
         opacity: isVisible ? 1 : 0,
         transform: isVisible ? "translateY(0)" : "translateY(50px)",
-        transition: `all 0.6s ease-out ${index * 0.08}s`,
+        transition: `opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1) ${index * 0.05}s, transform 0.5s cubic-bezier(0.4, 0, 0.2, 1) ${index * 0.05}s`,
       }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
     >
       {/* Product Image Container */}
       <div className="relative bg-gray-100 rounded-2xl overflow-hidden mb-4 aspect-[3/4]">
         {/* Product Image */}
-        <div
-          className="absolute inset-0 bg-gray-200 bg-cover bg-center transition-transform duration-700 ease-out"
-          style={{
-            backgroundImage: `url(${product.image})`,
-            transform: isHovered ? "scale(1.08)" : "scale(1)",
-          }}
+        <img
+          src={product.image}
+          alt={product.title}
+          className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+          loading="lazy"
         />
 
         {/* Hover Overlay */}
-        <div
-          className="absolute inset-0 bg-black/20 transition-opacity duration-300"
-          style={{
-            opacity: isHovered ? 1 : 0,
-          }}
-        />
+        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
         {/* Action Buttons */}
         <div className="absolute top-3 right-3 flex flex-col gap-2">
           {/* Wishlist Button */}
           <button
-            className="bg-white/90 backdrop-blur-sm p-2.5 rounded-full shadow-lg hover:bg-white transition-all duration-300"
-            style={{
-              opacity: isHovered ? 1 : 0,
-              transform: isHovered
-                ? "translateX(0) scale(1)"
-                : "translateX(20px) scale(0.8)",
-              transition: "all 0.4s ease-out",
-            }}
+            className="bg-white/90 backdrop-blur-sm p-2.5 rounded-full shadow-lg hover:bg-white transition-all duration-300 opacity-0 translate-x-5 scale-90 group-hover:opacity-100 group-hover:translate-x-0 group-hover:scale-100"
+            aria-label="Add to wishlist"
           >
             <Heart size={18} className="text-gray-800" />
           </button>
@@ -207,13 +204,11 @@ function ProductCard({ product, index, isVisible }) {
 
         {/* Add to Cart Button */}
         <button
-          className="absolute bottom-4 left-4 right-4 bg-black text-white py-3 rounded-full font-semibold text-sm uppercase flex items-center justify-center gap-2 hover:bg-gray-900 transition-all duration-300"
+          className="absolute bottom-4 left-4 right-4 bg-black text-white py-3 rounded-full font-semibold text-sm uppercase flex items-center justify-center gap-2 hover:bg-gray-900 transition-all duration-300 opacity-0 translate-y-5 group-hover:opacity-100 group-hover:translate-y-0"
           style={{
-            fontFamily: "'Montserrat', sans-serif",
-            letterSpacing: "0.05em",
-            opacity: isHovered ? 1 : 0,
-            transform: isHovered ? "translateY(0)" : "translateY(20px)",
-            transition: "all 0.4s ease-out 0.1s",
+            fontFamily: "'Poppins', sans-serif",
+            letterSpacing: "0.08em",
+            fontWeight: 600,
           }}
         >
           <ShoppingCart size={16} />
@@ -226,8 +221,9 @@ function ProductCard({ product, index, isVisible }) {
         <h3
           className="text-gray-900 font-semibold text-base mb-1 uppercase"
           style={{
-            fontFamily: "'Montserrat', sans-serif",
-            letterSpacing: "0.03em",
+            fontFamily: "'Poppins', sans-serif",
+            letterSpacing: "0.05em",
+            fontWeight: 600,
           }}
         >
           {product.title}
@@ -235,7 +231,8 @@ function ProductCard({ product, index, isVisible }) {
         <p
           className="text-gray-500 text-sm mb-2"
           style={{
-            fontFamily: "'Montserrat', sans-serif",
+            fontFamily: "'Poppins', sans-serif",
+            fontWeight: 400,
           }}
         >
           {product.description}
@@ -244,10 +241,11 @@ function ProductCard({ product, index, isVisible }) {
           <span
             className="text-black font-bold text-lg"
             style={{
-              fontFamily: "'Montserrat', sans-serif",
+              fontFamily: "'Poppins', sans-serif",
+              fontWeight: 700,
             }}
           >
-            {product.price}
+            {product.price} <span className="text-sm font-normal">ETB</span>
           </span>
 
           {/* Size Indicator */}
@@ -255,10 +253,11 @@ function ProductCard({ product, index, isVisible }) {
             {["S", "M", "L"].map((size) => (
               <span
                 key={size}
-                className="w-6 h-6 flex items-center justify-center text-xs text-gray-400 border border-gray-300 rounded-full hover:border-black hover:text-black transition-all duration-200"
+                className="w-6 h-6 flex items-center justify-center text-gray-400 border border-gray-300 rounded-full hover:border-black hover:text-black transition-all duration-200 cursor-pointer"
                 style={{
-                  fontFamily: "'Montserrat', sans-serif",
+                  fontFamily: "'Poppins', sans-serif",
                   fontSize: "10px",
+                  fontWeight: 600,
                 }}
               >
                 {size}
@@ -269,12 +268,7 @@ function ProductCard({ product, index, isVisible }) {
       </div>
 
       {/* Bottom Accent Line */}
-      <div
-        className="mt-3 h-0.5 bg-black rounded-full transition-all duration-400 ease-out"
-        style={{
-          width: isHovered ? "100%" : "0%",
-        }}
-      />
+      <div className="mt-3 h-0.5 bg-black rounded-full w-0 group-hover:w-full transition-all duration-400 ease-out" />
     </div>
   );
 }
