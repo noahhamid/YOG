@@ -1,11 +1,27 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ShoppingCart, Heart } from "lucide-react";
+import {
+  ShoppingCart,
+  Heart,
+  Search,
+  SlidersHorizontal,
+  X,
+} from "lucide-react";
+import Link from "next/link"; // Import Link
 
 export default function ProductGrid() {
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
+
+  // Filter states
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 5000]);
+  const [selectedColors, setSelectedColors] = useState<string[]>([]);
+  const [sortBy, setSortBy] = useState("featured");
+  const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -30,7 +46,10 @@ export default function ProductGrid() {
       id: 1,
       title: "Essential White Tee",
       description: "Premium organic cotton",
-      price: "800",
+      price: 800,
+      category: "tops",
+      sizes: ["S", "M", "L", "XL"],
+      colors: ["white", "black"],
       image:
         "https://i.pinimg.com/1200x/6c/29/4d/6c294de767f1fc184ae4591d38662b49.jpg",
     },
@@ -38,7 +57,10 @@ export default function ProductGrid() {
       id: 2,
       title: "Denim Jacket",
       description: "Classic streetwear",
-      price: "2,500",
+      price: 2500,
+      category: "outerwear",
+      sizes: ["M", "L", "XL"],
+      colors: ["blue"],
       image:
         "https://i.pinimg.com/736x/1b/7a/71/1b7a7199025f67791606841333ef70f5.jpg",
     },
@@ -46,7 +68,10 @@ export default function ProductGrid() {
       id: 3,
       title: "Utility Cargo",
       description: "Urban comfort",
-      price: "1,800",
+      price: 1800,
+      category: "bottoms",
+      sizes: ["S", "M", "L", "XL", "XXL"],
+      colors: ["khaki", "black"],
       image:
         "https://i.pinimg.com/736x/d1/7c/8d/d17c8d81022342185ae929271704f535.jpg",
     },
@@ -54,7 +79,10 @@ export default function ProductGrid() {
       id: 4,
       title: "Oversized Hoodie",
       description: "Cozy essential",
-      price: "1,500",
+      price: 1500,
+      category: "tops",
+      sizes: ["M", "L", "XL"],
+      colors: ["gray", "black", "white"],
       image:
         "https://i.pinimg.com/1200x/2e/da/3d/2eda3de39d654180908f3d87590ceb1b.jpg",
     },
@@ -62,7 +90,10 @@ export default function ProductGrid() {
       id: 5,
       title: "Slim Joggers",
       description: "Athletic style",
-      price: "1,200",
+      price: 1200,
+      category: "bottoms",
+      sizes: ["S", "M", "L", "XL"],
+      colors: ["black", "gray"],
       image:
         "https://i.pinimg.com/1200x/ed/73/47/ed73471bd6bc58afbf67fd11d1de9536.jpg",
     },
@@ -70,7 +101,10 @@ export default function ProductGrid() {
       id: 6,
       title: "Graphic Tee",
       description: "Statement piece",
-      price: "900",
+      price: 900,
+      category: "tops",
+      sizes: ["S", "M", "L"],
+      colors: ["white", "black"],
       image:
         "https://i.pinimg.com/736x/4f/99/be/4f99be2e372c30cf87d9a16d1f5b209a.jpg",
     },
@@ -78,7 +112,10 @@ export default function ProductGrid() {
       id: 7,
       title: "Bomber Jacket",
       description: "Aviation inspired",
-      price: "2,800",
+      price: 2800,
+      category: "outerwear",
+      sizes: ["M", "L", "XL"],
+      colors: ["black", "green"],
       image:
         "https://i.pinimg.com/736x/ba/2e/de/ba2ede82049f540aace10180acfbd8fa.jpg",
     },
@@ -86,7 +123,10 @@ export default function ProductGrid() {
       id: 8,
       title: "Track Pants",
       description: "Retro athletic",
-      price: "1,400",
+      price: 1400,
+      category: "bottoms",
+      sizes: ["S", "M", "L", "XL"],
+      colors: ["black", "blue"],
       image:
         "https://i.pinimg.com/736x/6f/d7/6b/6fd76b54f6135a206f407700b0ca74b1.jpg",
     },
@@ -94,25 +134,119 @@ export default function ProductGrid() {
       id: 9,
       title: "Flannel Shirt",
       description: "Casual layering",
-      price: "1,600",
+      price: 1600,
+      category: "tops",
+      sizes: ["M", "L", "XL"],
+      colors: ["red", "blue"],
       image:
         "https://i.pinimg.com/1200x/56/b5/02/56b502ad1ab836436d590dc8895ac511.jpg",
     },
     {
       id: 10,
-      title: "baggy Jeans",
+      title: "Baggy Jeans",
       description: "Modern denim",
-      price: "2,000",
+      price: 2000,
+      category: "bottoms",
+      sizes: ["S", "M", "L", "XL", "XXL"],
+      colors: ["blue", "black"],
       image:
         "https://i.pinimg.com/1200x/8b/e0/3c/8be03c3124b1ebb3a262357a00b87e5d.jpg",
     },
   ];
 
+  const categories = [
+    { value: "all", label: "All Items" },
+    { value: "tops", label: "Tops" },
+    { value: "bottoms", label: "Bottoms" },
+    { value: "outerwear", label: "Outerwear" },
+  ];
+
+  const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
+
+  const colors = [
+    { value: "black", label: "Black", hex: "#000000" },
+    { value: "white", label: "White", hex: "#FFFFFF" },
+    { value: "gray", label: "Gray", hex: "#9CA3AF" },
+    { value: "blue", label: "Blue", hex: "#3B82F6" },
+    { value: "red", label: "Red", hex: "#EF4444" },
+    { value: "green", label: "Green", hex: "#10B981" },
+    { value: "khaki", label: "Khaki", hex: "#C4B5A0" },
+  ];
+
+  // Filter logic
+  const filteredProducts = products
+    .filter((product) => {
+      const matchesSearch =
+        product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.description.toLowerCase().includes(searchQuery.toLowerCase());
+
+      const matchesCategory =
+        selectedCategory === "all" || product.category === selectedCategory;
+
+      const matchesSize =
+        selectedSizes.length === 0 ||
+        selectedSizes.some((size) => product.sizes.includes(size));
+
+      const matchesPrice =
+        product.price >= priceRange[0] && product.price <= priceRange[1];
+
+      const matchesColor =
+        selectedColors.length === 0 ||
+        selectedColors.some((color) => product.colors.includes(color));
+
+      return (
+        matchesSearch &&
+        matchesCategory &&
+        matchesSize &&
+        matchesPrice &&
+        matchesColor
+      );
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case "price-low":
+          return a.price - b.price;
+        case "price-high":
+          return b.price - a.price;
+        case "name":
+          return a.title.localeCompare(b.title);
+        default:
+          return 0;
+      }
+    });
+
+  const toggleSize = (size: string) => {
+    setSelectedSizes((prev) =>
+      prev.includes(size) ? prev.filter((s) => s !== size) : [...prev, size],
+    );
+  };
+
+  const toggleColor = (color: string) => {
+    setSelectedColors((prev) =>
+      prev.includes(color) ? prev.filter((c) => c !== color) : [...prev, color],
+    );
+  };
+
+  const clearFilters = () => {
+    setSearchQuery("");
+    setSelectedCategory("all");
+    setSelectedSizes([]);
+    setPriceRange([0, 5000]);
+    setSelectedColors([]);
+    setSortBy("featured");
+  };
+
+  const activeFiltersCount =
+    (selectedCategory !== "all" ? 1 : 0) +
+    selectedSizes.length +
+    selectedColors.length +
+    (priceRange[0] !== 0 || priceRange[1] !== 5000 ? 1 : 0);
+
   return (
     <section ref={sectionRef} className="w-full py-20 px-4 bg-white">
       <div className="max-w-7xl mx-auto">
         {/* Section Header */}
-        <div className="text-center mb-16">
+        <div className="text-center mb-12">
           <h2
             className="text-black font-light uppercase text-[56px] mb-3"
             style={{
@@ -140,17 +274,277 @@ export default function ProductGrid() {
           </p>
         </div>
 
-        {/* Product Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-          {products.map((product, index) => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              index={index}
-              isVisible={isVisible}
-            />
-          ))}
+        {/* Search and Filter Bar */}
+        <div className="mb-8 space-y-4">
+          <div className="flex flex-col md:flex-row gap-4">
+            {/* Search Bar */}
+            <div className="flex-1 relative">
+              <Search
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+                size={20}
+              />
+              <input
+                type="text"
+                placeholder="Search products..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+                style={{ fontFamily: "'Poppins', sans-serif" }}
+              />
+            </div>
+
+            {/* Filter Toggle Button */}
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="flex items-center justify-center gap-2 px-6 py-3 border border-gray-300 rounded-full hover:bg-gray-50 transition-colors relative"
+              style={{ fontFamily: "'Poppins', sans-serif" }}
+            >
+              <SlidersHorizontal size={20} />
+              <span>Filters</span>
+              {activeFiltersCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-black text-white text-xs w-6 h-6 rounded-full flex items-center justify-center">
+                  {activeFiltersCount}
+                </span>
+              )}
+            </button>
+
+            {/* Sort Dropdown */}
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="px-6 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent cursor-pointer"
+              style={{ fontFamily: "'Poppins', sans-serif" }}
+            >
+              <option value="featured">Featured</option>
+              <option value="price-low">Price: Low to High</option>
+              <option value="price-high">Price: High to Low</option>
+              <option value="name">Name: A-Z</option>
+            </select>
+          </div>
+
+          {/* Filters Panel */}
+          {showFilters && (
+            <div className="bg-gray-50 rounded-2xl p-6 space-y-6 border border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3
+                  className="text-lg font-semibold"
+                  style={{ fontFamily: "'Poppins', sans-serif" }}
+                >
+                  Filters
+                </h3>
+                <button
+                  onClick={clearFilters}
+                  className="text-sm text-gray-600 hover:text-black flex items-center gap-1"
+                  style={{ fontFamily: "'Poppins', sans-serif" }}
+                >
+                  <X size={16} />
+                  Clear All
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {/* Category Filter */}
+                <div>
+                  <h4
+                    className="font-semibold mb-3 text-sm"
+                    style={{ fontFamily: "'Poppins', sans-serif" }}
+                  >
+                    Category
+                  </h4>
+                  <div className="space-y-2">
+                    {categories.map((category) => (
+                      <label
+                        key={category.value}
+                        className="flex items-center gap-2 cursor-pointer"
+                      >
+                        <input
+                          type="radio"
+                          name="category"
+                          value={category.value}
+                          checked={selectedCategory === category.value}
+                          onChange={(e) => setSelectedCategory(e.target.value)}
+                          className="w-4 h-4 accent-black cursor-pointer"
+                        />
+                        <span
+                          className="text-sm"
+                          style={{ fontFamily: "'Poppins', sans-serif" }}
+                        >
+                          {category.label}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Size Filter */}
+                <div>
+                  <h4
+                    className="font-semibold mb-3 text-sm"
+                    style={{ fontFamily: "'Poppins', sans-serif" }}
+                  >
+                    Size
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {sizes.map((size) => (
+                      <button
+                        key={size}
+                        onClick={() => toggleSize(size)}
+                        className={`px-4 py-2 rounded-full border text-sm transition-all ${
+                          selectedSizes.includes(size)
+                            ? "bg-black text-white border-black"
+                            : "bg-white text-gray-700 border-gray-300 hover:border-black"
+                        }`}
+                        style={{ fontFamily: "'Poppins', sans-serif" }}
+                      >
+                        {size}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Color Filter */}
+                <div>
+                  <h4
+                    className="font-semibold mb-3 text-sm"
+                    style={{ fontFamily: "'Poppins', sans-serif" }}
+                  >
+                    Color
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {colors.map((color) => (
+                      <button
+                        key={color.value}
+                        onClick={() => toggleColor(color.value)}
+                        className={`w-10 h-10 rounded-full border-2 transition-all ${
+                          selectedColors.includes(color.value)
+                            ? "border-black scale-110"
+                            : "border-gray-300 hover:border-gray-400"
+                        }`}
+                        style={{
+                          backgroundColor: color.hex,
+                          boxShadow:
+                            color.hex === "#FFFFFF"
+                              ? "inset 0 0 0 1px #e5e7eb"
+                              : "none",
+                        }}
+                        title={color.label}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Price Range Filter */}
+                <div>
+                  <h4
+                    className="font-semibold mb-3 text-sm"
+                    style={{ fontFamily: "'Poppins', sans-serif" }}
+                  >
+                    Price Range
+                  </h4>
+                  <div className="space-y-3">
+                    <input
+                      type="range"
+                      min="0"
+                      max="5000"
+                      step="100"
+                      value={priceRange[1]}
+                      onChange={(e) =>
+                        setPriceRange([priceRange[0], parseInt(e.target.value)])
+                      }
+                      className="w-full accent-black"
+                    />
+                    <div
+                      className="flex items-center justify-between text-sm"
+                      style={{ fontFamily: "'Poppins', sans-serif" }}
+                    >
+                      <span className="text-gray-600">0 ETB</span>
+                      <span className="font-semibold">
+                        {priceRange[1].toLocaleString()} ETB
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Active Filters Display */}
+          {activeFiltersCount > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {selectedCategory !== "all" && (
+                <span className="px-4 py-2 bg-black text-white rounded-full text-sm flex items-center gap-2">
+                  {categories.find((c) => c.value === selectedCategory)?.label}
+                  <button onClick={() => setSelectedCategory("all")}>
+                    <X size={14} />
+                  </button>
+                </span>
+              )}
+              {selectedSizes.map((size) => (
+                <span
+                  key={size}
+                  className="px-4 py-2 bg-black text-white rounded-full text-sm flex items-center gap-2"
+                >
+                  Size: {size}
+                  <button onClick={() => toggleSize(size)}>
+                    <X size={14} />
+                  </button>
+                </span>
+              ))}
+              {selectedColors.map((color) => (
+                <span
+                  key={color}
+                  className="px-4 py-2 bg-black text-white rounded-full text-sm flex items-center gap-2"
+                >
+                  {colors.find((c) => c.value === color)?.label}
+                  <button onClick={() => toggleColor(color)}>
+                    <X size={14} />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
         </div>
+
+        {/* Results Count */}
+        <div className="mb-6">
+          <p
+            className="text-gray-600"
+            style={{ fontFamily: "'Poppins', sans-serif" }}
+          >
+            Showing {filteredProducts.length}{" "}
+            {filteredProducts.length === 1 ? "product" : "products"}
+          </p>
+        </div>
+
+        {/* Product Grid */}
+        {filteredProducts.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+            {filteredProducts.map((product, index) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                index={index}
+                isVisible={isVisible}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-20">
+            <p
+              className="text-2xl text-gray-400 mb-4"
+              style={{ fontFamily: "'Poppins', sans-serif" }}
+            >
+              No products found
+            </p>
+            <button
+              onClick={clearFilters}
+              className="px-6 py-3 bg-black text-white rounded-full hover:bg-gray-800 transition-colors"
+              style={{ fontFamily: "'Poppins', sans-serif" }}
+            >
+              Clear Filters
+            </button>
+          </div>
+        )}
       </div>
     </section>
   );
@@ -161,7 +555,7 @@ interface ProductCardProps {
     id: number;
     title: string;
     description: string;
-    price: string;
+    price: number;
     image: string;
   };
   index: number;
@@ -170,105 +564,118 @@ interface ProductCardProps {
 
 function ProductCard({ product, index, isVisible }: ProductCardProps) {
   return (
-    <div
-      className="group relative cursor-pointer will-change-transform"
-      style={{
-        opacity: isVisible ? 1 : 0,
-        transform: isVisible ? "translateY(0)" : "translateY(50px)",
-        transition: `opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1) ${index * 0.05}s, transform 0.5s cubic-bezier(0.4, 0, 0.2, 1) ${index * 0.05}s`,
-      }}
-    >
-      {/* Product Image Container */}
-      <div className="relative bg-gray-100 rounded-2xl overflow-hidden mb-4 aspect-[3/4]">
-        {/* Product Image */}
-        <img
-          src={product.image}
-          alt={product.title}
-          className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
-          loading="lazy"
-        />
+    <Link href={`/product/${product.id}`}>
+      {" "}
+      {/* Wrap entire card in Link */}
+      <div
+        className="group relative cursor-pointer will-change-transform"
+        style={{
+          opacity: isVisible ? 1 : 0,
+          transform: isVisible ? "translateY(0)" : "translateY(50px)",
+          transition: `opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1) ${index * 0.05}s, transform 0.5s cubic-bezier(0.4, 0, 0.2, 1) ${index * 0.05}s`,
+        }}
+      >
+        {/* Product Image Container */}
+        <div className="relative bg-gray-100 rounded-2xl overflow-hidden mb-4 aspect-[3/4]">
+          {/* Product Image */}
+          <img
+            src={product.image}
+            alt={product.title}
+            className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+            loading="lazy"
+          />
 
-        {/* Hover Overlay */}
-        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          {/* Hover Overlay */}
+          <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-        {/* Action Buttons */}
-        <div className="absolute top-3 right-3 flex flex-col gap-2">
-          {/* Wishlist Button */}
+          {/* Action Buttons */}
+          <div className="absolute top-3 right-3 flex flex-col gap-2">
+            {/* Wishlist Button */}
+            <button
+              onClick={(e) => {
+                e.preventDefault(); // Prevent navigation when clicking heart
+                // Add to wishlist logic here
+              }}
+              className="bg-white/90 backdrop-blur-sm p-2.5 rounded-full shadow-lg hover:bg-white transition-all duration-300 opacity-0 translate-x-5 scale-90 group-hover:opacity-100 group-hover:translate-x-0 group-hover:scale-100"
+              aria-label="Add to wishlist"
+            >
+              <Heart size={18} className="text-gray-800" />
+            </button>
+          </div>
+
+          {/* Add to Cart Button */}
           <button
-            className="bg-white/90 backdrop-blur-sm p-2.5 rounded-full shadow-lg hover:bg-white transition-all duration-300 opacity-0 translate-x-5 scale-90 group-hover:opacity-100 group-hover:translate-x-0 group-hover:scale-100"
-            aria-label="Add to wishlist"
+            onClick={(e) => {
+              e.preventDefault(); // Prevent navigation when clicking add to cart
+              // Add to cart logic here
+            }}
+            className="absolute bottom-4 left-4 right-4 bg-black text-white py-3 rounded-full font-semibold text-sm uppercase flex items-center justify-center gap-2 hover:bg-gray-900 transition-all duration-300 opacity-0 translate-y-5 group-hover:opacity-100 group-hover:translate-y-0"
+            style={{
+              fontFamily: "'Poppins', sans-serif",
+              letterSpacing: "0.08em",
+              fontWeight: 600,
+            }}
           >
-            <Heart size={18} className="text-gray-800" />
+            <ShoppingCart size={16} />
+            Add to Cart
           </button>
         </div>
 
-        {/* Add to Cart Button */}
-        <button
-          className="absolute bottom-4 left-4 right-4 bg-black text-white py-3 rounded-full font-semibold text-sm uppercase flex items-center justify-center gap-2 hover:bg-gray-900 transition-all duration-300 opacity-0 translate-y-5 group-hover:opacity-100 group-hover:translate-y-0"
-          style={{
-            fontFamily: "'Poppins', sans-serif",
-            letterSpacing: "0.08em",
-            fontWeight: 600,
-          }}
-        >
-          <ShoppingCart size={16} />
-          Add to Cart
-        </button>
-      </div>
-
-      {/* Product Info */}
-      <div className="px-1">
-        <h3
-          className="text-gray-900 font-semibold text-base mb-1 uppercase"
-          style={{
-            fontFamily: "'Poppins', sans-serif",
-            letterSpacing: "0.05em",
-            fontWeight: 600,
-          }}
-        >
-          {product.title}
-        </h3>
-        <p
-          className="text-gray-500 text-sm mb-2"
-          style={{
-            fontFamily: "'Poppins', sans-serif",
-            fontWeight: 400,
-          }}
-        >
-          {product.description}
-        </p>
-        <div className="flex items-center justify-between">
-          <span
-            className="text-black font-bold text-lg"
+        {/* Product Info */}
+        <div className="px-1">
+          <h3
+            className="text-gray-900 font-semibold text-base mb-1 uppercase"
             style={{
               fontFamily: "'Poppins', sans-serif",
-              fontWeight: 700,
+              letterSpacing: "0.05em",
+              fontWeight: 600,
             }}
           >
-            {product.price} <span className="text-sm font-normal">ETB</span>
-          </span>
+            {product.title}
+          </h3>
+          <p
+            className="text-gray-500 text-sm mb-2"
+            style={{
+              fontFamily: "'Poppins', sans-serif",
+              fontWeight: 400,
+            }}
+          >
+            {product.description}
+          </p>
+          <div className="flex items-center justify-between">
+            <span
+              className="text-black font-bold text-lg"
+              style={{
+                fontFamily: "'Poppins', sans-serif",
+                fontWeight: 700,
+              }}
+            >
+              {product.price.toLocaleString()}{" "}
+              <span className="text-sm font-normal">ETB</span>
+            </span>
 
-          {/* Size Indicator */}
-          <div className="flex gap-1">
-            {["S", "M", "L"].map((size) => (
-              <span
-                key={size}
-                className="w-6 h-6 flex items-center justify-center text-gray-400 border border-gray-300 rounded-full hover:border-black hover:text-black transition-all duration-200 cursor-pointer"
-                style={{
-                  fontFamily: "'Poppins', sans-serif",
-                  fontSize: "10px",
-                  fontWeight: 600,
-                }}
-              >
-                {size}
-              </span>
-            ))}
+            {/* Size Indicator */}
+            <div className="flex gap-1">
+              {["S", "M", "L"].map((size) => (
+                <span
+                  key={size}
+                  className="w-6 h-6 flex items-center justify-center text-gray-400 border border-gray-300 rounded-full hover:border-black hover:text-black transition-all duration-200 cursor-pointer"
+                  style={{
+                    fontFamily: "'Poppins', sans-serif",
+                    fontSize: "10px",
+                    fontWeight: 600,
+                  }}
+                >
+                  {size}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Bottom Accent Line */}
-      <div className="mt-3 h-0.5 bg-black rounded-full w-0 group-hover:w-full transition-all duration-400 ease-out" />
-    </div>
+        {/* Bottom Accent Line */}
+        <div className="mt-3 h-0.5 bg-black rounded-full w-0 group-hover:w-full transition-all duration-400 ease-out" />
+      </div>
+    </Link>
   );
 }
