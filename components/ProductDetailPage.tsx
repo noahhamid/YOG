@@ -36,6 +36,13 @@ export default function ProductDetailPage({
   const [isZoomed, setIsZoomed] = useState(false);
   const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 });
   const [isHoveringControls, setIsHoveringControls] = useState(false);
+  const [showOrderModal, setShowOrderModal] = useState(false);
+  const [orderForm, setOrderForm] = useState({
+    name: "",
+    phone: "",
+    deliveryMethod: "delivery",
+    address: "",
+  });
 
   // Complete products database matching the ProductGrid
   const allProducts = [
@@ -694,6 +701,52 @@ export default function ProductDetailPage({
 
           {/* Right Column - Product Info */}
           <div className="space-y-4">
+            {/* Seller Info - Prominent */}
+            <div className="border border-gray-200 rounded-xl p-4 bg-gradient-to-r from-gray-50 to-white">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-gradient-to-br from-black to-gray-700 rounded-full flex items-center justify-center shadow-md">
+                    <Store size={24} className="text-white" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <h3
+                        className="font-bold text-base"
+                        style={{ fontFamily: "'Poppins', sans-serif" }}
+                      >
+                        {seller.name}
+                      </h3>
+                      {seller.verified && (
+                        <div className="bg-blue-500 text-white p-1 rounded-full">
+                          <Check size={10} />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1 mb-0.5">
+                      <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
+                      <span className="font-semibold text-sm">
+                        {seller.rating}
+                      </span>
+                      <span className="text-gray-600 text-xs">
+                        Store Rating
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-600">
+                      Joined {seller.joinedDate} ·{" "}
+                      {seller.followers.toLocaleString()} followers
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setActiveTab("seller")}
+                  className="px-4 py-1.5 border-2 border-black rounded-full font-semibold hover:bg-black hover:text-white transition-all text-sm"
+                  style={{ fontFamily: "'Poppins', sans-serif" }}
+                >
+                  View Store
+                </button>
+              </div>
+            </div>
+
             {/* Brand & Title */}
             <div>
               <p
@@ -855,9 +908,9 @@ export default function ProductDetailPage({
             {/* Action Buttons */}
             <div className="space-y-2">
               <button
+                onClick={() => setShowOrderModal(true)}
                 className="w-full bg-black text-white py-3 rounded-full font-semibold hover:bg-gray-800 transition-all flex items-center justify-center gap-2"
                 style={{ fontFamily: "'Poppins', sans-serif" }}
-                disabled={!selectedSize}
               >
                 <Package size={18} />
                 Order Now
@@ -1005,28 +1058,27 @@ export default function ProductDetailPage({
 
           <div className="py-6">
             {activeTab === "description" && (
-              <div className="max-w-3xl space-y-4">
-                <p className="text-gray-700 leading-relaxed text-sm">
+              <div className="max-w-3xl space-y-6">
+                <p className="text-gray-700 leading-relaxed text-base">
                   {product.description}
                 </p>
                 <div>
                   <h4
-                    className="font-semibold mb-2 text-sm"
+                    className="font-semibold mb-3 text-base"
                     style={{ fontFamily: "'Poppins', sans-serif" }}
                   >
                     Key Features:
                   </h4>
-                  <ul className="space-y-1.5">
+                  <ul className="space-y-2">
                     {product.features.map((feature, index) => (
-                      <li
-                        key={index}
-                        className="flex items-start gap-2 text-sm"
-                      >
+                      <li key={index} className="flex items-start gap-2">
                         <Check
                           className="text-green-600 flex-shrink-0 mt-0.5"
-                          size={16}
+                          size={18}
                         />
-                        <span className="text-gray-700">{feature}</span>
+                        <span className="text-gray-700 text-base">
+                          {feature}
+                        </span>
                       </li>
                     ))}
                   </ul>
@@ -1036,7 +1088,7 @@ export default function ProductDetailPage({
 
             {activeTab === "specifications" && (
               <div className="max-w-3xl">
-                <table className="w-full text-sm">
+                <table className="w-full">
                   <tbody>
                     {Object.entries(product.specifications).map(
                       ([key, value], index) => (
@@ -1045,12 +1097,12 @@ export default function ProductDetailPage({
                           className={index % 2 === 0 ? "bg-gray-50" : ""}
                         >
                           <td
-                            className="px-3 py-2 font-semibold text-gray-900"
+                            className="px-4 py-3 font-semibold text-gray-900"
                             style={{ fontFamily: "'Poppins', sans-serif" }}
                           >
                             {key}
                           </td>
-                          <td className="px-3 py-2 text-gray-700">{value}</td>
+                          <td className="px-4 py-3 text-gray-700">{value}</td>
                         </tr>
                       ),
                     )}
@@ -1129,11 +1181,11 @@ export default function ProductDetailPage({
             )}
 
             {activeTab === "reviews" && (
-              <div className="max-w-3xl space-y-4">
-                <div className="flex items-center justify-between mb-4">
+              <div className="max-w-3xl space-y-6">
+                <div className="flex items-center justify-between mb-6">
                   <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-4xl font-bold">
+                    <div className="flex items-center gap-3 mb-2">
+                      <span className="text-5xl font-bold">
                         {product.rating}
                       </span>
                       <div>
@@ -1141,35 +1193,33 @@ export default function ProductDetailPage({
                           {[1, 2, 3, 4, 5].map((star) => (
                             <Star
                               key={star}
-                              className="w-4 h-4 fill-yellow-400 text-yellow-400"
+                              className="w-5 h-5 fill-yellow-400 text-yellow-400"
                             />
                           ))}
                         </div>
-                        <p className="text-xs text-gray-600">
+                        <p className="text-sm text-gray-600">
                           Based on {product.reviewCount} reviews
                         </p>
                       </div>
                     </div>
                   </div>
-                  <button className="px-4 py-1.5 border-2 border-black rounded-full font-semibold hover:bg-gray-50 transition-colors text-sm">
+                  <button className="px-5 py-2 border-2 border-black rounded-full font-semibold hover:bg-gray-50 transition-colors">
                     Write Review
                   </button>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {reviews.map((review) => (
                     <div
                       key={review.id}
-                      className="border border-gray-200 rounded-xl p-3"
+                      className="border border-gray-200 rounded-xl p-4"
                     >
-                      <div className="flex items-start justify-between mb-1.5">
+                      <div className="flex items-start justify-between mb-2">
                         <div>
-                          <div className="flex items-center gap-2 mb-0.5">
-                            <p className="font-semibold text-sm">
-                              {review.user}
-                            </p>
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="font-semibold">{review.user}</p>
                             {review.verified && (
-                              <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full">
+                              <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
                                 Verified
                               </span>
                             )}
@@ -1179,20 +1229,18 @@ export default function ProductDetailPage({
                               {[1, 2, 3, 4, 5].map((star) => (
                                 <Star
                                   key={star}
-                                  className={`w-3 h-3 ${star <= review.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`}
+                                  className={`w-4 h-4 ${star <= review.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`}
                                 />
                               ))}
                             </div>
-                            <span className="text-xs text-gray-600">
+                            <span className="text-sm text-gray-600">
                               {review.date}
                             </span>
                           </div>
                         </div>
                       </div>
-                      <p className="text-gray-700 mb-2 text-sm">
-                        {review.comment}
-                      </p>
-                      <button className="text-xs text-gray-600 hover:text-black">
+                      <p className="text-gray-700 mb-2">{review.comment}</p>
+                      <button className="text-sm text-gray-600 hover:text-black">
                         Helpful ({review.helpful})
                       </button>
                     </div>
@@ -1252,6 +1300,186 @@ export default function ProductDetailPage({
         </div>
       </div>
 
+      {/* Order Modal */}
+      {showOrderModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2
+                className="text-2xl font-bold"
+                style={{ fontFamily: "'Poppins', sans-serif" }}
+              >
+                Place Order
+              </h2>
+              <button
+                onClick={() => setShowOrderModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <ChevronLeft size={20} />
+              </button>
+            </div>
+
+            <div className="bg-gray-50 rounded-xl p-4">
+              <div className="flex gap-3">
+                <img
+                  src={product.images[0]}
+                  alt={product.title}
+                  className="w-20 h-20 object-cover rounded-lg"
+                />
+                <div className="flex-1">
+                  <h3 className="font-semibold mb-1">{product.title}</h3>
+                  <p className="text-sm text-gray-600 mb-1">
+                    {selectedSize && `Size: ${selectedSize}`}
+                    {selectedSize && selectedColor && " • "}
+                    {selectedColor &&
+                      `Color: ${product.colors.find((c) => c.value === selectedColor)?.name}`}
+                  </p>
+                  <p className="font-bold">
+                    {(product.price * quantity).toLocaleString()} ETB
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                // Handle order submission
+                alert(
+                  `Order placed!\nName: ${orderForm.name}\nPhone: ${orderForm.phone}\nMethod: ${orderForm.deliveryMethod}\n${orderForm.deliveryMethod === "delivery" ? `Address: ${orderForm.address}` : "Meet-up location will be confirmed"}`,
+                );
+                setShowOrderModal(false);
+                setOrderForm({
+                  name: "",
+                  phone: "",
+                  deliveryMethod: "delivery",
+                  address: "",
+                });
+              }}
+              className="space-y-4"
+            >
+              {/* Name Input */}
+              <div>
+                <label
+                  className="block text-sm font-semibold mb-2"
+                  style={{ fontFamily: "'Poppins', sans-serif" }}
+                >
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={orderForm.name}
+                  onChange={(e) =>
+                    setOrderForm({ ...orderForm, name: e.target.value })
+                  }
+                  placeholder="Enter your name"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+                  style={{ fontFamily: "'Poppins', sans-serif" }}
+                />
+              </div>
+
+              {/* Phone Input */}
+              <div>
+                <label
+                  className="block text-sm font-semibold mb-2"
+                  style={{ fontFamily: "'Poppins', sans-serif" }}
+                >
+                  Phone Number
+                </label>
+                <input
+                  type="tel"
+                  required
+                  value={orderForm.phone}
+                  onChange={(e) =>
+                    setOrderForm({ ...orderForm, phone: e.target.value })
+                  }
+                  placeholder="+251 9XX XXX XXX"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+                  style={{ fontFamily: "'Poppins', sans-serif" }}
+                />
+              </div>
+
+              {/* Delivery Method */}
+              <div>
+                <label
+                  className="block text-sm font-semibold mb-2"
+                  style={{ fontFamily: "'Poppins', sans-serif" }}
+                >
+                  Delivery Method
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setOrderForm({ ...orderForm, deliveryMethod: "delivery" })
+                    }
+                    className={`p-4 border-2 rounded-lg transition-all ${
+                      orderForm.deliveryMethod === "delivery"
+                        ? "border-black bg-black text-white"
+                        : "border-gray-300 hover:border-gray-400"
+                    }`}
+                  >
+                    <Truck className="mx-auto mb-2" size={24} />
+                    <p className="font-semibold text-sm">Delivery</p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setOrderForm({ ...orderForm, deliveryMethod: "meetup" })
+                    }
+                    className={`p-4 border-2 rounded-lg transition-all ${
+                      orderForm.deliveryMethod === "meetup"
+                        ? "border-black bg-black text-white"
+                        : "border-gray-300 hover:border-gray-400"
+                    }`}
+                  >
+                    <Store className="mx-auto mb-2" size={24} />
+                    <p className="font-semibold text-sm">Meet-up</p>
+                  </button>
+                </div>
+              </div>
+
+              {/* Address (only for delivery) */}
+              {orderForm.deliveryMethod === "delivery" && (
+                <div>
+                  <label
+                    className="block text-sm font-semibold mb-2"
+                    style={{ fontFamily: "'Poppins', sans-serif" }}
+                  >
+                    Delivery Address
+                  </label>
+                  <textarea
+                    required
+                    value={orderForm.address}
+                    onChange={(e) =>
+                      setOrderForm({ ...orderForm, address: e.target.value })
+                    }
+                    placeholder="Enter your full address"
+                    rows={3}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent resize-none"
+                    style={{ fontFamily: "'Poppins', sans-serif" }}
+                  />
+                </div>
+              )}
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                className="w-full bg-black text-white py-3 rounded-full font-semibold hover:bg-gray-800 transition-all"
+                style={{ fontFamily: "'Poppins', sans-serif" }}
+              >
+                Submit Order
+              </button>
+
+              <p className="text-xs text-gray-600 text-center">
+                No payment required now. Pay when you receive your order.
+              </p>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Sticky Bottom Bar (Mobile) */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-3 lg:hidden z-50">
         <div className="flex items-center gap-3">
@@ -1262,9 +1490,9 @@ export default function ProductDetailPage({
             </p>
           </div>
           <button
+            onClick={() => setShowOrderModal(true)}
             className="flex-1 bg-black text-white py-2.5 rounded-full font-semibold hover:bg-gray-800 transition-colors text-sm"
             style={{ fontFamily: "'Poppins', sans-serif" }}
-            disabled={!selectedSize}
           >
             Order Now
           </button>

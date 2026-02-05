@@ -155,7 +155,7 @@ const Navbar = () => {
           {/* Account Actions */}
           <div className="flex items-center gap-6">
             <Link
-              href="/signin"
+              href="/seller/dashboard"
               className={`text-[11px] font-semibold uppercase tracking-[0.15em] whitespace-nowrap hover:opacity-60 relative group`}
               style={{
                 color: isScrolled ? "white" : "black",
@@ -171,7 +171,7 @@ const Navbar = () => {
               />
             </Link>
             <Link
-              href="/cart"
+              href="/seller/apply"
               className={`hover:opacity-60 transition-all hover:scale-110 relative group`}
               style={{
                 color: isScrolled ? "white" : "black",
