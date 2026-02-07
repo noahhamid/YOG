@@ -5,10 +5,11 @@ import {
   ShoppingCart,
   Heart,
   Search,
-  SlidersHorizontal,
   X,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
-import Link from "next/link"; // Import Link
+import Link from "next/link";
 
 export default function ProductGrid() {
   const [isVisible, setIsVisible] = useState(false);
@@ -20,8 +21,20 @@ export default function ProductGrid() {
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 5000]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
+  const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState("featured");
-  const [showFilters, setShowFilters] = useState(false);
+  const [showNewArrivals, setShowNewArrivals] = useState(false);
+  const [showOnSale, setShowOnSale] = useState(false);
+
+  // Accordion states for filters
+  const [expandedSections, setExpandedSections] = useState({
+    category: true,
+    price: true,
+    size: true,
+    color: true,
+    brand: true,
+    other: true,
+  });
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -50,6 +63,9 @@ export default function ProductGrid() {
       category: "tops",
       sizes: ["S", "M", "L", "XL"],
       colors: ["white", "black"],
+      brand: "YOG Basics",
+      newArrival: true,
+      onSale: false,
       image:
         "https://i.pinimg.com/1200x/6c/29/4d/6c294de767f1fc184ae4591d38662b49.jpg",
     },
@@ -61,6 +77,9 @@ export default function ProductGrid() {
       category: "outerwear",
       sizes: ["M", "L", "XL"],
       colors: ["blue"],
+      brand: "Urban Threads",
+      newArrival: false,
+      onSale: true,
       image:
         "https://i.pinimg.com/736x/1b/7a/71/1b7a7199025f67791606841333ef70f5.jpg",
     },
@@ -72,6 +91,9 @@ export default function ProductGrid() {
       category: "bottoms",
       sizes: ["S", "M", "L", "XL", "XXL"],
       colors: ["khaki", "black"],
+      brand: "Street Essential",
+      newArrival: true,
+      onSale: false,
       image:
         "https://i.pinimg.com/736x/d1/7c/8d/d17c8d81022342185ae929271704f535.jpg",
     },
@@ -83,6 +105,9 @@ export default function ProductGrid() {
       category: "tops",
       sizes: ["M", "L", "XL"],
       colors: ["gray", "black", "white"],
+      brand: "Comfort Zone",
+      newArrival: false,
+      onSale: true,
       image:
         "https://i.pinimg.com/1200x/2e/da/3d/2eda3de39d654180908f3d87590ceb1b.jpg",
     },
@@ -94,6 +119,9 @@ export default function ProductGrid() {
       category: "bottoms",
       sizes: ["S", "M", "L", "XL"],
       colors: ["black", "gray"],
+      brand: "Active Life",
+      newArrival: false,
+      onSale: false,
       image:
         "https://i.pinimg.com/1200x/ed/73/47/ed73471bd6bc58afbf67fd11d1de9536.jpg",
     },
@@ -105,6 +133,9 @@ export default function ProductGrid() {
       category: "tops",
       sizes: ["S", "M", "L"],
       colors: ["white", "black"],
+      brand: "YOG Basics",
+      newArrival: true,
+      onSale: false,
       image:
         "https://i.pinimg.com/736x/4f/99/be/4f99be2e372c30cf87d9a16d1f5b209a.jpg",
     },
@@ -116,6 +147,9 @@ export default function ProductGrid() {
       category: "outerwear",
       sizes: ["M", "L", "XL"],
       colors: ["black", "green"],
+      brand: "Urban Threads",
+      newArrival: false,
+      onSale: false,
       image:
         "https://i.pinimg.com/736x/ba/2e/de/ba2ede82049f540aace10180acfbd8fa.jpg",
     },
@@ -127,6 +161,9 @@ export default function ProductGrid() {
       category: "bottoms",
       sizes: ["S", "M", "L", "XL"],
       colors: ["black", "blue"],
+      brand: "Active Life",
+      newArrival: false,
+      onSale: true,
       image:
         "https://i.pinimg.com/736x/6f/d7/6b/6fd76b54f6135a206f407700b0ca74b1.jpg",
     },
@@ -138,6 +175,9 @@ export default function ProductGrid() {
       category: "tops",
       sizes: ["M", "L", "XL"],
       colors: ["red", "blue"],
+      brand: "Comfort Zone",
+      newArrival: false,
+      onSale: false,
       image:
         "https://i.pinimg.com/1200x/56/b5/02/56b502ad1ab836436d590dc8895ac511.jpg",
     },
@@ -149,6 +189,149 @@ export default function ProductGrid() {
       category: "bottoms",
       sizes: ["S", "M", "L", "XL", "XXL"],
       colors: ["blue", "black"],
+      brand: "Street Essential",
+      newArrival: true,
+      onSale: false,
+      image:
+        "https://i.pinimg.com/1200x/8b/e0/3c/8be03c3124b1ebb3a262357a00b87e5d.jpg",
+    },
+    {
+      id: 11,
+      title: "Essential White Tee",
+      description: "Premium organic cotton",
+      price: 800,
+      category: "tops",
+      sizes: ["S", "M", "L", "XL"],
+      colors: ["white", "black"],
+      brand: "YOG Basics",
+      newArrival: true,
+      onSale: false,
+      image:
+        "https://i.pinimg.com/1200x/6c/29/4d/6c294de767f1fc184ae4591d38662b49.jpg",
+    },
+    {
+      id: 12,
+      title: "Denim Jacket",
+      description: "Classic streetwear",
+      price: 2500,
+      category: "outerwear",
+      sizes: ["M", "L", "XL"],
+      colors: ["blue"],
+      brand: "Urban Threads",
+      newArrival: false,
+      onSale: true,
+      image:
+        "https://i.pinimg.com/736x/1b/7a/71/1b7a7199025f67791606841333ef70f5.jpg",
+    },
+    {
+      id: 13,
+      title: "Utility Cargo",
+      description: "Urban comfort",
+      price: 1800,
+      category: "bottoms",
+      sizes: ["S", "M", "L", "XL", "XXL"],
+      colors: ["khaki", "black"],
+      brand: "Street Essential",
+      newArrival: true,
+      onSale: false,
+      image:
+        "https://i.pinimg.com/736x/d1/7c/8d/d17c8d81022342185ae929271704f535.jpg",
+    },
+    {
+      id: 14,
+      title: "Oversized Hoodie",
+      description: "Cozy essential",
+      price: 1500,
+      category: "tops",
+      sizes: ["M", "L", "XL"],
+      colors: ["gray", "black", "white"],
+      brand: "Comfort Zone",
+      newArrival: false,
+      onSale: true,
+      image:
+        "https://i.pinimg.com/1200x/2e/da/3d/2eda3de39d654180908f3d87590ceb1b.jpg",
+    },
+    {
+      id: 15,
+      title: "Slim Joggers",
+      description: "Athletic style",
+      price: 1200,
+      category: "bottoms",
+      sizes: ["S", "M", "L", "XL"],
+      colors: ["black", "gray"],
+      brand: "Active Life",
+      newArrival: false,
+      onSale: false,
+      image:
+        "https://i.pinimg.com/1200x/ed/73/47/ed73471bd6bc58afbf67fd11d1de9536.jpg",
+    },
+    {
+      id: 16,
+      title: "Graphic Tee",
+      description: "Statement piece",
+      price: 900,
+      category: "tops",
+      sizes: ["S", "M", "L"],
+      colors: ["white", "black"],
+      brand: "YOG Basics",
+      newArrival: true,
+      onSale: false,
+      image:
+        "https://i.pinimg.com/736x/4f/99/be/4f99be2e372c30cf87d9a16d1f5b209a.jpg",
+    },
+    {
+      id: 17,
+      title: "Bomber Jacket",
+      description: "Aviation inspired",
+      price: 2800,
+      category: "outerwear",
+      sizes: ["M", "L", "XL"],
+      colors: ["black", "green"],
+      brand: "Urban Threads",
+      newArrival: false,
+      onSale: false,
+      image:
+        "https://i.pinimg.com/736x/ba/2e/de/ba2ede82049f540aace10180acfbd8fa.jpg",
+    },
+    {
+      id: 18,
+      title: "Track Pants",
+      description: "Retro athletic",
+      price: 1400,
+      category: "bottoms",
+      sizes: ["S", "M", "L", "XL"],
+      colors: ["black", "blue"],
+      brand: "Active Life",
+      newArrival: false,
+      onSale: true,
+      image:
+        "https://i.pinimg.com/736x/6f/d7/6b/6fd76b54f6135a206f407700b0ca74b1.jpg",
+    },
+    {
+      id: 19,
+      title: "Flannel Shirt",
+      description: "Casual layering",
+      price: 1600,
+      category: "tops",
+      sizes: ["M", "L", "XL"],
+      colors: ["red", "blue"],
+      brand: "Comfort Zone",
+      newArrival: false,
+      onSale: false,
+      image:
+        "https://i.pinimg.com/1200x/56/b5/02/56b502ad1ab836436d590dc8895ac511.jpg",
+    },
+    {
+      id: 20,
+      title: "Baggy Jeans",
+      description: "Modern denim",
+      price: 2000,
+      category: "bottoms",
+      sizes: ["S", "M", "L", "XL", "XXL"],
+      colors: ["blue", "black"],
+      brand: "Street Essential",
+      newArrival: true,
+      onSale: false,
       image:
         "https://i.pinimg.com/1200x/8b/e0/3c/8be03c3124b1ebb3a262357a00b87e5d.jpg",
     },
@@ -173,6 +356,14 @@ export default function ProductGrid() {
     { value: "khaki", label: "Khaki", hex: "#C4B5A0" },
   ];
 
+  const brands = [
+    "YOG Basics",
+    "Urban Threads",
+    "Street Essential",
+    "Comfort Zone",
+    "Active Life",
+  ];
+
   // Filter logic
   const filteredProducts = products
     .filter((product) => {
@@ -194,12 +385,21 @@ export default function ProductGrid() {
         selectedColors.length === 0 ||
         selectedColors.some((color) => product.colors.includes(color));
 
+      const matchesBrand =
+        selectedBrands.length === 0 || selectedBrands.includes(product.brand);
+
+      const matchesNewArrivals = !showNewArrivals || product.newArrival;
+      const matchesSale = !showOnSale || product.onSale;
+
       return (
         matchesSearch &&
         matchesCategory &&
         matchesSize &&
         matchesPrice &&
-        matchesColor
+        matchesColor &&
+        matchesBrand &&
+        matchesNewArrivals &&
+        matchesSale
       );
     })
     .sort((a, b) => {
@@ -227,24 +427,43 @@ export default function ProductGrid() {
     );
   };
 
+  const toggleBrand = (brand: string) => {
+    setSelectedBrands((prev) =>
+      prev.includes(brand) ? prev.filter((b) => b !== brand) : [...prev, brand],
+    );
+  };
+
+  const toggleSection = (section: keyof typeof expandedSections) => {
+    setExpandedSections((prev) => ({
+      ...prev,
+      [section]: !prev[section],
+    }));
+  };
+
   const clearFilters = () => {
     setSearchQuery("");
     setSelectedCategory("all");
     setSelectedSizes([]);
     setPriceRange([0, 5000]);
     setSelectedColors([]);
+    setSelectedBrands([]);
     setSortBy("featured");
+    setShowNewArrivals(false);
+    setShowOnSale(false);
   };
 
   const activeFiltersCount =
     (selectedCategory !== "all" ? 1 : 0) +
     selectedSizes.length +
     selectedColors.length +
-    (priceRange[0] !== 0 || priceRange[1] !== 5000 ? 1 : 0);
+    selectedBrands.length +
+    (priceRange[0] !== 0 || priceRange[1] !== 5000 ? 1 : 0) +
+    (showNewArrivals ? 1 : 0) +
+    (showOnSale ? 1 : 0);
 
   return (
-    <section ref={sectionRef} className="w-full py-20 px-4 bg-white">
-      <div className="max-w-7xl mx-auto">
+    <section ref={sectionRef} className="w-full py-20 px-10 bg-white">
+      <div className=" mx-auto">
         {/* Section Header */}
         <div className="text-center mb-12">
           <h2
@@ -274,83 +493,60 @@ export default function ProductGrid() {
           </p>
         </div>
 
-        {/* Search and Filter Bar */}
-        <div className="mb-8 space-y-4">
-          <div className="flex flex-col md:flex-row gap-4">
-            {/* Search Bar */}
-            <div className="flex-1 relative">
-              <Search
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-                size={20}
-              />
-              <input
-                type="text"
-                placeholder="Search products..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-                style={{ fontFamily: "'Poppins', sans-serif" }}
-              />
-            </div>
+        {/* Main Layout: Sidebar + Products */}
+        <div className="flex gap-6">
+          {/* LEFT SIDEBAR - FIXED/STICKY FILTERS */}
+          <div className="w-64 flex-shrink-0">
+            <div className="sticky top-24 bg-gray-50 rounded-2xl p-5 border border-gray-200 max-h-[calc(100vh-120px)] overflow-y-auto">
+              {/* Search Bar */}
+              <div className="mb-6">
+                <div className="relative">
+                  <Search
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                    size={18}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Search products..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent text-sm"
+                    style={{ fontFamily: "'Poppins', sans-serif" }}
+                  />
+                </div>
+              </div>
 
-            {/* Filter Toggle Button */}
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center justify-center gap-2 px-6 py-3 border border-gray-300 rounded-full hover:bg-gray-50 transition-colors relative"
-              style={{ fontFamily: "'Poppins', sans-serif" }}
-            >
-              <SlidersHorizontal size={20} />
-              <span>Filters</span>
+              {/* Clear All Filters */}
               {activeFiltersCount > 0 && (
-                <span className="absolute -top-2 -right-2 bg-black text-white text-xs w-6 h-6 rounded-full flex items-center justify-center">
-                  {activeFiltersCount}
-                </span>
-              )}
-            </button>
-
-            {/* Sort Dropdown */}
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="px-6 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent cursor-pointer"
-              style={{ fontFamily: "'Poppins', sans-serif" }}
-            >
-              <option value="featured">Featured</option>
-              <option value="price-low">Price: Low to High</option>
-              <option value="price-high">Price: High to Low</option>
-              <option value="name">Name: A-Z</option>
-            </select>
-          </div>
-
-          {/* Filters Panel */}
-          {showFilters && (
-            <div className="bg-gray-50 rounded-2xl p-6 space-y-6 border border-gray-200">
-              <div className="flex items-center justify-between">
-                <h3
-                  className="text-lg font-semibold"
-                  style={{ fontFamily: "'Poppins', sans-serif" }}
-                >
-                  Filters
-                </h3>
                 <button
                   onClick={clearFilters}
-                  className="text-sm text-gray-600 hover:text-black flex items-center gap-1"
+                  className="w-full mb-6 px-4 py-2 bg-gray-200 text-gray-700 rounded-full text-sm font-semibold hover:bg-gray-300 transition-colors flex items-center justify-center gap-2"
                   style={{ fontFamily: "'Poppins', sans-serif" }}
                 >
                   <X size={16} />
-                  Clear All
+                  Clear All ({activeFiltersCount})
                 </button>
-              </div>
+              )}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {/* Category Filter */}
-                <div>
+              {/* Category Filter */}
+              <div className="mb-6 pb-6 border-b border-gray-300">
+                <button
+                  onClick={() => toggleSection("category")}
+                  className="w-full flex items-center justify-between mb-3"
+                >
                   <h4
-                    className="font-semibold mb-3 text-sm"
+                    className="font-semibold text-sm"
                     style={{ fontFamily: "'Poppins', sans-serif" }}
                   >
                     Category
                   </h4>
+                  {expandedSections.category ? (
+                    <ChevronUp size={16} />
+                  ) : (
+                    <ChevronDown size={16} />
+                  )}
+                </button>
+                {expandedSections.category && (
                   <div className="space-y-2">
                     {categories.map((category) => (
                       <label
@@ -374,73 +570,28 @@ export default function ProductGrid() {
                       </label>
                     ))}
                   </div>
-                </div>
+                )}
+              </div>
 
-                {/* Size Filter */}
-                <div>
+              {/* Price Range */}
+              <div className="mb-6 pb-6 border-b border-gray-300">
+                <button
+                  onClick={() => toggleSection("price")}
+                  className="w-full flex items-center justify-between mb-3"
+                >
                   <h4
-                    className="font-semibold mb-3 text-sm"
-                    style={{ fontFamily: "'Poppins', sans-serif" }}
-                  >
-                    Size
-                  </h4>
-                  <div className="flex flex-wrap gap-2">
-                    {sizes.map((size) => (
-                      <button
-                        key={size}
-                        onClick={() => toggleSize(size)}
-                        className={`px-4 py-2 rounded-full border text-sm transition-all ${
-                          selectedSizes.includes(size)
-                            ? "bg-black text-white border-black"
-                            : "bg-white text-gray-700 border-gray-300 hover:border-black"
-                        }`}
-                        style={{ fontFamily: "'Poppins', sans-serif" }}
-                      >
-                        {size}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Color Filter */}
-                <div>
-                  <h4
-                    className="font-semibold mb-3 text-sm"
-                    style={{ fontFamily: "'Poppins', sans-serif" }}
-                  >
-                    Color
-                  </h4>
-                  <div className="flex flex-wrap gap-2">
-                    {colors.map((color) => (
-                      <button
-                        key={color.value}
-                        onClick={() => toggleColor(color.value)}
-                        className={`w-10 h-10 rounded-full border-2 transition-all ${
-                          selectedColors.includes(color.value)
-                            ? "border-black scale-110"
-                            : "border-gray-300 hover:border-gray-400"
-                        }`}
-                        style={{
-                          backgroundColor: color.hex,
-                          boxShadow:
-                            color.hex === "#FFFFFF"
-                              ? "inset 0 0 0 1px #e5e7eb"
-                              : "none",
-                        }}
-                        title={color.label}
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                {/* Price Range Filter */}
-                <div>
-                  <h4
-                    className="font-semibold mb-3 text-sm"
+                    className="font-semibold text-sm"
                     style={{ fontFamily: "'Poppins', sans-serif" }}
                   >
                     Price Range
                   </h4>
+                  {expandedSections.price ? (
+                    <ChevronUp size={16} />
+                  ) : (
+                    <ChevronDown size={16} />
+                  )}
+                </button>
+                {expandedSections.price && (
                   <div className="space-y-3">
                     <input
                       type="range"
@@ -463,88 +614,242 @@ export default function ProductGrid() {
                       </span>
                     </div>
                   </div>
-                </div>
+                )}
+              </div>
+
+              {/* Size Filter */}
+              <div className="mb-6 pb-6 border-b border-gray-300">
+                <button
+                  onClick={() => toggleSection("size")}
+                  className="w-full flex items-center justify-between mb-3"
+                >
+                  <h4
+                    className="font-semibold text-sm"
+                    style={{ fontFamily: "'Poppins', sans-serif" }}
+                  >
+                    Size
+                  </h4>
+                  {expandedSections.size ? (
+                    <ChevronUp size={16} />
+                  ) : (
+                    <ChevronDown size={16} />
+                  )}
+                </button>
+                {expandedSections.size && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {sizes.map((size) => (
+                      <button
+                        key={size}
+                        onClick={() => toggleSize(size)}
+                        className={`px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all ${
+                          selectedSizes.includes(size)
+                            ? "bg-black text-white border-black"
+                            : "bg-white text-gray-700 border-gray-300 hover:border-black"
+                        }`}
+                        style={{ fontFamily: "'Poppins', sans-serif" }}
+                      >
+                        {size}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Color Filter */}
+              <div className="mb-6 pb-6 border-b border-gray-300">
+                <button
+                  onClick={() => toggleSection("color")}
+                  className="w-full flex items-center justify-between mb-3"
+                >
+                  <h4
+                    className="font-semibold text-sm"
+                    style={{ fontFamily: "'Poppins', sans-serif" }}
+                  >
+                    Color
+                  </h4>
+                  {expandedSections.color ? (
+                    <ChevronUp size={16} />
+                  ) : (
+                    <ChevronDown size={16} />
+                  )}
+                </button>
+                {expandedSections.color && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {colors.map((color) => (
+                      <button
+                        key={color.value}
+                        onClick={() => toggleColor(color.value)}
+                        className={`w-8 h-8 rounded-full border-2 transition-all ${
+                          selectedColors.includes(color.value)
+                            ? "border-black scale-110"
+                            : "border-gray-300 hover:border-gray-400"
+                        }`}
+                        style={{
+                          backgroundColor: color.hex,
+                          boxShadow:
+                            color.hex === "#FFFFFF"
+                              ? "inset 0 0 0 1px #e5e7eb"
+                              : "none",
+                        }}
+                        title={color.label}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Brand Filter */}
+              <div className="mb-6 pb-6 border-b border-gray-300">
+                <button
+                  onClick={() => toggleSection("brand")}
+                  className="w-full flex items-center justify-between mb-3"
+                >
+                  <h4
+                    className="font-semibold text-sm"
+                    style={{ fontFamily: "'Poppins', sans-serif" }}
+                  >
+                    Brand
+                  </h4>
+                  {expandedSections.brand ? (
+                    <ChevronUp size={16} />
+                  ) : (
+                    <ChevronDown size={16} />
+                  )}
+                </button>
+                {expandedSections.brand && (
+                  <div className="space-y-2">
+                    {brands.map((brand) => (
+                      <label
+                        key={brand}
+                        className="flex items-center gap-2 cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedBrands.includes(brand)}
+                          onChange={() => toggleBrand(brand)}
+                          className="w-4 h-4 rounded border-gray-300 text-black focus:ring-black cursor-pointer"
+                        />
+                        <span
+                          className="text-sm"
+                          style={{ fontFamily: "'Poppins', sans-serif" }}
+                        >
+                          {brand}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Other Filters */}
+              <div>
+                <button
+                  onClick={() => toggleSection("other")}
+                  className="w-full flex items-center justify-between mb-3"
+                >
+                  <h4
+                    className="font-semibold text-sm"
+                    style={{ fontFamily: "'Poppins', sans-serif" }}
+                  >
+                    Other Filters
+                  </h4>
+                  {expandedSections.other ? (
+                    <ChevronUp size={16} />
+                  ) : (
+                    <ChevronDown size={16} />
+                  )}
+                </button>
+                {expandedSections.other && (
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={showNewArrivals}
+                        onChange={(e) => setShowNewArrivals(e.target.checked)}
+                        className="w-4 h-4 rounded border-gray-300 text-black focus:ring-black cursor-pointer"
+                      />
+                      <span
+                        className="text-sm"
+                        style={{ fontFamily: "'Poppins', sans-serif" }}
+                      >
+                        New Arrivals
+                      </span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={showOnSale}
+                        onChange={(e) => setShowOnSale(e.target.checked)}
+                        className="w-4 h-4 rounded border-gray-300 text-black focus:ring-black cursor-pointer"
+                      />
+                      <span
+                        className="text-sm"
+                        style={{ fontFamily: "'Poppins', sans-serif" }}
+                      >
+                        On Sale
+                      </span>
+                    </label>
+                  </div>
+                )}
               </div>
             </div>
-          )}
+          </div>
 
-          {/* Active Filters Display */}
-          {activeFiltersCount > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {selectedCategory !== "all" && (
-                <span className="px-4 py-2 bg-black text-white rounded-full text-sm flex items-center gap-2">
-                  {categories.find((c) => c.value === selectedCategory)?.label}
-                  <button onClick={() => setSelectedCategory("all")}>
-                    <X size={14} />
-                  </button>
-                </span>
-              )}
-              {selectedSizes.map((size) => (
-                <span
-                  key={size}
-                  className="px-4 py-2 bg-black text-white rounded-full text-sm flex items-center gap-2"
-                >
-                  Size: {size}
-                  <button onClick={() => toggleSize(size)}>
-                    <X size={14} />
-                  </button>
-                </span>
-              ))}
-              {selectedColors.map((color) => (
-                <span
-                  key={color}
-                  className="px-4 py-2 bg-black text-white rounded-full text-sm flex items-center gap-2"
-                >
-                  {colors.find((c) => c.value === color)?.label}
-                  <button onClick={() => toggleColor(color)}>
-                    <X size={14} />
-                  </button>
-                </span>
-              ))}
+          {/* RIGHT SIDE - PRODUCTS */}
+          <div className="flex-1">
+            {/* Top Bar */}
+            <div className="flex items-center justify-between mb-6">
+              <p
+                className="text-gray-600"
+                style={{ fontFamily: "'Poppins', sans-serif" }}
+              >
+                Showing {filteredProducts.length}{" "}
+                {filteredProducts.length === 1 ? "product" : "products"}
+              </p>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="px-6 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent cursor-pointer"
+                style={{ fontFamily: "'Poppins', sans-serif" }}
+              >
+                <option value="featured">Featured</option>
+                <option value="price-low">Price: Low to High</option>
+                <option value="price-high">Price: High to Low</option>
+                <option value="name">Name: A-Z</option>
+              </select>
             </div>
-          )}
-        </div>
 
-        {/* Results Count */}
-        <div className="mb-6">
-          <p
-            className="text-gray-600"
-            style={{ fontFamily: "'Poppins', sans-serif" }}
-          >
-            Showing {filteredProducts.length}{" "}
-            {filteredProducts.length === 1 ? "product" : "products"}
-          </p>
+            {/* Product Grid */}
+            {filteredProducts.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+                {filteredProducts.map((product, index) => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    index={index}
+                    isVisible={isVisible}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-20">
+                <p
+                  className="text-2xl text-gray-400 mb-4"
+                  style={{ fontFamily: "'Poppins', sans-serif" }}
+                >
+                  No products found
+                </p>
+                <button
+                  onClick={clearFilters}
+                  className="px-6 py-3 bg-black text-white rounded-full hover:bg-gray-800 transition-colors"
+                  style={{ fontFamily: "'Poppins', sans-serif" }}
+                >
+                  Clear Filters
+                </button>
+              </div>
+            )}
+          </div>
         </div>
-
-        {/* Product Grid */}
-        {filteredProducts.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-            {filteredProducts.map((product, index) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                index={index}
-                isVisible={isVisible}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-20">
-            <p
-              className="text-2xl text-gray-400 mb-4"
-              style={{ fontFamily: "'Poppins', sans-serif" }}
-            >
-              No products found
-            </p>
-            <button
-              onClick={clearFilters}
-              className="px-6 py-3 bg-black text-white rounded-full hover:bg-gray-800 transition-colors"
-              style={{ fontFamily: "'Poppins', sans-serif" }}
-            >
-              Clear Filters
-            </button>
-          </div>
-        )}
       </div>
     </section>
   );
@@ -565,8 +870,6 @@ interface ProductCardProps {
 function ProductCard({ product, index, isVisible }: ProductCardProps) {
   return (
     <Link href={`/product/${product.id}`}>
-      {" "}
-      {/* Wrap entire card in Link */}
       <div
         className="group relative cursor-pointer will-change-transform"
         style={{
@@ -577,7 +880,6 @@ function ProductCard({ product, index, isVisible }: ProductCardProps) {
       >
         {/* Product Image Container */}
         <div className="relative bg-gray-100 rounded-2xl overflow-hidden mb-4 aspect-[3/4]">
-          {/* Product Image */}
           <img
             src={product.image}
             alt={product.title}
@@ -585,29 +887,23 @@ function ProductCard({ product, index, isVisible }: ProductCardProps) {
             loading="lazy"
           />
 
-          {/* Hover Overlay */}
           <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-          {/* Action Buttons */}
-          <div className="absolute top-3 right-3 flex flex-col gap-2">
-            {/* Wishlist Button */}
-            <button
-              onClick={(e) => {
-                e.preventDefault(); // Prevent navigation when clicking heart
-                // Add to wishlist logic here
-              }}
-              className="bg-white/90 backdrop-blur-sm p-2.5 rounded-full shadow-lg hover:bg-white transition-all duration-300 opacity-0 translate-x-5 scale-90 group-hover:opacity-100 group-hover:translate-x-0 group-hover:scale-100"
-              aria-label="Add to wishlist"
-            >
-              <Heart size={18} className="text-gray-800" />
-            </button>
-          </div>
+          {/* Wishlist Button */}
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+            }}
+            className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm p-2.5 rounded-full shadow-lg hover:bg-white transition-all duration-300 opacity-0 translate-x-5 scale-90 group-hover:opacity-100 group-hover:translate-x-0 group-hover:scale-100"
+            aria-label="Add to wishlist"
+          >
+            <Heart size={18} className="text-gray-800" />
+          </button>
 
           {/* Add to Cart Button */}
           <button
             onClick={(e) => {
-              e.preventDefault(); // Prevent navigation when clicking add to cart
-              // Add to cart logic here
+              e.preventDefault();
             }}
             className="absolute bottom-4 left-4 right-4 bg-black text-white py-3 rounded-full font-semibold text-sm uppercase flex items-center justify-center gap-2 hover:bg-gray-900 transition-all duration-300 opacity-0 translate-y-5 group-hover:opacity-100 group-hover:translate-y-0"
             style={{
