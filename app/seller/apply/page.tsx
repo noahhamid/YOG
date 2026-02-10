@@ -117,11 +117,39 @@ export default function SellerOnboarding() {
 
     setIsSubmitting(true);
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    try {
+      const response = await fetch("/api/seller/apply", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          brandName: formData.brandName,
+          ownerName: formData.ownerName,
+          phone: formData.phone,
+          email: formData.email,
+          instagram: formData.instagram,
+          location: formData.location,
+          clothingType: formData.clothingType,
+          businessType: formData.businessType,
+          experience: formData.experience,
+          description: formData.description,
+        }),
+      });
 
-    setIsSubmitting(false);
-    setSubmitSuccess(true);
+      const data = await response.json();
+
+      if (response.ok) {
+        setSubmitSuccess(true);
+      } else {
+        alert(data.error || "Failed to submit application");
+        setIsSubmitting(false);
+      }
+    } catch (error) {
+      console.error("Submission error:", error);
+      alert("Failed to submit application. Please try again.");
+      setIsSubmitting(false);
+    }
   };
 
   if (submitSuccess) {
