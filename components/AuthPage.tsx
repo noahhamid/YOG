@@ -166,11 +166,8 @@ export default function AuthPage() {
         <div className="bg-white rounded-3xl shadow-2xl p-8 sm:p-10 backdrop-blur-xl">
           {/* Header */}
           <div className="text-center mb-8">
-            <h1
-              className="text-3xl font-bold text-gray-900 mb-2"
-              style={{ fontFamily: "'Poppins', sans-serif" }}
-            >
-              {step === "email" && "Welcome to YOG"}
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              {step === "email" && "Sign in or create account"}
               {step === "otp" && "Verify Your Email"}
               {step === "success" && "You're All Set!"}
             </h1>
