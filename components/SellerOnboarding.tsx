@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
+import { useRouter } from "next/navigation";
 import {
   Store,
   User,
@@ -27,6 +28,9 @@ import {
 } from "lucide-react";
 
 export default function SellerOnboarding() {
+  const router = useRouter();
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
   const [formData, setFormData] = useState({
     brandName: "",
     ownerName: "",
@@ -61,6 +65,21 @@ export default function SellerOnboarding() {
     "Established Brand",
     "Wholesaler",
   ];
+
+  // Load user data on mount
+  useEffect(() => {
+    const userStr = localStorage.getItem("yog_user");
+    if (userStr) {
+      const user = JSON.parse(userStr);
+      setCurrentUser(user);
+      // Pre-fill email from logged-in user
+      setFormData((prev) => ({
+        ...prev,
+        email: user.email,
+        ownerName: user.name,
+      }));
+    }
+  }, []);
 
   const handleInputChange = (
     e: React.ChangeEvent<
@@ -114,13 +133,54 @@ export default function SellerOnboarding() {
       return;
     }
 
+    // Check if user is logged in
+    if (!currentUser) {
+      alert("Please sign in first");
+      router.push("/login?redirect=/seller/apply");
+      return;
+    }
+
     setIsSubmitting(true);
 
-    // Simulate API call (no backend yet)
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    try {
+      const response = await fetch("/api/seller/apply", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          brandName: formData.brandName,
+          ownerName: formData.ownerName,
+          phone: formData.phone,
+          email: formData.email,
+          instagram: formData.instagram,
+          location: formData.location,
+          clothingType: formData.clothingType,
+          businessType: formData.businessType,
+          experience: formData.experience,
+          description: formData.description,
+        }),
+      });
 
-    setIsSubmitting(false);
-    setSubmitSuccess(true);
+      const data = await response.json();
+
+      if (response.ok) {
+        console.log("✅ Seller application submitted:", data);
+
+        // Update user in localStorage to SELLER role
+        const updatedUser = { ...currentUser, role: "SELLER" };
+        localStorage.setItem("yog_user", JSON.stringify(updatedUser));
+
+        setSubmitSuccess(true);
+      } else {
+        alert(data.error || "Failed to submit application");
+        setIsSubmitting(false);
+      }
+    } catch (error) {
+      console.error("Submission error:", error);
+      alert("Failed to submit application. Please try again.");
+      setIsSubmitting(false);
+    }
   };
 
   if (submitSuccess) {
@@ -191,7 +251,10 @@ export default function SellerOnboarding() {
             </div>
 
             <button
-              onClick={() => (window.location.href = "/")}
+              onClick={() => {
+                router.push("/");
+                router.refresh();
+              }}
               className="w-full bg-black text-white py-4 rounded-full font-semibold hover:bg-gray-800 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2 group"
               style={{ fontFamily: "'Poppins', sans-serif" }}
             >
@@ -500,6 +563,7 @@ export default function SellerOnboarding() {
                       }`}
                       placeholder="your@email.com"
                       style={{ fontFamily: "'Poppins', sans-serif" }}
+                      readOnly
                     />
                     {errors.email && (
                       <p className="text-red-500 text-sm mt-1 flex items-center gap-1">

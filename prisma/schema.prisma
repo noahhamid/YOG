@@ -1,0 +1,55 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum UserRole {
+  USER
+  SELLER
+  ADMIN
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  phone     String   @unique
+  password  String
+  role      UserRole @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  seller Seller? // One user can have one seller profile
+
+  @@index([email])
+  @@index([phone])
+}
+
+model Seller {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  brandName       String
+  ownerName       String
+  phone           String
+  email           String
+  instagram       String?
+  location        String
+  clothingType    String
+  businessType    String
+  experience      String?
+  description     String?  @db.Text
+  approved        Boolean  @default(false)
+  rejectionReason String?  @db.Text
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([approved])
+}
