@@ -1,44 +1,37 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // NEXT.JS 15: Must await params
     const { id: sellerId } = await params;
-    const { reason } = await req.json();
 
-    if (!reason || !reason.trim()) {
-      return NextResponse.json(
-        { error: "Rejection reason is required" },
-        { status: 400 }
-      );
-    }
+    console.log(`✅ Approving seller: ${sellerId}`);
 
-    console.log(`❌ Rejecting seller: ${sellerId}`);
-
-    // Update seller with rejection
     const seller = await prisma.seller.update({
       where: { id: sellerId },
       data: {
-        approved: false,
-        rejectionReason: reason,
+        approved: true,
+        rejectionReason: null,
       },
     });
 
-    console.log(`❌ Seller rejected: ${seller.brandName}`);
+    console.log(`✅ Seller approved: ${seller.brandName}`);
 
     return NextResponse.json({
       success: true,
-      message: "Seller rejected successfully",
+      message: "Seller approved successfully",
       seller,
     });
   } catch (error: any) {
-    console.error("❌ Error rejecting seller:", error);
+    console.error("❌ Error approving seller:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to reject seller" },
+      { error: error.message || "Failed to approve seller" },
       { status: 500 }
     );
   }

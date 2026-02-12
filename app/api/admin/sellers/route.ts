@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = 'force-dynamic'; 
 export async function GET(req: NextRequest) {
   try {
-    // In production, verify admin authentication here
-    // For now, we'll trust the frontend check
-
     const sellers = await prisma.seller.findMany({
       include: {
         user: {
