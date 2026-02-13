@@ -1,23 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-// Force dynamic rendering
-export const dynamic = 'force-dynamic';
-
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // NEXT.JS 15: Must await params
     const { id: sellerId } = await params;
 
     console.log(`✅ Approving seller: ${sellerId}`);
 
+    // Update seller to approved
     const seller = await prisma.seller.update({
       where: { id: sellerId },
       data: {
         approved: true,
-        rejectionReason: null,
+        rejectionReason: null, // Clear any previous rejection
       },
     });
 

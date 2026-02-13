@@ -3,7 +3,7 @@ import { Resend } from "resend";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
-export const dynamic = 'force-dynamic'; 
+
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Store OTPs temporarily (in production, use Redis)
