@@ -3,138 +3,194 @@ import { prisma } from "@/lib/prisma";
 
 export const dynamic = 'force-dynamic';
 
-export async function POST(req: NextRequest) {
+// Update product
+export async function PATCH(
+  req: NextRequest,
+  props: { params: Promise<{ id: string }> }
+) {
   try {
-    const body = await req.json();
-    const {
-      brandName,
-      ownerName,
-      phone,
-      email,
-      instagram,
-      location,
-      clothingType,
-      businessType,
-      experience,
-      description,
-    } = body;
+    const params = await props.params;
+    const productId = params.id;
 
-    // Validation
-    if (!brandName || !ownerName || !phone || !email || !location || !clothingType || !businessType) {
+    console.log(`🔍 Editing product ID: ${productId}`);
+
+    const userStr = req.headers.get("x-user-data");
+    if (!userStr) {
       return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 }
+        { error: "Please sign in first" },
+        { status: 401 }
       );
     }
 
-    // Get logged-in user from request body email
-    const userEmail = email.toLowerCase();
+    const user = JSON.parse(userStr);
 
-    // Find user by email
-    const user = await prisma.user.findUnique({
-      where: { email: userEmail },
-      include: { seller: true },
+    const seller = await prisma.seller.findUnique({
+      where: { userId: user.id },
     });
 
-    if (!user) {
+    if (!seller) {
       return NextResponse.json(
-        { error: "User not found. Please sign in first." },
+        { error: "You need to be a seller" },
+        { status: 403 }
+      );
+    }
+
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+    });
+
+    if (!product) {
+      return NextResponse.json(
+        { error: "Product not found" },
         { status: 404 }
       );
     }
 
-    // Check if user already has a seller application
-    if (user.seller) {
-      // If rejected, allow reapplication by updating existing seller
-      if (user.seller.rejectionReason) {
-        console.log(`🔄 Reapplying seller: ${user.id}`);
-
-        const seller = await prisma.seller.update({
-          where: { userId: user.id },
-          data: {
-            brandName,
-            ownerName,
-            phone,
-            email: userEmail,
-            instagram: instagram || null,
-            location,
-            clothingType,
-            businessType,
-            experience: experience || null,
-            description: description || null,
-            approved: false,
-            rejectionReason: null, // Clear rejection reason
-          },
-        });
-
-        console.log(`✅ Seller reapplication submitted: ${seller.id}`);
-
-        return NextResponse.json(
-          {
-            success: true,
-            message: "Seller reapplication submitted successfully",
-            seller: {
-              id: seller.id,
-              brandName: seller.brandName,
-              approved: seller.approved,
-            },
-          },
-          { status: 201 }
-        );
-      } else {
-        // Already has a pending or approved application
-        return NextResponse.json(
-          { error: "You have already applied to become a seller" },
-          { status: 400 }
-        );
-      }
+    if (product.sellerId !== seller.id) {
+      return NextResponse.json(
+        { error: "You can only edit your own products" },
+        { status: 403 }
+      );
     }
 
-    console.log(`📝 Creating seller application for user: ${user.id}`);
+    const body = await req.json();
+    const {
+      title,
+      description,
+      price,
+      compareAtPrice,
+      category,
+      brand,
+      status,
+      variants,
+      images,
+    } = body;
 
-    // Create new seller application
-    const seller = await prisma.seller.create({
+    console.log(`✏️ Updating product: ${title}`);
+
+    // Delete old variants and images
+    await prisma.productVariant.deleteMany({
+      where: { productId },
+    });
+
+    await prisma.productImage.deleteMany({
+      where: { productId },
+    });
+
+    // Update product with new data
+    const updatedProduct = await prisma.product.update({
+      where: { id: productId },
       data: {
-        userId: user.id,
-        brandName,
-        ownerName,
-        phone,
-        email: userEmail,
-        instagram: instagram || null,
-        location,
-        clothingType,
-        businessType,
-        experience: experience || null,
-        description: description || null,
-        approved: false,
-      },
-    });
-
-    // Update user role to SELLER (but not approved yet)
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { role: "SELLER" },
-    });
-
-    console.log(`✅ Seller application created: ${seller.id}`);
-    console.log(`✅ User role updated to SELLER`);
-
-    return NextResponse.json(
-      {
-        success: true,
-        message: "Seller application submitted successfully",
-        seller: {
-          id: seller.id,
-          brandName: seller.brandName,
-          approved: seller.approved,
+        title,
+        description,
+        price,
+        compareAtPrice,
+        category,
+        brand,
+        status,
+        variants: {
+          create: variants.map((v: any) => ({
+            size: v.size,
+            color: v.color,
+            quantity: v.quantity,
+            sku: `${title.substring(0, 3).toUpperCase()}-${v.size}-${v.color}`.replace(/\s/g, ""),
+          })),
+        },
+        images: {
+          create: images.map((url: string, index: number) => ({
+            url,
+            position: index,
+          })),
         },
       },
-      { status: 201 }
-    );
+      include: {
+        variants: true,
+        images: true,
+      },
+    });
+
+    console.log(`✅ Product updated: ${updatedProduct.id}`);
+
+    return NextResponse.json({
+      success: true,
+      message: "Product updated successfully",
+      product: updatedProduct,
+    });
   } catch (error: any) {
-    console.error("❌ Seller application error:", error);
+    console.error("❌ Error updating product:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to submit application" },
+      { error: error.message || "Failed to update product" },
+      { status: 500 }
+    );
+  }
+}
+
+// Delete product
+export async function DELETE(
+  req: NextRequest,
+  props: { params: Promise<{ id: string }> }
+) {
+  try {
+    const params = await props.params;
+    const productId = params.id;
+
+    console.log(`🔍 Deleting product ID: ${productId}`);
+
+    const userStr = req.headers.get("x-user-data");
+    if (!userStr) {
+      return NextResponse.json(
+        { error: "Please sign in first" },
+        { status: 401 }
+      );
+    }
+
+    const user = JSON.parse(userStr);
+
+    const seller = await prisma.seller.findUnique({
+      where: { userId: user.id },
+    });
+
+    if (!seller) {
+      return NextResponse.json(
+        { error: "You need to be a seller" },
+        { status: 403 }
+      );
+    }
+
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+    });
+
+    if (!product) {
+      return NextResponse.json(
+        { error: "Product not found" },
+        { status: 404 }
+      );
+    }
+
+    if (product.sellerId !== seller.id) {
+      return NextResponse.json(
+        { error: "You can only delete your own products" },
+        { status: 403 }
+      );
+    }
+
+    console.log(`🗑️ Deleting product: ${product.title}`);
+
+    await prisma.product.delete({
+      where: { id: productId },
+    });
+
+    console.log(`✅ Product deleted: ${productId}`);
+
+    return NextResponse.json({
+      success: true,
+      message: "Product deleted successfully",
+    });
+  } catch (error: any) {
+    console.error("❌ Error deleting product:", error);
+    return NextResponse.json(
+      { error: error.message || "Failed to delete product" },
       { status: 500 }
     );
   }

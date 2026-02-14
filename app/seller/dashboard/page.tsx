@@ -1,5 +1,5 @@
 "use client";
-
+import EditProductForm from "@/components/EditProductForm";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
@@ -21,9 +21,11 @@ import {
 interface Product {
   id: string;
   title: string;
+  description: string; // ← ADD THIS
   price: number;
   compareAtPrice: number | null;
   category: string;
+  brand: string | null; // ← ADD THIS
   status: string;
   createdAt: string;
   variants: Array<{
@@ -41,6 +43,7 @@ interface Product {
 
 export default function SellerDashboard() {
   const router = useRouter();
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [activeTab, setActiveTab] = useState<"products" | "orders">("products");
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -536,7 +539,7 @@ export default function SellerDashboard() {
 
                     <div className="flex gap-2">
                       <button
-                        onClick={() => alert("Edit functionality coming soon!")}
+                        onClick={() => setEditingProduct(product)}
                         className="flex-1 bg-gray-100 text-gray-700 py-2 rounded-lg font-medium flex items-center justify-center gap-2 hover:bg-gray-200 transition-colors"
                         style={{
                           fontFamily: "'Poppins', sans-serif",
@@ -624,6 +627,16 @@ export default function SellerDashboard() {
         <AddProductForm
           onClose={() => setIsAddingProduct(false)}
           onSubmit={handleAddProduct}
+        />
+      )}
+      {editingProduct && (
+        <EditProductForm
+          product={editingProduct}
+          onClose={() => setEditingProduct(null)}
+          onSubmit={() => {
+            fetchProducts();
+            setEditingProduct(null);
+          }}
         />
       )}
     </>
