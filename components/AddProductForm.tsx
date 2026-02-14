@@ -1,655 +1,499 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Upload,
   X,
-  Check,
-  AlertCircle,
-  Image as ImageIcon,
-  Package,
-  DollarSign,
-  Tag,
-  FileText,
-  Truck,
-  MapPin,
-  Sparkles,
+  Upload,
   Plus,
+  Minus,
+  Image as ImageIcon,
+  AlertCircle,
+  Check,
 } from "lucide-react";
 
-interface ProductFormData {
-  name: string;
-  price: string;
-  sizes: string[];
-  category: string;
-  description: string;
-  images: File[];
-  deliveryAvailable: boolean;
-  meetupAvailable: boolean;
-  tags: string[];
+interface Variant {
+  size: string;
+  color: string;
+  quantity: number;
 }
 
 interface AddProductFormProps {
   onClose: () => void;
-  onSubmit: (data: ProductFormData) => void;
+  onSubmit: (data: any) => void;
 }
 
 export default function AddProductForm({
   onClose,
   onSubmit,
 }: AddProductFormProps) {
-  const [formData, setFormData] = useState<ProductFormData>({
-    name: "",
-    price: "",
-    sizes: [],
-    category: "",
+  const [formData, setFormData] = useState({
+    title: "",
     description: "",
-    images: [],
-    deliveryAvailable: false,
-    meetupAvailable: false,
-    tags: [],
+    price: "",
+    compareAtPrice: "",
+    category: "",
+    brand: "",
+    status: "PUBLISHED",
   });
 
+  const [variants, setVariants] = useState<Variant[]>([
+    { size: "S", color: "Black", quantity: 0 },
+  ]);
+
+  const [images, setImages] = useState<string[]>([]);
+  const [imageUrl, setImageUrl] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
-  const [currentTag, setCurrentTag] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
-  const categories = [
-    "Streetwear",
-    "Casual Wear",
-    "Formal Wear",
-    "Athletic Wear",
-    "Traditional Wear",
-    "Accessories",
-  ];
+  const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
+  const categories = ["MEN", "WOMEN", "UNISEX"];
 
-  const availableSizes = ["XS", "S", "M", "L", "XL", "XXL"];
+  // Load user on mount
+  useEffect(() => {
+    const userStr = localStorage.getItem("yog_user");
+    if (userStr) {
+      setCurrentUser(JSON.parse(userStr));
+    }
+  }, []);
 
-  // Image validation
-  const validateImage = async (
-    file: File,
-  ): Promise<{ valid: boolean; error?: string }> => {
-    return new Promise((resolve) => {
-      // Check file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        resolve({ valid: false, error: "Image must be less than 5MB" });
-        return;
-      }
-
-      // Check file type
-      if (!file.type.startsWith("image/")) {
-        resolve({ valid: false, error: "File must be an image" });
-        return;
-      }
-
-      // Check dimensions and aspect ratio
-      const img = new Image();
-      const reader = new FileReader();
-
-      reader.onload = (e) => {
-        img.src = e.target?.result as string;
-      };
-
-      img.onload = () => {
-        const width = img.width;
-        const height = img.height;
-        const aspectRatio = width / height;
-
-        // Minimum resolution: 800x800
-        if (width < 800 || height < 800) {
-          resolve({
-            valid: false,
-            error: "Image must be at least 800x800 pixels",
-          });
-          return;
-        }
-
-        // Must be square (allow 5% tolerance)
-        if (Math.abs(aspectRatio - 1) > 0.05) {
-          resolve({
-            valid: false,
-            error: "Image must be square (1:1 aspect ratio)",
-          });
-          return;
-        }
-
-        resolve({ valid: true });
-      };
-
-      reader.readAsDataURL(file);
-    });
+  const handleInputChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
+  ) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    if (errors[name]) {
+      setErrors({ ...errors, [name]: "" });
+    }
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
+  const addVariant = () => {
+    setVariants([...variants, { size: "S", color: "Black", quantity: 0 }]);
+  };
 
-    if (formData.images.length + files.length > 5) {
-      setErrors({ ...errors, images: "Maximum 5 images allowed" });
-      return;
+  const removeVariant = (index: number) => {
+    setVariants(variants.filter((_, i) => i !== index));
+  };
+
+  const updateVariant = (index: number, field: keyof Variant, value: any) => {
+    const updated = [...variants];
+    updated[index][field] = value;
+    setVariants(updated);
+  };
+
+  const addImage = () => {
+    if (imageUrl.trim()) {
+      setImages([...images, imageUrl.trim()]);
+      setImageUrl("");
     }
-
-    for (const file of files) {
-      const validation = await validateImage(file);
-
-      if (!validation.valid) {
-        setErrors({ ...errors, images: validation.error || "Invalid image" });
-        return;
-      }
-    }
-
-    // All images valid
-    const newImages = [...formData.images, ...files];
-    setFormData({ ...formData, images: newImages });
-
-    // Create previews
-    const newPreviews = await Promise.all(
-      files.map((file) => {
-        return new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onload = (e) => resolve(e.target?.result as string);
-          reader.readAsDataURL(file);
-        });
-      }),
-    );
-
-    setImagePreviews([...imagePreviews, ...newPreviews]);
-    setErrors({ ...errors, images: "" });
   };
 
   const removeImage = (index: number) => {
-    const newImages = formData.images.filter((_, i) => i !== index);
-    const newPreviews = imagePreviews.filter((_, i) => i !== index);
-    setFormData({ ...formData, images: newImages });
-    setImagePreviews(newPreviews);
-  };
-
-  const toggleSize = (size: string) => {
-    const newSizes = formData.sizes.includes(size)
-      ? formData.sizes.filter((s) => s !== size)
-      : [...formData.sizes, size];
-    setFormData({ ...formData, sizes: newSizes });
-  };
-
-  const addTag = () => {
-    if (currentTag.trim() && !formData.tags.includes(currentTag.trim())) {
-      setFormData({ ...formData, tags: [...formData.tags, currentTag.trim()] });
-      setCurrentTag("");
-    }
-  };
-
-  const removeTag = (tag: string) => {
-    setFormData({ ...formData, tags: formData.tags.filter((t) => t !== tag) });
+    setImages(images.filter((_, i) => i !== index));
   };
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.name.trim()) newErrors.name = "Product name is required";
-    if (!formData.price.trim()) newErrors.price = "Price is required";
-    if (formData.sizes.length === 0)
-      newErrors.sizes = "Select at least one size";
-    if (!formData.category) newErrors.category = "Category is required";
+    if (!formData.title.trim()) newErrors.title = "Title is required";
     if (!formData.description.trim())
       newErrors.description = "Description is required";
-    if (formData.images.length < 3)
-      newErrors.images = "Upload at least 3 images";
-    if (!formData.deliveryAvailable && !formData.meetupAvailable) {
-      newErrors.delivery = "Select at least one fulfillment option";
-    }
+    if (!formData.price || parseFloat(formData.price) <= 0)
+      newErrors.price = "Valid price is required";
+    if (!formData.category) newErrors.category = "Category is required";
+    if (images.length === 0)
+      newErrors.images = "At least one image is required";
+    if (variants.length === 0)
+      newErrors.variants = "At least one variant is required";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
     if (!validateForm()) {
       return;
     }
 
+    // Check if user is logged in
+    if (!currentUser) {
+      alert("Please sign in first");
+      window.location.href = "/login?redirect=/seller/dashboard";
+      return;
+    }
+
+    // Check if user is a seller
+    if (currentUser.role !== "SELLER" && currentUser.role !== "ADMIN") {
+      alert("You need to be a seller to add products");
+      return;
+    }
+
     setIsSubmitting(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    onSubmit(formData);
+
+    try {
+      const productData = {
+        ...formData,
+        price: parseFloat(formData.price),
+        compareAtPrice: formData.compareAtPrice
+          ? parseFloat(formData.compareAtPrice)
+          : null,
+        variants,
+        images,
+      };
+
+      const response = await fetch("/api/products", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-user-data": JSON.stringify(currentUser),
+        },
+        body: JSON.stringify(productData),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert("Product added successfully!");
+        onSubmit(data.product);
+      } else {
+        alert(data.error || "Failed to add product");
+        setIsSubmitting(false);
+      }
+    } catch (error) {
+      console.error("Error adding product:", error);
+      alert("Failed to add product");
+      setIsSubmitting(false);
+    }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        className="bg-white rounded-3xl w-full max-w-4xl my-8 shadow-2xl"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between p-8 border-b-2 border-gray-100">
-          <div>
-            <h2
-              className="text-3xl font-light text-gray-900 flex items-center gap-3"
-              style={{ fontFamily: "'DM Serif Display', serif" }}
-            >
-              <Package size={32} />
+    <AnimatePresence>
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          className="bg-white rounded-3xl max-w-4xl w-full my-8 p-8"
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-3xl font-bold text-gray-900">
               Add New Product
             </h2>
-            <p
-              className="text-gray-600 mt-2"
-              style={{ fontFamily: "'Poppins', sans-serif", fontSize: "14px" }}
+            <button
+              onClick={onClose}
+              className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition-colors"
             >
-              Fill in the details to list your product
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <X size={28} />
-          </button>
-        </div>
-
-        {/* Form */}
-        <div className="p-8 space-y-8 max-h-[70vh] overflow-y-auto">
-          {/* Product Name */}
-          <div>
-            <label
-              className="block text-sm font-semibold text-gray-900 mb-2"
-              style={{ fontFamily: "'Poppins', sans-serif" }}
-            >
-              Product Name *
-            </label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
-              }
-              className={`w-full px-4 py-4 bg-gray-50 border-2 rounded-xl focus:outline-none focus:border-black transition-colors ${
-                errors.name ? "border-red-500" : "border-gray-200"
-              }`}
-              placeholder="e.g., Classic White T-Shirt"
-              style={{ fontFamily: "'Poppins', sans-serif" }}
-            />
-            {errors.name && (
-              <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                <AlertCircle size={14} />
-                {errors.name}
-              </p>
-            )}
+              <X size={20} />
+            </button>
           </div>
 
-          {/* Price */}
-          <div>
-            <label
-              className="block text-sm font-semibold text-gray-900 mb-2"
-              style={{ fontFamily: "'Poppins', sans-serif" }}
-            >
-              Price (ETB) *
-            </label>
-            <div className="relative">
-              <DollarSign
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-                size={20}
-              />
-              <input
-                type="text"
-                value={formData.price}
-                onChange={(e) =>
-                  setFormData({ ...formData, price: e.target.value })
-                }
-                className={`w-full pl-12 pr-4 py-4 bg-gray-50 border-2 rounded-xl focus:outline-none focus:border-black transition-colors ${
-                  errors.price ? "border-red-500" : "border-gray-200"
-                }`}
-                placeholder="800"
-                style={{ fontFamily: "'Poppins', sans-serif" }}
-              />
-            </div>
-            {errors.price && (
-              <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                <AlertCircle size={14} />
-                {errors.price}
-              </p>
-            )}
-          </div>
-
-          {/* Sizes */}
-          <div>
-            <label
-              className="block text-sm font-semibold text-gray-900 mb-3"
-              style={{ fontFamily: "'Poppins', sans-serif" }}
-            >
-              Available Sizes *
-            </label>
-            <div className="flex flex-wrap gap-3">
-              {availableSizes.map((size) => (
-                <button
-                  key={size}
-                  type="button"
-                  onClick={() => toggleSize(size)}
-                  className={`px-6 py-3 rounded-xl font-semibold transition-all ${
-                    formData.sizes.includes(size)
-                      ? "bg-black text-white"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  }`}
-                  style={{ fontFamily: "'Poppins', sans-serif" }}
-                >
-                  {size}
-                </button>
-              ))}
-            </div>
-            {errors.sizes && (
-              <p className="text-red-500 text-sm mt-2 flex items-center gap-1">
-                <AlertCircle size={14} />
-                {errors.sizes}
-              </p>
-            )}
-          </div>
-
-          {/* Category */}
-          <div>
-            <label
-              className="block text-sm font-semibold text-gray-900 mb-2"
-              style={{ fontFamily: "'Poppins', sans-serif" }}
-            >
-              Category *
-            </label>
-            <select
-              value={formData.category}
-              onChange={(e) =>
-                setFormData({ ...formData, category: e.target.value })
-              }
-              className={`w-full px-4 py-4 bg-gray-50 border-2 rounded-xl focus:outline-none focus:border-black transition-colors ${
-                errors.category ? "border-red-500" : "border-gray-200"
-              }`}
-              style={{ fontFamily: "'Poppins', sans-serif" }}
-            >
-              <option value="">Select category</option>
-              {categories.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
-              ))}
-            </select>
-            {errors.category && (
-              <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                <AlertCircle size={14} />
-                {errors.category}
-              </p>
-            )}
-          </div>
-
-          {/* Description */}
-          <div>
-            <label
-              className="block text-sm font-semibold text-gray-900 mb-2"
-              style={{ fontFamily: "'Poppins', sans-serif" }}
-            >
-              Description *
-            </label>
-            <textarea
-              value={formData.description}
-              onChange={(e) =>
-                setFormData({ ...formData, description: e.target.value })
-              }
-              rows={4}
-              className={`w-full px-4 py-4 bg-gray-50 border-2 rounded-xl focus:outline-none focus:border-black transition-colors resize-none ${
-                errors.description ? "border-red-500" : "border-gray-200"
-              }`}
-              placeholder="Describe your product... (material, fit, style, etc.)"
-              style={{ fontFamily: "'Poppins', sans-serif" }}
-            />
-            {errors.description && (
-              <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                <AlertCircle size={14} />
-                {errors.description}
-              </p>
-            )}
-          </div>
-
-          {/* Images Upload */}
-          <div>
-            <label
-              className="block text-sm font-semibold text-gray-900 mb-3"
-              style={{ fontFamily: "'Poppins', sans-serif" }}
-            >
-              Product Images * (3-5 images required)
-            </label>
-
-            {/* Image Requirements */}
-            <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 mb-4">
-              <p
-                className="text-sm font-semibold text-blue-900 mb-2 flex items-center gap-2"
-                style={{ fontFamily: "'Poppins', sans-serif" }}
-              >
-                <Sparkles size={16} />
-                Image Quality Requirements:
-              </p>
-              <ul
-                className="text-sm text-blue-800 space-y-1 ml-6"
-                style={{ fontFamily: "'Poppins', sans-serif" }}
-              >
-                <li>• Square images only (1:1 aspect ratio)</li>
-                <li>• Minimum 800x800 pixels</li>
-                <li>• Maximum 5MB per image</li>
-                <li>• JPG, PNG, or WebP format</li>
-              </ul>
-            </div>
-
-            {/* Image Grid */}
-            <div className="grid grid-cols-3 gap-4 mb-4">
-              {imagePreviews.map((preview, index) => (
-                <div
-                  key={index}
-                  className="relative aspect-square rounded-xl overflow-hidden group"
-                >
-                  <img
-                    src={preview}
-                    alt={`Preview ${index + 1}`}
-                    className="w-full h-full object-cover"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeImage(index)}
-                    className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <X size={16} />
-                  </button>
-                  <div className="absolute bottom-2 left-2 bg-black/70 text-white px-2 py-1 rounded text-xs font-semibold">
-                    {index + 1}
-                  </div>
-                </div>
-              ))}
-
-              {/* Upload Button */}
-              {formData.images.length < 5 && (
-                <label className="aspect-square border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-black hover:bg-gray-50 transition-all">
+          <form onSubmit={handleSubmit} className="space-y-8">
+            {/* Basic Info */}
+            <div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                Basic Information
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Product Title *
+                  </label>
                   <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={handleImageUpload}
-                    className="hidden"
+                    type="text"
+                    name="title"
+                    value={formData.title}
+                    onChange={handleInputChange}
+                    className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:border-black ${
+                      errors.title ? "border-red-500" : "border-gray-200"
+                    }`}
+                    placeholder="e.g., Oversized Vintage Hoodie"
                   />
-                  <Upload size={32} className="text-gray-400 mb-2" />
-                  <span
-                    className="text-sm text-gray-600 font-medium"
-                    style={{ fontFamily: "'Poppins', sans-serif" }}
+                  {errors.title && (
+                    <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
+                      <AlertCircle size={14} />
+                      {errors.title}
+                    </p>
+                  )}
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Description *
+                  </label>
+                  <textarea
+                    name="description"
+                    value={formData.description}
+                    onChange={handleInputChange}
+                    rows={4}
+                    className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:border-black resize-none ${
+                      errors.description ? "border-red-500" : "border-gray-200"
+                    }`}
+                    placeholder="Describe your product..."
+                  />
+                  {errors.description && (
+                    <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
+                      <AlertCircle size={14} />
+                      {errors.description}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Price (ETB) *
+                  </label>
+                  <input
+                    type="number"
+                    name="price"
+                    value={formData.price}
+                    onChange={handleInputChange}
+                    className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:border-black ${
+                      errors.price ? "border-red-500" : "border-gray-200"
+                    }`}
+                    placeholder="1000"
+                  />
+                  {errors.price && (
+                    <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
+                      <AlertCircle size={14} />
+                      {errors.price}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Compare At Price (ETB)
+                  </label>
+                  <input
+                    type="number"
+                    name="compareAtPrice"
+                    value={formData.compareAtPrice}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-black"
+                    placeholder="1500"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Original price for showing discounts
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Category *
+                  </label>
+                  <select
+                    name="category"
+                    value={formData.category}
+                    onChange={handleInputChange}
+                    className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:border-black ${
+                      errors.category ? "border-red-500" : "border-gray-200"
+                    }`}
                   >
-                    Upload Image
-                  </span>
-                </label>
+                    <option value="">Select category</option>
+                    {categories.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.category && (
+                    <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
+                      <AlertCircle size={14} />
+                      {errors.category}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Brand
+                  </label>
+                  <input
+                    type="text"
+                    name="brand"
+                    value={formData.brand}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-black"
+                    placeholder="Your brand name"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Variants */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-semibold text-gray-900">
+                  Variants (Size & Color)
+                </h3>
+                <button
+                  type="button"
+                  onClick={addVariant}
+                  className="px-4 py-2 bg-black text-white rounded-xl font-semibold hover:bg-gray-800 transition-colors flex items-center gap-2"
+                >
+                  <Plus size={18} />
+                  Add Variant
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                {variants.map((variant, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl"
+                  >
+                    <select
+                      value={variant.size}
+                      onChange={(e) =>
+                        updateVariant(index, "size", e.target.value)
+                      }
+                      className="px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-black"
+                    >
+                      {sizes.map((size) => (
+                        <option key={size} value={size}>
+                          {size}
+                        </option>
+                      ))}
+                    </select>
+
+                    <input
+                      type="text"
+                      value={variant.color}
+                      onChange={(e) =>
+                        updateVariant(index, "color", e.target.value)
+                      }
+                      placeholder="Color"
+                      className="flex-1 px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-black"
+                    />
+
+                    <input
+                      type="number"
+                      value={variant.quantity}
+                      onChange={(e) =>
+                        updateVariant(
+                          index,
+                          "quantity",
+                          parseInt(e.target.value) || 0,
+                        )
+                      }
+                      placeholder="Qty"
+                      min="0"
+                      className="w-24 px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-black"
+                    />
+
+                    {variants.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeVariant(index)}
+                        className="w-10 h-10 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 flex items-center justify-center"
+                      >
+                        <Minus size={18} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              {errors.variants && (
+                <p className="text-red-500 text-sm mt-2 flex items-center gap-1">
+                  <AlertCircle size={14} />
+                  {errors.variants}
+                </p>
               )}
             </div>
 
-            <p
-              className="text-xs text-gray-500"
-              style={{ fontFamily: "'Poppins', sans-serif" }}
-            >
-              {formData.images.length} of 5 images uploaded (min. 3 required)
-            </p>
+            {/* Images */}
+            <div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                Product Images
+              </h3>
 
-            {errors.images && (
-              <p className="text-red-500 text-sm mt-2 flex items-center gap-1">
-                <AlertCircle size={14} />
-                {errors.images}
-              </p>
-            )}
-          </div>
-
-          {/* Fulfillment Options */}
-          <div>
-            <label
-              className="block text-sm font-semibold text-gray-900 mb-3"
-              style={{ fontFamily: "'Poppins', sans-serif" }}
-            >
-              Fulfillment Options *
-            </label>
-            <div className="space-y-3">
-              <label className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition-colors">
+              <div className="flex gap-3 mb-4">
                 <input
-                  type="checkbox"
-                  checked={formData.deliveryAvailable}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      deliveryAvailable: e.target.checked,
-                    })
-                  }
-                  className="w-5 h-5 rounded border-2 border-gray-300 checked:bg-black checked:border-black"
+                  type="url"
+                  value={imageUrl}
+                  onChange={(e) => setImageUrl(e.target.value)}
+                  placeholder="Paste image URL"
+                  className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-black"
                 />
-                <Truck size={20} className="text-gray-600" />
-                <div className="flex-1">
-                  <p
-                    className="font-semibold text-gray-900"
-                    style={{ fontFamily: "'Poppins', sans-serif" }}
-                  >
-                    Delivery Available
-                  </p>
-                  <p
-                    className="text-sm text-gray-600"
-                    style={{ fontFamily: "'Poppins', sans-serif" }}
-                  >
-                    Ship products to customers
-                  </p>
-                </div>
-              </label>
+                <button
+                  type="button"
+                  onClick={addImage}
+                  className="px-6 py-3 bg-black text-white rounded-xl font-semibold hover:bg-gray-800 flex items-center gap-2"
+                >
+                  <Plus size={18} />
+                  Add
+                </button>
+              </div>
 
-              <label className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition-colors">
-                <input
-                  type="checkbox"
-                  checked={formData.meetupAvailable}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      meetupAvailable: e.target.checked,
-                    })
-                  }
-                  className="w-5 h-5 rounded border-2 border-gray-300 checked:bg-black checked:border-black"
-                />
-                <MapPin size={20} className="text-gray-600" />
-                <div className="flex-1">
-                  <p
-                    className="font-semibold text-gray-900"
-                    style={{ fontFamily: "'Poppins', sans-serif" }}
-                  >
-                    Meet-up Available
-                  </p>
-                  <p
-                    className="text-sm text-gray-600"
-                    style={{ fontFamily: "'Poppins', sans-serif" }}
-                  >
-                    Local pickup option
-                  </p>
-                </div>
-              </label>
+              <div className="grid grid-cols-3 md:grid-cols-5 gap-4">
+                {images.map((img, index) => (
+                  <div key={index} className="relative group">
+                    <img
+                      src={img}
+                      alt={`Product ${index + 1}`}
+                      className="w-full aspect-square object-cover rounded-xl"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(index)}
+                      className="absolute top-2 right-2 w-8 h-8 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                ))}
+
+                {images.length === 0 && (
+                  <div className="col-span-3 md:col-span-5 flex flex-col items-center justify-center py-12 border-2 border-dashed border-gray-300 rounded-xl">
+                    <ImageIcon className="text-gray-400 mb-2" size={48} />
+                    <p className="text-gray-500 text-sm">No images added yet</p>
+                  </div>
+                )}
+              </div>
+              {errors.images && (
+                <p className="text-red-500 text-sm mt-2 flex items-center gap-1">
+                  <AlertCircle size={14} />
+                  {errors.images}
+                </p>
+              )}
             </div>
-            {errors.delivery && (
-              <p className="text-red-500 text-sm mt-2 flex items-center gap-1">
-                <AlertCircle size={14} />
-                {errors.delivery}
-              </p>
-            )}
-          </div>
 
-          {/* Tags (Optional) */}
-          <div>
-            <label
-              className="block text-sm font-semibold text-gray-900 mb-2"
-              style={{ fontFamily: "'Poppins', sans-serif" }}
-            >
-              Tags (Optional)
-            </label>
-            <div className="flex gap-2 mb-3">
-              <input
-                type="text"
-                value={currentTag}
-                onChange={(e) => setCurrentTag(e.target.value)}
-                onKeyPress={(e) =>
-                  e.key === "Enter" && (e.preventDefault(), addTag())
-                }
-                className="flex-1 px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-black"
-                placeholder="e.g., nike, baggy, hoodie"
-                style={{ fontFamily: "'Poppins', sans-serif" }}
-              />
+            {/* Submit */}
+            <div className="flex gap-4">
               <button
                 type="button"
-                onClick={addTag}
-                className="bg-black text-white px-6 py-3 rounded-xl font-semibold hover:bg-gray-800 transition-colors flex items-center gap-2"
-                style={{ fontFamily: "'Poppins', sans-serif" }}
+                onClick={onClose}
+                className="flex-1 px-6 py-4 border-2 border-gray-200 rounded-xl font-semibold hover:bg-gray-50 transition-colors"
               >
-                <Plus size={18} />
-                Add
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="flex-1 px-6 py-4 bg-black text-white rounded-xl font-semibold hover:bg-gray-800 transition-colors disabled:bg-gray-400 flex items-center justify-center gap-2"
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Adding...
+                  </>
+                ) : (
+                  <>
+                    <Check size={20} />
+                    Add Product
+                  </>
+                )}
               </button>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {formData.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="inline-flex items-center gap-2 bg-gray-100 px-4 py-2 rounded-full text-sm font-medium text-gray-700"
-                  style={{ fontFamily: "'Poppins', sans-serif" }}
-                >
-                  #{tag}
-                  <button
-                    type="button"
-                    onClick={() => removeTag(tag)}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    <X size={14} />
-                  </button>
-                </span>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-between p-8 border-t-2 border-gray-100 bg-gray-50 rounded-b-3xl">
-          <button
-            onClick={onClose}
-            className="px-8 py-4 bg-white text-gray-700 rounded-full font-semibold hover:bg-gray-100 transition-colors border-2 border-gray-200"
-            style={{ fontFamily: "'Poppins', sans-serif" }}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-            className="px-8 py-4 bg-black text-white rounded-full font-semibold hover:bg-gray-800 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
-            style={{ fontFamily: "'Poppins', sans-serif" }}
-          >
-            {isSubmitting ? (
-              <>
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Adding Product...
-              </>
-            ) : (
-              <>
-                <Check size={20} />
-                Add Product
-              </>
-            )}
-          </button>
-        </div>
-      </motion.div>
-    </div>
+          </form>
+        </motion.div>
+      </div>
+    </AnimatePresence>
   );
 }

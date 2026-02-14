@@ -183,7 +183,11 @@ const Navbar = () => {
           {/* Sell Link */}
           <div className="hidden xl:flex items-center gap-8 border-r border-black/10 pr-8">
             <Link
-              href="/seller/apply"
+              href={
+                user?.role === "SELLER" || user?.role === "ADMIN"
+                  ? "/seller/dashboard"
+                  : "/seller/apply"
+              }
               className="text-[11px] font-semibold uppercase tracking-[0.15em] whitespace-nowrap hover:opacity-60 relative group"
               style={{
                 color: isScrolled ? "white" : "black",
