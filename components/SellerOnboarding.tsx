@@ -187,7 +187,7 @@ export default function SellerOnboarding() {
     return (
       <>
         <Navbar />
-        <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white flex items-center justify-center px-4 pt-32">
+        <div className="min-h-screen bg-linear-to-b from-gray-50 to-white flex items-center justify-center px-4 pt-32">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
