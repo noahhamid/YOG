@@ -78,9 +78,17 @@ export default function AddProductForm({
     setVariants(variants.filter((_, i) => i !== index));
   };
 
-  const updateVariant = (index: number, field: keyof Variant, value: any) => {
+  const updateVariant = (
+    index: number,
+    field: keyof Variant,
+    value: string | number,
+  ) => {
     const updated = [...variants];
-    updated[index][field] = value;
+    if (field === "quantity") {
+      updated[index][field] = value as number;
+    } else {
+      updated[index][field] = value as string;
+    }
     setVariants(updated);
   };
 
