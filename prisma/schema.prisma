@@ -58,14 +58,41 @@ model Seller {
   description     String?  @db.Text
   approved        Boolean  @default(false)
   rejectionReason String?  @db.Text
+  
+  // Store customization
+  storeSlug       String?  @unique
+  storeLogo       String?
+  storeCover      String?
+  storeDescription String? @db.Text
+  
+  // Analytics
+  followers       Int      @default(0)
+  totalViews      Int      @default(0)
+  totalSales      Int      @default(0)
+  
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  products Product[]
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  products      Product[]
+  followersList Follow[]  @relation("SellerFollowers")  // ← Changed from "followers" to "followersList"
 
   @@index([userId])
   @@index([approved])
+  @@index([storeSlug])
+}
+
+model Follow {
+  id        String   @id @default(cuid())
+  userId    String
+  sellerId  String
+  createdAt DateTime @default(now())
+
+  seller Seller @relation("SellerFollowers", fields: [sellerId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, sellerId])
+  @@index([userId])
+  @@index([sellerId])
 }
 
 model Product {

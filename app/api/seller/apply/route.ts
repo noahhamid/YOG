@@ -3,6 +3,14 @@ import { prisma } from "@/lib/prisma";
 
 export const dynamic = 'force-dynamic';
 
+// Helper function to generate slug
+function generateSlug(brandName: string): string {
+  return brandName
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -43,6 +51,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Generate slug
+    const slug = generateSlug(brandName);
+
     // Check if user already has a seller application
     if (user.seller) {
       // If rejected, allow reapplication by updating existing seller
@@ -64,6 +75,7 @@ export async function POST(req: NextRequest) {
             description: description || null,
             approved: false,
             rejectionReason: null, // Clear rejection reason
+            storeSlug: slug, // Update slug
           },
         });
 
@@ -107,6 +119,7 @@ export async function POST(req: NextRequest) {
         experience: experience || null,
         description: description || null,
         approved: false,
+        storeSlug: slug, // Add slug
       },
     });
 
@@ -118,6 +131,7 @@ export async function POST(req: NextRequest) {
 
     console.log(`✅ Seller application created: ${seller.id}`);
     console.log(`✅ User role updated to SELLER`);
+    console.log(`✅ Store slug generated: ${slug}`);
 
     return NextResponse.json(
       {
