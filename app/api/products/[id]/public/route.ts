@@ -10,7 +10,6 @@ export async function GET(
   try {
     const { id: productId } = await params;
 
-
     const product = await prisma.product.findUnique({
       where: {
         id: productId,
@@ -40,9 +39,7 @@ export async function GET(
 
     // Get unique sizes and colors
     const sizes = [...new Set(product.variants.map((v) => v.size))];
-    const colors = [
-      ...new Set(product.variants.map((v) => v.color.toLowerCase())),
-    ];
+    const colors = [...new Set(product.variants.map((v) => v.color))];
 
     // Calculate total stock
     const totalStock = product.variants.reduce((sum, v) => sum + v.quantity, 0);

@@ -1,5 +1,4 @@
 "use client";
-import { X } from "lucide-react";
 
 import { useState } from "react";
 import {
@@ -17,6 +16,7 @@ import {
   Clock,
   Package,
   CreditCard,
+  X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -127,18 +127,72 @@ export default function ProductDetailClient({
       return;
     }
 
-    // Here you would typically send the order to your API
-    alert(
-      `Order placed!\nProduct: ${product.title}\nSize: ${selectedSize}\nColor: ${selectedColor}\nQuantity: ${quantity}\nName: ${orderForm.name}\nPhone: ${orderForm.phone}\nMethod: ${orderForm.deliveryMethod}\n${orderForm.deliveryMethod === "delivery" ? `Address: ${orderForm.address}` : "Meet-up location will be confirmed"}`,
-    );
+    if (!selectedColor) {
+      alert("Please select a color");
+      return;
+    }
 
-    setShowOrderModal(false);
-    setOrderForm({
-      name: "",
-      phone: "",
-      deliveryMethod: "delivery",
-      address: "",
-    });
+    // Show loading state
+    const submitButton = e.currentTarget.querySelector(
+      'button[type="submit"]',
+    ) as HTMLButtonElement;
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.textContent = "Placing Order...";
+    }
+
+    try {
+      const response = await fetch("/api/orders", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          productId: product.id,
+          customerName: orderForm.name,
+          customerPhone: orderForm.phone,
+          customerEmail: "", // Optional: add email field if needed
+          quantity,
+          selectedSize,
+          selectedColor,
+          deliveryMethod: orderForm.deliveryMethod.toUpperCase(),
+          deliveryAddress:
+            orderForm.deliveryMethod === "delivery" ? orderForm.address : null,
+          unitPrice: product.price,
+          deliveryFee: orderForm.deliveryMethod === "delivery" ? 50 : 0, // Adjust as needed
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Success!
+        alert(
+          `✅ Order Placed Successfully!\n\nOrder Number: ${data.order.orderNumber}\n\nThe seller will contact you soon to confirm your order.\n\nThank you for shopping with us! 🎉`,
+        );
+
+        // Reset form
+        setShowOrderModal(false);
+        setOrderForm({
+          name: "",
+          phone: "",
+          deliveryMethod: "delivery",
+          address: "",
+        });
+        setQuantity(1);
+      } else {
+        alert(`❌ Error: ${data.error || "Failed to place order"}`);
+      }
+    } catch (error) {
+      console.error("Error placing order:", error);
+      alert("❌ Failed to place order. Please try again.");
+    } finally {
+      // Reset button
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.textContent = "Submit Order";
+      }
+    }
   };
 
   return (

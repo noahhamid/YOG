@@ -1,31 +1,38 @@
 "use client";
-import EditProductForm from "@/components/EditProductForm";
-import { useState, useEffect } from "react";
+
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import AddProductForm from "@/components/AddProductForm";
+import EditProductForm from "@/components/EditProductForm";
 import {
-  Package,
   Plus,
-  Edit3,
+  Package,
+  DollarSign,
+  TrendingUp,
+  Eye,
+  Store,
+  Edit,
   Trash2,
   ShoppingBag,
-  CheckCircle,
   Clock,
-  DollarSign,
-  AlertCircle,
+  CheckCircle,
+  Truck,
   XCircle,
+  Phone,
+  MapPin,
+  User,
+  Calendar,
 } from "lucide-react";
 
 interface Product {
   id: string;
   title: string;
-  description: string; // ← ADD THIS
+  description: string;
   price: number;
   compareAtPrice: number | null;
   category: string;
-  brand: string | null; // ← ADD THIS
+  brand: string | null;
   status: string;
   createdAt: string;
   variants: Array<{
@@ -41,25 +48,62 @@ interface Product {
   }>;
 }
 
+interface Order {
+  id: string;
+  orderNumber: string;
+  customerName: string;
+  customerPhone: string;
+  customerEmail: string | null;
+  quantity: number;
+  selectedSize: string;
+  selectedColor: string;
+  unitPrice: number;
+  totalPrice: number;
+  deliveryFee: number;
+  finalTotal: number;
+  deliveryMethod: string;
+  deliveryAddress: string | null;
+  status: string;
+  notes: string | null;
+  createdAt: string;
+  product: {
+    id: string;
+    title: string;
+    images: Array<{
+      url: string;
+    }>;
+  };
+}
+
 export default function SellerDashboard() {
   const router = useRouter();
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [activeTab, setActiveTab] = useState<"products" | "orders">("products");
-  const [products, setProducts] = useState<Product[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAddingProduct, setIsAddingProduct] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [sellerStatus, setSellerStatus] = useState<any>(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [orderStats, setOrderStats] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [activeTab, setActiveTab] = useState<"products" | "orders">("products");
+  const [orderFilter, setOrderFilter] = useState("all");
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
-  // Check authentication and seller status
   useEffect(() => {
-    checkSellerStatus();
-  }, [router]);
+    checkAuth();
+  }, []);
 
-  const checkSellerStatus = async () => {
+  useEffect(() => {
+    if (activeTab === "orders") {
+      fetchOrders();
+    }
+  }, [activeTab, orderFilter]);
+
+  const checkAuth = async () => {
     const userStr = localStorage.getItem("yog_user");
+
     if (!userStr) {
-      router.push("/login?redirect=/seller/dashboard");
+      router.push("/login");
       return;
     }
 
@@ -67,12 +111,15 @@ export default function SellerDashboard() {
     setUser(userData);
 
     if (userData.role !== "SELLER" && userData.role !== "ADMIN") {
-      alert("Access denied. Sellers only.");
-      router.push("/");
+      router.push("/seller/apply");
       return;
     }
 
-    // Fetch seller status
+    await checkSellerStatus(userStr);
+    await fetchProducts(userStr);
+  };
+
+  const checkSellerStatus = async (userStr: string) => {
     try {
       const response = await fetch("/api/seller/status", {
         headers: {
@@ -81,32 +128,47 @@ export default function SellerDashboard() {
       });
 
       const data = await response.json();
+      setSellerStatus(data);
 
-      if (response.ok) {
-        setSellerStatus(data.seller);
-
-        // If approved, fetch products
-        if (data.seller.approved) {
-          fetchProducts();
-        } else {
-          setIsLoading(false);
-        }
-      } else {
-        alert("Failed to check seller status");
-        setIsLoading(false);
+      if (!data.approved && data.status !== "pending") {
+        router.push("/seller/apply");
       }
     } catch (error) {
       console.error("Error checking seller status:", error);
+    } finally {
       setIsLoading(false);
     }
   };
 
-  const fetchProducts = async () => {
+  const fetchProducts = async (userStr?: string) => {
+    try {
+      const response = await fetch("/api/products", {
+        headers: {
+          "x-user-data": userStr || localStorage.getItem("yog_user") || "",
+        },
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setProducts(data.products);
+      }
+    } catch (error) {
+      console.error("Error fetching products:", error);
+    }
+  };
+
+  const fetchOrders = async () => {
     try {
       const userStr = localStorage.getItem("yog_user");
       if (!userStr) return;
 
-      const response = await fetch("/api/products", {
+      const params = new URLSearchParams();
+      if (orderFilter !== "all") {
+        params.append("status", orderFilter);
+      }
+
+      const response = await fetch(`/api/seller/orders?${params.toString()}`, {
         headers: {
           "x-user-data": userStr,
         },
@@ -115,33 +177,25 @@ export default function SellerDashboard() {
       const data = await response.json();
 
       if (response.ok) {
-        setProducts(data.products);
-      } else {
-        console.error("Failed to fetch products:", data.error);
+        setOrders(data.orders);
+        setOrderStats(data.stats);
       }
     } catch (error) {
-      console.error("Error fetching products:", error);
-    } finally {
-      setIsLoading(false);
+      console.error("Error fetching orders:", error);
     }
   };
 
-  const handleAddProduct = () => {
-    fetchProducts();
-    setIsAddingProduct(false);
-  };
-
-  const handleDeleteProduct = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this product?")) return;
+  const handleDeleteProduct = async (productId: string) => {
+    if (!confirm("Are you sure you want to delete this product?")) {
+      return;
+    }
 
     try {
       const userStr = localStorage.getItem("yog_user");
-      if (!userStr) return;
-
-      const response = await fetch(`/api/products/${id}`, {
+      const response = await fetch(`/api/products/${productId}`, {
         method: "DELETE",
         headers: {
-          "x-user-data": userStr,
+          "x-user-data": userStr || "",
         },
       });
 
@@ -158,8 +212,30 @@ export default function SellerDashboard() {
     }
   };
 
-  const getTotalStock = (variants: any[]) => {
-    return variants.reduce((sum, v) => sum + v.quantity, 0);
+  const updateOrderStatus = async (orderId: string, newStatus: string) => {
+    try {
+      const userStr = localStorage.getItem("yog_user");
+      const response = await fetch(`/api/seller/orders/${orderId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "x-user-data": userStr || "",
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (response.ok) {
+        alert("Order status updated!");
+        fetchOrders();
+        setSelectedOrder(null);
+      } else {
+        const data = await response.json();
+        alert(data.error || "Failed to update order");
+      }
+    } catch (error) {
+      console.error("Error updating order:", error);
+      alert("Failed to update order");
+    }
   };
 
   if (isLoading) {
@@ -170,474 +246,654 @@ export default function SellerDashboard() {
     );
   }
 
-  // If seller is not approved, show pending/rejected screen
-  if (sellerStatus && !sellerStatus.approved) {
+  // Pending status screen
+  if (
+    sellerStatus &&
+    !sellerStatus.approved &&
+    sellerStatus.status === "pending"
+  ) {
     return (
       <>
         <Navbar />
-        <main className="min-h-screen bg-gradient-to-b from-gray-50 to-white pt-32 pb-20 px-4">
-          <div className="max-w-2xl mx-auto">
-            {/* Pending Status */}
-            {!sellerStatus.rejectionReason && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="bg-white rounded-3xl p-12 text-center border-2 border-yellow-200 shadow-xl"
-              >
-                <div className="w-24 h-24 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Clock size={48} className="text-yellow-600" />
-                </div>
-                <h2 className="text-4xl font-bold text-gray-900 mb-4">
-                  Application Under Review
-                </h2>
-                <p className="text-gray-600 text-lg mb-8 leading-relaxed">
-                  Thank you for applying to sell on YOG! Your application is
-                  currently being reviewed by our team. We'll notify you via
-                  email once a decision has been made.
-                </p>
-                <div className="bg-yellow-50 rounded-2xl p-6 border border-yellow-200 mb-6">
-                  <p className="text-sm text-yellow-800 font-semibold mb-2">
-                    ⏰ Expected Review Time
-                  </p>
-                  <p className="text-sm text-yellow-700">
-                    Applications are typically reviewed within 2-3 business days
-                  </p>
-                </div>
-                <button
-                  onClick={() => router.push("/")}
-                  className="bg-black text-white px-8 py-4 rounded-full font-semibold hover:bg-gray-800 transition-all"
-                >
-                  Back to Home
-                </button>
-              </motion.div>
-            )}
-
-            {/* Rejected Status */}
-            {sellerStatus.rejectionReason && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="bg-white rounded-3xl p-12 text-center border-2 border-red-200 shadow-xl"
-              >
-                <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <XCircle size={48} className="text-red-600" />
-                </div>
-                <h2 className="text-4xl font-bold text-gray-900 mb-4">
-                  Application Rejected
-                </h2>
-                <p className="text-gray-600 text-lg mb-8">
-                  Unfortunately, your seller application was not approved at
-                  this time.
-                </p>
-
-                <div className="bg-red-50 rounded-2xl p-6 border border-red-200 mb-8 text-left">
-                  <p className="text-sm font-semibold text-red-900 mb-2 flex items-center gap-2">
-                    <AlertCircle size={16} />
-                    Rejection Reason:
-                  </p>
-                  <p className="text-sm text-red-700 leading-relaxed">
-                    {sellerStatus.rejectionReason}
-                  </p>
-                </div>
-
-                <div className="bg-blue-50 rounded-2xl p-6 border border-blue-200 mb-8 text-left">
-                  <p className="text-sm font-semibold text-blue-900 mb-2">
-                    💡 What You Can Do
-                  </p>
-                  <ul className="text-sm text-blue-700 space-y-2">
-                    <li>• Review the rejection reason carefully</li>
-                    <li>• Address the concerns mentioned</li>
-                    <li>• Contact our support team if you have questions</li>
-                    <li>• You may reapply after addressing the issues</li>
-                  </ul>
-                </div>
-
-                <div className="flex gap-4">
-                  <button
-                    onClick={() => router.push("/")}
-                    className="flex-1 bg-gray-100 text-gray-700 px-6 py-4 rounded-full font-semibold hover:bg-gray-200 transition-all"
-                  >
-                    Back to Home
-                  </button>
-                  <button
-                    onClick={() => router.push("/seller/apply")}
-                    className="flex-1 bg-black text-white px-6 py-4 rounded-full font-semibold hover:bg-gray-800 transition-all"
-                  >
-                    Reapply
-                  </button>
-                </div>
-              </motion.div>
-            )}
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
+          <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
+            <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Clock size={40} className="text-yellow-600" />
+            </div>
+            <h1
+              className="text-3xl font-bold mb-4"
+              style={{ fontFamily: "'Poppins', sans-serif" }}
+            >
+              Application Under Review
+            </h1>
+            <p className="text-gray-600 mb-6">
+              Thank you for applying to become a seller! Our team is currently
+              reviewing your application. This typically takes 2-3 business
+              days.
+            </p>
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+              <p className="text-sm text-blue-800">
+                We'll notify you via email once your application has been
+                reviewed.
+              </p>
+            </div>
           </div>
-        </main>
+        </div>
       </>
     );
   }
 
-  // Approved seller - show dashboard
+  // Rejected status screen
+  if (sellerStatus && !sellerStatus.approved && sellerStatus.rejectionReason) {
+    return (
+      <>
+        <Navbar />
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
+          <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8">
+            <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <XCircle size={40} className="text-red-600" />
+            </div>
+            <h1
+              className="text-3xl font-bold mb-4 text-center"
+              style={{ fontFamily: "'Poppins', sans-serif" }}
+            >
+              Application Not Approved
+            </h1>
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+              <p className="text-sm text-red-800 font-semibold mb-2">
+                Reason for rejection:
+              </p>
+              <p className="text-sm text-red-700">
+                {sellerStatus.rejectionReason}
+              </p>
+            </div>
+            <div className="bg-gray-50 rounded-xl p-4 mb-6">
+              <p className="text-sm font-semibold mb-2">What You Can Do:</p>
+              <ul className="text-sm text-gray-700 space-y-1">
+                <li>• Review the rejection reason above</li>
+                <li>• Address the concerns mentioned</li>
+                <li>• Submit a new application</li>
+              </ul>
+            </div>
+            <button
+              onClick={() => router.push("/seller/apply")}
+              className="w-full bg-black text-white py-3 rounded-full font-semibold hover:bg-gray-800 transition-colors"
+              style={{ fontFamily: "'Poppins', sans-serif" }}
+            >
+              Reapply Now
+            </button>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // Main dashboard for approved sellers
+  const totalStock = products.reduce(
+    (sum, product) =>
+      sum + product.variants.reduce((vSum, v) => vSum + v.quantity, 0),
+    0,
+  );
+
+  const publishedCount = products.filter(
+    (p) => p.status === "PUBLISHED",
+  ).length;
+  const draftCount = products.filter((p) => p.status === "DRAFT").length;
+
+  const stats = [
+    {
+      icon: Package,
+      label: "Total Products",
+      value: products.length,
+      color: "from-blue-500 to-blue-600",
+    },
+    {
+      icon: ShoppingBag,
+      label: "Total Orders",
+      value: orderStats?.total || 0,
+      color: "from-green-500 to-green-600",
+    },
+    {
+      icon: DollarSign,
+      label: "Total Revenue",
+      value: `${(orderStats?.revenue || 0).toLocaleString()} ETB`,
+      color: "from-purple-500 to-purple-600",
+    },
+    {
+      icon: TrendingUp,
+      label: "Pending Orders",
+      value: orderStats?.pending || 0,
+      color: "from-orange-500 to-orange-600",
+    },
+  ];
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "PENDING":
+        return "bg-yellow-100 text-yellow-800";
+      case "CONFIRMED":
+        return "bg-blue-100 text-blue-800";
+      case "PROCESSING":
+        return "bg-purple-100 text-purple-800";
+      case "SHIPPED":
+        return "bg-indigo-100 text-indigo-800";
+      case "DELIVERED":
+        return "bg-green-100 text-green-800";
+      case "CANCELLED":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "PENDING":
+        return <Clock size={16} />;
+      case "CONFIRMED":
+        return <CheckCircle size={16} />;
+      case "PROCESSING":
+        return <Package size={16} />;
+      case "SHIPPED":
+        return <Truck size={16} />;
+      case "DELIVERED":
+        return <CheckCircle size={16} />;
+      case "CANCELLED":
+        return <XCircle size={16} />;
+      default:
+        return <Clock size={16} />;
+    }
+  };
+
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-gradient-to-b from-gray-50 to-white pt-32 pb-20 px-4">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pt-20 pb-12 px-4">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-12"
-          >
-            <div className="flex items-center gap-3 mb-4">
-              <h1
-                className="text-5xl font-light text-gray-900"
-                style={{ fontFamily: "'DM Serif Display', serif" }}
-              >
-                Seller Dashboard
-              </h1>
-              <span className="px-4 py-2 bg-green-100 text-green-700 rounded-full text-sm font-semibold flex items-center gap-2">
-                <CheckCircle size={16} />
-                Approved
-              </span>
-            </div>
-            <p
-              className="text-gray-600 text-lg"
+          <div className="mb-8">
+            <h1
+              className="text-4xl font-bold text-gray-900 mb-2"
               style={{ fontFamily: "'Poppins', sans-serif" }}
             >
-              Manage your products and orders
+              Seller Dashboard
+            </h1>
+            <p
+              className="text-gray-600"
+              style={{ fontFamily: "'Poppins', sans-serif" }}
+            >
+              Welcome back, {user?.name}!
             </p>
-          </motion.div>
+          </div>
 
-          {/* Stats Cards */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12"
-          >
-            <div className="bg-white rounded-2xl p-6 border-2 border-gray-100 shadow-sm hover:shadow-lg transition-shadow">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                  <Package size={24} className="text-blue-600" />
+          {/* Stats Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {stats.map((stat, index) => {
+              const Icon = stat.icon;
+              return (
+                <div
+                  key={index}
+                  className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100"
+                >
+                  <div className="flex items-center gap-4">
+                    <div
+                      className={`w-14 h-14 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center`}
+                    >
+                      <Icon size={28} className="text-white" />
+                    </div>
+                    <div>
+                      <p
+                        className="text-sm text-gray-600 mb-1"
+                        style={{ fontFamily: "'Poppins', sans-serif" }}
+                      >
+                        {stat.label}
+                      </p>
+                      <p
+                        className="text-2xl font-bold text-gray-900"
+                        style={{ fontFamily: "'Poppins', sans-serif" }}
+                      >
+                        {stat.value}
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <p
-                    className="text-sm text-gray-600"
-                    style={{ fontFamily: "'Poppins', sans-serif" }}
-                  >
-                    Total Products
-                  </p>
-                  <p
-                    className="text-3xl font-bold text-gray-900"
-                    style={{ fontFamily: "'Poppins', sans-serif" }}
-                  >
-                    {products.length}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-2xl p-6 border-2 border-gray-100 shadow-sm hover:shadow-lg transition-shadow">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                  <CheckCircle size={24} className="text-green-600" />
-                </div>
-                <div>
-                  <p
-                    className="text-sm text-gray-600"
-                    style={{ fontFamily: "'Poppins', sans-serif" }}
-                  >
-                    Published
-                  </p>
-                  <p
-                    className="text-3xl font-bold text-gray-900"
-                    style={{ fontFamily: "'Poppins', sans-serif" }}
-                  >
-                    {products.filter((p) => p.status === "PUBLISHED").length}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-2xl p-6 border-2 border-gray-100 shadow-sm hover:shadow-lg transition-shadow">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center">
-                  <Clock size={24} className="text-yellow-600" />
-                </div>
-                <div>
-                  <p
-                    className="text-sm text-gray-600"
-                    style={{ fontFamily: "'Poppins', sans-serif" }}
-                  >
-                    Draft
-                  </p>
-                  <p
-                    className="text-3xl font-bold text-gray-900"
-                    style={{ fontFamily: "'Poppins', sans-serif" }}
-                  >
-                    {products.filter((p) => p.status === "DRAFT").length}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-2xl p-6 border-2 border-gray-100 shadow-sm hover:shadow-lg transition-shadow">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-                  <ShoppingBag size={24} className="text-purple-600" />
-                </div>
-                <div>
-                  <p
-                    className="text-sm text-gray-600"
-                    style={{ fontFamily: "'Poppins', sans-serif" }}
-                  >
-                    Total Stock
-                  </p>
-                  <p
-                    className="text-3xl font-bold text-gray-900"
-                    style={{ fontFamily: "'Poppins', sans-serif" }}
-                  >
-                    {products.reduce(
-                      (sum, p) => sum + getTotalStock(p.variants),
-                      0,
-                    )}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </motion.div>
+              );
+            })}
+          </div>
 
           {/* Tabs */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="mb-8"
-          >
-            <div className="bg-white rounded-2xl p-2 inline-flex gap-2 border-2 border-gray-100 shadow-sm">
-              <button
-                onClick={() => setActiveTab("products")}
-                className={`px-8 py-3 rounded-xl font-semibold transition-all ${
-                  activeTab === "products"
-                    ? "bg-black text-white shadow-lg"
-                    : "text-gray-600 hover:text-gray-900"
-                }`}
-                style={{ fontFamily: "'Poppins', sans-serif" }}
-              >
-                Products
-              </button>
-              <button
-                onClick={() => setActiveTab("orders")}
-                className={`px-8 py-3 rounded-xl font-semibold transition-all ${
-                  activeTab === "orders"
-                    ? "bg-black text-white shadow-lg"
-                    : "text-gray-600 hover:text-gray-900"
-                }`}
-                style={{ fontFamily: "'Poppins', sans-serif" }}
-              >
-                Orders
-                <span className="ml-2 bg-orange-500 text-white text-xs px-2 py-1 rounded-full">
-                  Soon
-                </span>
-              </button>
+          <div className="mb-6">
+            <div className="border-b border-gray-200">
+              <div className="flex gap-6">
+                <button
+                  onClick={() => setActiveTab("products")}
+                  className={`pb-4 font-semibold transition-colors relative ${
+                    activeTab === "products"
+                      ? "text-black"
+                      : "text-gray-400 hover:text-gray-600"
+                  }`}
+                  style={{ fontFamily: "'Poppins', sans-serif" }}
+                >
+                  Products ({products.length})
+                  {activeTab === "products" && (
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-black"></div>
+                  )}
+                </button>
+                <button
+                  onClick={() => setActiveTab("orders")}
+                  className={`pb-4 font-semibold transition-colors relative ${
+                    activeTab === "orders"
+                      ? "text-black"
+                      : "text-gray-400 hover:text-gray-600"
+                  }`}
+                  style={{ fontFamily: "'Poppins', sans-serif" }}
+                >
+                  Orders ({orderStats?.total || 0})
+                  {activeTab === "orders" && (
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-black"></div>
+                  )}
+                </button>
+              </div>
             </div>
-          </motion.div>
+          </div>
 
           {/* Products Tab */}
           {activeTab === "products" && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-            >
+            <>
               {/* Add Product Button */}
-              <div className="mb-8">
+              <div className="mb-6 flex items-center justify-between">
+                <div className="flex gap-4">
+                  <span className="text-sm text-gray-600">
+                    Published: {publishedCount}
+                  </span>
+                  <span className="text-sm text-gray-600">
+                    Drafts: {draftCount}
+                  </span>
+                  <span className="text-sm text-gray-600">
+                    Total Stock: {totalStock}
+                  </span>
+                </div>
                 <button
-                  onClick={() => setIsAddingProduct(true)}
-                  className="bg-black text-white px-6 py-4 rounded-full font-semibold flex items-center gap-2 hover:bg-gray-800 transition-all shadow-lg hover:shadow-xl group"
+                  onClick={() => setShowAddModal(true)}
+                  className="bg-black text-white px-6 py-3 rounded-full font-semibold hover:bg-gray-800 transition-colors flex items-center gap-2"
                   style={{ fontFamily: "'Poppins', sans-serif" }}
                 >
-                  <Plus
-                    size={20}
-                    className="group-hover:rotate-90 transition-transform"
-                  />
-                  Add New Product
+                  <Plus size={20} />
+                  Add Product
                 </button>
               </div>
 
               {/* Products Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {products.map((product, index) => (
-                  <motion.div
-                    key={product.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    className="bg-white rounded-2xl p-4 border-2 border-gray-100 shadow-sm hover:shadow-xl transition-all group"
-                  >
-                    <div className="relative bg-gray-100 rounded-xl overflow-hidden mb-4 aspect-square">
-                      <img
-                        src={
-                          product.images.sort(
-                            (a, b) => a.position - b.position,
-                          )[0]?.url || "https://via.placeholder.com/400"
-                        }
-                        alt={product.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                      <div className="absolute top-2 right-2 bg-black/70 text-white px-3 py-1 rounded-full text-xs font-semibold">
-                        {product.category}
-                      </div>
-                      <div
-                        className={`absolute top-2 left-2 px-3 py-1 rounded-full text-xs font-semibold ${
-                          product.status === "PUBLISHED"
-                            ? "bg-green-500 text-white"
-                            : "bg-yellow-500 text-white"
-                        }`}
-                      >
-                        {product.status}
-                      </div>
-                    </div>
-
-                    <h4
-                      className="text-lg font-semibold text-gray-900 mb-3 line-clamp-1"
-                      style={{ fontFamily: "'Poppins', sans-serif" }}
+              {products.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {products.map((product) => (
+                    <div
+                      key={product.id}
+                      className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-lg transition-shadow"
                     >
-                      {product.title}
-                    </h4>
-
-                    <div className="space-y-2 mb-4">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-600 flex items-center gap-1">
-                          <DollarSign size={14} />
-                          Price:
-                        </span>
-                        <span className="font-bold text-gray-900">
-                          {product.price} ETB
-                        </span>
+                      <div className="relative aspect-square bg-gray-100">
+                        <img
+                          src={
+                            product.images[0]?.url ||
+                            "https://via.placeholder.com/400"
+                          }
+                          alt={product.title}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute top-3 right-3">
+                          <span
+                            className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                              product.status === "PUBLISHED"
+                                ? "bg-green-100 text-green-800"
+                                : "bg-gray-100 text-gray-800"
+                            }`}
+                          >
+                            {product.status}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-600 flex items-center gap-1">
-                          <Package size={14} />
-                          Stock:
-                        </span>
-                        <span
-                          className={`font-semibold ${
-                            getTotalStock(product.variants) > 10
-                              ? "text-green-600"
-                              : "text-orange-600"
-                          }`}
+                      <div className="p-4">
+                        <h3
+                          className="font-bold text-lg mb-2 line-clamp-1"
+                          style={{ fontFamily: "'Poppins', sans-serif" }}
                         >
-                          {getTotalStock(product.variants)} units
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-600">Variants:</span>
-                        <span className="font-semibold text-gray-900">
-                          {product.variants.length}
-                        </span>
+                          {product.title}
+                        </h3>
+                        <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+                          {product.description}
+                        </p>
+                        <div className="flex items-center justify-between mb-4">
+                          <div>
+                            <p
+                              className="font-bold text-xl"
+                              style={{ fontFamily: "'Poppins', sans-serif" }}
+                            >
+                              {product.price.toLocaleString()} ETB
+                            </p>
+                            {product.compareAtPrice && (
+                              <p className="text-xs text-gray-400 line-through">
+                                {product.compareAtPrice.toLocaleString()} ETB
+                              </p>
+                            )}
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xs text-gray-600">Stock</p>
+                            <p className="font-semibold">
+                              {product.variants.reduce(
+                                (sum, v) => sum + v.quantity,
+                                0,
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setEditingProduct(product)}
+                            className="flex-1 bg-gray-100 text-gray-700 py-2 rounded-lg font-semibold hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
+                            style={{ fontFamily: "'Poppins', sans-serif" }}
+                          >
+                            <Edit size={16} />
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteProduct(product.id)}
+                            className="flex-1 bg-red-50 text-red-600 py-2 rounded-lg font-semibold hover:bg-red-100 transition-colors flex items-center justify-center gap-2"
+                            style={{ fontFamily: "'Poppins', sans-serif" }}
+                          >
+                            <Trash2 size={16} />
+                            Delete
+                          </button>
+                        </div>
                       </div>
                     </div>
-
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setEditingProduct(product)}
-                        className="flex-1 bg-gray-100 text-gray-700 py-2 rounded-lg font-medium flex items-center justify-center gap-2 hover:bg-gray-200 transition-colors"
-                        style={{
-                          fontFamily: "'Poppins', sans-serif",
-                          fontSize: "14px",
-                        }}
-                      >
-                        <Edit3 size={16} />
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDeleteProduct(product.id)}
-                        className="flex-1 bg-red-50 text-red-600 py-2 rounded-lg font-medium flex items-center justify-center gap-2 hover:bg-red-100 transition-colors"
-                        style={{
-                          fontFamily: "'Poppins', sans-serif",
-                          fontSize: "14px",
-                        }}
-                      >
-                        <Trash2 size={16} />
-                        Delete
-                      </button>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-
-              {/* Empty State */}
-              {products.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border-2 border-gray-100">
-                  <Package size={64} className="text-gray-300 mb-4" />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-20 bg-white rounded-2xl border border-gray-100">
+                  <Package size={64} className="mx-auto text-gray-300 mb-4" />
                   <h3
-                    className="text-xl font-semibold text-gray-900 mb-2"
+                    className="text-xl font-semibold mb-2"
                     style={{ fontFamily: "'Poppins', sans-serif" }}
                   >
                     No products yet
                   </h3>
-                  <p
-                    className="text-gray-600 mb-6"
-                    style={{ fontFamily: "'Poppins', sans-serif" }}
-                  >
+                  <p className="text-gray-600 mb-6">
                     Start by adding your first product
                   </p>
                   <button
-                    onClick={() => setIsAddingProduct(true)}
-                    className="bg-black text-white px-6 py-3 rounded-full font-semibold flex items-center gap-2 hover:bg-gray-800 transition-colors"
+                    onClick={() => setShowAddModal(true)}
+                    className="bg-black text-white px-6 py-3 rounded-full font-semibold hover:bg-gray-800 transition-colors inline-flex items-center gap-2"
                     style={{ fontFamily: "'Poppins', sans-serif" }}
                   >
                     <Plus size={20} />
-                    Add Product
+                    Add Your First Product
                   </button>
                 </div>
               )}
-            </motion.div>
+            </>
           )}
 
           {/* Orders Tab */}
           {activeTab === "orders" && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="bg-white rounded-3xl border-2 border-gray-100 shadow-xl p-12"
-            >
-              <div className="flex flex-col items-center justify-center">
-                <ShoppingBag size={64} className="text-gray-300 mb-4" />
-                <h3
-                  className="text-xl font-semibold text-gray-900 mb-2"
-                  style={{ fontFamily: "'Poppins', sans-serif" }}
-                >
-                  Orders Coming Soon
-                </h3>
-                <p
-                  className="text-gray-600"
-                  style={{ fontFamily: "'Poppins', sans-serif" }}
-                >
-                  Order management functionality will be added soon
-                </p>
+            <>
+              {/* Order Filters */}
+              <div className="mb-6 flex gap-3 overflow-x-auto pb-2">
+                {[
+                  { value: "all", label: "All Orders" },
+                  { value: "pending", label: "Pending" },
+                  { value: "confirmed", label: "Confirmed" },
+                  { value: "processing", label: "Processing" },
+                  { value: "shipped", label: "Shipped" },
+                  { value: "delivered", label: "Delivered" },
+                  { value: "cancelled", label: "Cancelled" },
+                ].map((filter) => (
+                  <button
+                    key={filter.value}
+                    onClick={() => setOrderFilter(filter.value)}
+                    className={`px-4 py-2 rounded-full font-semibold whitespace-nowrap transition-colors ${
+                      orderFilter === filter.value
+                        ? "bg-black text-white"
+                        : "bg-white text-gray-700 hover:bg-gray-100"
+                    }`}
+                    style={{ fontFamily: "'Poppins', sans-serif" }}
+                  >
+                    {filter.label}
+                  </button>
+                ))}
               </div>
-            </motion.div>
+
+              {/* Orders List */}
+              {orders.length > 0 ? (
+                <div className="space-y-4">
+                  {orders.map((order) => (
+                    <div
+                      key={order.id}
+                      className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100"
+                    >
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex gap-4">
+                          <img
+                            src={
+                              order.product.images[0]?.url ||
+                              "https://via.placeholder.com/100"
+                            }
+                            alt={order.product.title}
+                            className="w-20 h-20 rounded-lg object-cover"
+                          />
+                          <div>
+                            <h3
+                              className="font-bold text-lg mb-1"
+                              style={{ fontFamily: "'Poppins', sans-serif" }}
+                            >
+                              {order.product.title}
+                            </h3>
+                            <p className="text-sm text-gray-600 mb-2">
+                              Order #{order.orderNumber}
+                            </p>
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 ${getStatusColor(order.status)}`}
+                              >
+                                {getStatusIcon(order.status)}
+                                {order.status}
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                {new Date(order.createdAt).toLocaleDateString()}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm text-gray-600 mb-1">Total</p>
+                          <p
+                            className="text-2xl font-bold"
+                            style={{ fontFamily: "'Poppins', sans-serif" }}
+                          >
+                            {order.finalTotal.toLocaleString()} ETB
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4 pt-4 border-t border-gray-100">
+                        <div>
+                          <p className="text-xs text-gray-600 mb-1 flex items-center gap-1">
+                            <User size={12} />
+                            Customer
+                          </p>
+                          <p className="font-semibold text-sm">
+                            {order.customerName}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-600 mb-1 flex items-center gap-1">
+                            <Phone size={12} />
+                            Phone
+                          </p>
+                          <p className="font-semibold text-sm">
+                            {order.customerPhone}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-600 mb-1">
+                            Size / Color
+                          </p>
+                          <p className="font-semibold text-sm">
+                            {order.selectedSize} / {order.selectedColor}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-600 mb-1">Quantity</p>
+                          <p className="font-semibold text-sm">
+                            {order.quantity}x
+                          </p>
+                        </div>
+                      </div>
+
+                      {order.deliveryMethod === "DELIVERY" &&
+                        order.deliveryAddress && (
+                          <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                            <p className="text-xs text-gray-600 mb-1 flex items-center gap-1">
+                              <MapPin size={12} />
+                              Delivery Address
+                            </p>
+                            <p className="text-sm">{order.deliveryAddress}</p>
+                          </div>
+                        )}
+
+                      {order.deliveryMethod === "MEETUP" && (
+                        <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+                          <p className="text-sm text-blue-800 flex items-center gap-2">
+                            <Store size={16} />
+                            Meet-up arrangement - Contact customer to arrange
+                            meeting point
+                          </p>
+                        </div>
+                      )}
+
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setSelectedOrder(order)}
+                          className="flex-1 bg-black text-white py-2 rounded-lg font-semibold hover:bg-gray-800 transition-colors"
+                          style={{ fontFamily: "'Poppins', sans-serif" }}
+                        >
+                          Update Status
+                        </button>
+                        <a
+                          href={`tel:${order.customerPhone}`}
+                          className="flex-1 bg-green-50 text-green-700 py-2 rounded-lg font-semibold hover:bg-green-100 transition-colors flex items-center justify-center gap-2"
+                          style={{ fontFamily: "'Poppins', sans-serif" }}
+                        >
+                          <Phone size={16} />
+                          Call Customer
+                        </a>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-20 bg-white rounded-2xl border border-gray-100">
+                  <ShoppingBag
+                    size={64}
+                    className="mx-auto text-gray-300 mb-4"
+                  />
+                  <h3
+                    className="text-xl font-semibold mb-2"
+                    style={{ fontFamily: "'Poppins', sans-serif" }}
+                  >
+                    No orders yet
+                  </h3>
+                  <p className="text-gray-600">
+                    Orders will appear here when customers place them
+                  </p>
+                </div>
+              )}
+            </>
           )}
         </div>
-      </main>
+      </div>
 
       {/* Add Product Modal */}
-      {isAddingProduct && (
-        <AddProductForm
-          onClose={() => setIsAddingProduct(false)}
-          onSubmit={handleAddProduct}
-        />
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <AddProductForm
+              onClose={() => setShowAddModal(false)}
+              onSubmit={() => {
+                setShowAddModal(false);
+                fetchProducts();
+              }}
+            />
+          </div>
+        </div>
       )}
+
+      {/* Edit Product Modal */}
       {editingProduct && (
-        <EditProductForm
-          product={editingProduct}
-          onClose={() => setEditingProduct(null)}
-          onSubmit={() => {
-            fetchProducts();
-            setEditingProduct(null);
-          }}
-        />
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <EditProductForm
+              product={editingProduct}
+              onClose={() => setEditingProduct(null)}
+              onSubmit={() => {
+                setEditingProduct(null);
+                fetchProducts();
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Update Order Status Modal */}
+      {selectedOrder && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6">
+            <h2
+              className="text-2xl font-bold mb-4"
+              style={{ fontFamily: "'Poppins', sans-serif" }}
+            >
+              Update Order Status
+            </h2>
+            <p className="text-sm text-gray-600 mb-6">
+              Order #{selectedOrder.orderNumber}
+            </p>
+            <div className="space-y-3">
+              {[
+                { value: "PENDING", label: "Pending", icon: Clock },
+                { value: "CONFIRMED", label: "Confirmed", icon: CheckCircle },
+                { value: "PROCESSING", label: "Processing", icon: Package },
+                { value: "SHIPPED", label: "Shipped", icon: Truck },
+                { value: "DELIVERED", label: "Delivered", icon: CheckCircle },
+                { value: "CANCELLED", label: "Cancelled", icon: XCircle },
+              ].map((status) => {
+                const Icon = status.icon;
+                return (
+                  <button
+                    key={status.value}
+                    onClick={() =>
+                      updateOrderStatus(selectedOrder.id, status.value)
+                    }
+                    className={`w-full p-4 rounded-lg border-2 font-semibold transition-all flex items-center gap-3 ${
+                      selectedOrder.status === status.value
+                        ? "border-black bg-black text-white"
+                        : "border-gray-200 hover:border-gray-400"
+                    }`}
+                    style={{ fontFamily: "'Poppins', sans-serif" }}
+                  >
+                    <Icon size={20} />
+                    {status.label}
+                  </button>
+                );
+              })}
+            </div>
+            <button
+              onClick={() => setSelectedOrder(null)}
+              className="w-full mt-4 py-3 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition-colors"
+              style={{ fontFamily: "'Poppins', sans-serif" }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
       )}
     </>
   );

@@ -27,6 +27,64 @@ enum ProductCategory {
   UNISEX
 }
 
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum DeliveryMethod {
+  DELIVERY
+  MEETUP
+}
+
+model Order {
+  id             String         @id @default(cuid())
+  orderNumber    String         @unique
+  
+  // Customer Info
+  customerName   String
+  customerPhone  String
+  customerEmail  String?
+  
+  // Product Info
+  productId      String
+  sellerId       String
+  quantity       Int
+  selectedSize   String
+  selectedColor  String
+  
+  // Pricing
+  unitPrice      Float
+  totalPrice     Float
+  deliveryFee    Float          @default(0)
+  finalTotal     Float
+  
+  // Delivery
+  deliveryMethod DeliveryMethod
+  deliveryAddress String?       @db.Text
+  
+  // Status
+  status         OrderStatus    @default(PENDING)
+  notes          String?        @db.Text
+  
+  // Timestamps
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  
+  // Relations
+  product        Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  seller         Seller         @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  
+  @@index([sellerId])
+  @@index([productId])
+  @@index([status])
+  @@index([orderNumber])
+}
+
 model User {
   id        String   @id @default(cuid())
   name      String
@@ -64,7 +122,7 @@ model Seller {
   storeLogo       String?
   storeCover      String?
   storeDescription String? @db.Text
-  
+  orders   Order[] 
   // Analytics
   followers       Int      @default(0)
   totalViews      Int      @default(0)
@@ -114,7 +172,7 @@ model Product {
   seller   Seller           @relation(fields: [sellerId], references: [id], onDelete: Cascade)
   variants ProductVariant[]
   images   ProductImage[]
-
+  orders   Order[] 
   @@index([sellerId])
   @@index([status])
   @@index([category])
