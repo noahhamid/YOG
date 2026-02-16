@@ -26,6 +26,11 @@ export default function ProductGrid() {
   const [showNewArrivals, setShowNewArrivals] = useState(false);
   const [showOnSale, setShowOnSale] = useState(false);
 
+  // Products state
+  const [products, setProducts] = useState<any[]>([]);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+  const [availableBrands, setAvailableBrands] = useState<string[]>([]);
+
   // Accordion states for filters
   const [expandedSections, setExpandedSections] = useState({
     category: true,
@@ -54,294 +59,65 @@ export default function ProductGrid() {
     return () => observer.disconnect();
   }, [isVisible]);
 
-  const products = [
-    {
-      id: 1,
-      title: "Essential White Tee",
-      description: "Premium organic cotton",
-      price: 800,
-      category: "tops",
-      sizes: ["S", "M", "L", "XL"],
-      colors: ["white", "black"],
-      brand: "YOG Basics",
-      newArrival: true,
-      onSale: false,
-      image:
-        "https://i.pinimg.com/1200x/6c/29/4d/6c294de767f1fc184ae4591d38662b49.jpg",
-    },
-    {
-      id: 2,
-      title: "Denim Jacket",
-      description: "Classic streetwear",
-      price: 2500,
-      category: "outerwear",
-      sizes: ["M", "L", "XL"],
-      colors: ["blue"],
-      brand: "Urban Threads",
-      newArrival: false,
-      onSale: true,
-      image:
-        "https://i.pinimg.com/736x/1b/7a/71/1b7a7199025f67791606841333ef70f5.jpg",
-    },
-    {
-      id: 3,
-      title: "Utility Cargo",
-      description: "Urban comfort",
-      price: 1800,
-      category: "bottoms",
-      sizes: ["S", "M", "L", "XL", "XXL"],
-      colors: ["khaki", "black"],
-      brand: "Street Essential",
-      newArrival: true,
-      onSale: false,
-      image:
-        "https://i.pinimg.com/736x/d1/7c/8d/d17c8d81022342185ae929271704f535.jpg",
-    },
-    {
-      id: 4,
-      title: "Oversized Hoodie",
-      description: "Cozy essential",
-      price: 1500,
-      category: "tops",
-      sizes: ["M", "L", "XL"],
-      colors: ["gray", "black", "white"],
-      brand: "Comfort Zone",
-      newArrival: false,
-      onSale: true,
-      image:
-        "https://i.pinimg.com/1200x/2e/da/3d/2eda3de39d654180908f3d87590ceb1b.jpg",
-    },
-    {
-      id: 5,
-      title: "Slim Joggers",
-      description: "Athletic style",
-      price: 1200,
-      category: "bottoms",
-      sizes: ["S", "M", "L", "XL"],
-      colors: ["black", "gray"],
-      brand: "Active Life",
-      newArrival: false,
-      onSale: false,
-      image:
-        "https://i.pinimg.com/1200x/ed/73/47/ed73471bd6bc58afbf67fd11d1de9536.jpg",
-    },
-    {
-      id: 6,
-      title: "Graphic Tee",
-      description: "Statement piece",
-      price: 900,
-      category: "tops",
-      sizes: ["S", "M", "L"],
-      colors: ["white", "black"],
-      brand: "YOG Basics",
-      newArrival: true,
-      onSale: false,
-      image:
-        "https://i.pinimg.com/736x/4f/99/be/4f99be2e372c30cf87d9a16d1f5b209a.jpg",
-    },
-    {
-      id: 7,
-      title: "Bomber Jacket",
-      description: "Aviation inspired",
-      price: 2800,
-      category: "outerwear",
-      sizes: ["M", "L", "XL"],
-      colors: ["black", "green"],
-      brand: "Urban Threads",
-      newArrival: false,
-      onSale: false,
-      image:
-        "https://i.pinimg.com/736x/ba/2e/de/ba2ede82049f540aace10180acfbd8fa.jpg",
-    },
-    {
-      id: 8,
-      title: "Track Pants",
-      description: "Retro athletic",
-      price: 1400,
-      category: "bottoms",
-      sizes: ["S", "M", "L", "XL"],
-      colors: ["black", "blue"],
-      brand: "Active Life",
-      newArrival: false,
-      onSale: true,
-      image:
-        "https://i.pinimg.com/736x/6f/d7/6b/6fd76b54f6135a206f407700b0ca74b1.jpg",
-    },
-    {
-      id: 9,
-      title: "Flannel Shirt",
-      description: "Casual layering",
-      price: 1600,
-      category: "tops",
-      sizes: ["M", "L", "XL"],
-      colors: ["red", "blue"],
-      brand: "Comfort Zone",
-      newArrival: false,
-      onSale: false,
-      image:
-        "https://i.pinimg.com/1200x/56/b5/02/56b502ad1ab836436d590dc8895ac511.jpg",
-    },
-    {
-      id: 10,
-      title: "Baggy Jeans",
-      description: "Modern denim",
-      price: 2000,
-      category: "bottoms",
-      sizes: ["S", "M", "L", "XL", "XXL"],
-      colors: ["blue", "black"],
-      brand: "Street Essential",
-      newArrival: true,
-      onSale: false,
-      image:
-        "https://i.pinimg.com/1200x/8b/e0/3c/8be03c3124b1ebb3a262357a00b87e5d.jpg",
-    },
-    {
-      id: 11,
-      title: "Essential White Tee",
-      description: "Premium organic cotton",
-      price: 800,
-      category: "tops",
-      sizes: ["S", "M", "L", "XL"],
-      colors: ["white", "black"],
-      brand: "YOG Basics",
-      newArrival: true,
-      onSale: false,
-      image:
-        "https://i.pinimg.com/1200x/6c/29/4d/6c294de767f1fc184ae4591d38662b49.jpg",
-    },
-    {
-      id: 12,
-      title: "Denim Jacket",
-      description: "Classic streetwear",
-      price: 2500,
-      category: "outerwear",
-      sizes: ["M", "L", "XL"],
-      colors: ["blue"],
-      brand: "Urban Threads",
-      newArrival: false,
-      onSale: true,
-      image:
-        "https://i.pinimg.com/736x/1b/7a/71/1b7a7199025f67791606841333ef70f5.jpg",
-    },
-    {
-      id: 13,
-      title: "Utility Cargo",
-      description: "Urban comfort",
-      price: 1800,
-      category: "bottoms",
-      sizes: ["S", "M", "L", "XL", "XXL"],
-      colors: ["khaki", "black"],
-      brand: "Street Essential",
-      newArrival: true,
-      onSale: false,
-      image:
-        "https://i.pinimg.com/736x/d1/7c/8d/d17c8d81022342185ae929271704f535.jpg",
-    },
-    {
-      id: 14,
-      title: "Oversized Hoodie",
-      description: "Cozy essential",
-      price: 1500,
-      category: "tops",
-      sizes: ["M", "L", "XL"],
-      colors: ["gray", "black", "white"],
-      brand: "Comfort Zone",
-      newArrival: false,
-      onSale: true,
-      image:
-        "https://i.pinimg.com/1200x/2e/da/3d/2eda3de39d654180908f3d87590ceb1b.jpg",
-    },
-    {
-      id: 15,
-      title: "Slim Joggers",
-      description: "Athletic style",
-      price: 1200,
-      category: "bottoms",
-      sizes: ["S", "M", "L", "XL"],
-      colors: ["black", "gray"],
-      brand: "Active Life",
-      newArrival: false,
-      onSale: false,
-      image:
-        "https://i.pinimg.com/1200x/ed/73/47/ed73471bd6bc58afbf67fd11d1de9536.jpg",
-    },
-    {
-      id: 16,
-      title: "Graphic Tee",
-      description: "Statement piece",
-      price: 900,
-      category: "tops",
-      sizes: ["S", "M", "L"],
-      colors: ["white", "black"],
-      brand: "YOG Basics",
-      newArrival: true,
-      onSale: false,
-      image:
-        "https://i.pinimg.com/736x/4f/99/be/4f99be2e372c30cf87d9a16d1f5b209a.jpg",
-    },
-    {
-      id: 17,
-      title: "Bomber Jacket",
-      description: "Aviation inspired",
-      price: 2800,
-      category: "outerwear",
-      sizes: ["M", "L", "XL"],
-      colors: ["black", "green"],
-      brand: "Urban Threads",
-      newArrival: false,
-      onSale: false,
-      image:
-        "https://i.pinimg.com/736x/ba/2e/de/ba2ede82049f540aace10180acfbd8fa.jpg",
-    },
-    {
-      id: 18,
-      title: "Track Pants",
-      description: "Retro athletic",
-      price: 1400,
-      category: "bottoms",
-      sizes: ["S", "M", "L", "XL"],
-      colors: ["black", "blue"],
-      brand: "Active Life",
-      newArrival: false,
-      onSale: true,
-      image:
-        "https://i.pinimg.com/736x/6f/d7/6b/6fd76b54f6135a206f407700b0ca74b1.jpg",
-    },
-    {
-      id: 19,
-      title: "Flannel Shirt",
-      description: "Casual layering",
-      price: 1600,
-      category: "tops",
-      sizes: ["M", "L", "XL"],
-      colors: ["red", "blue"],
-      brand: "Comfort Zone",
-      newArrival: false,
-      onSale: false,
-      image:
-        "https://i.pinimg.com/1200x/56/b5/02/56b502ad1ab836436d590dc8895ac511.jpg",
-    },
-    {
-      id: 20,
-      title: "Baggy Jeans",
-      description: "Modern denim",
-      price: 2000,
-      category: "bottoms",
-      sizes: ["S", "M", "L", "XL", "XXL"],
-      colors: ["blue", "black"],
-      brand: "Street Essential",
-      newArrival: true,
-      onSale: false,
-      image:
-        "https://i.pinimg.com/1200x/8b/e0/3c/8be03c3124b1ebb3a262357a00b87e5d.jpg",
-    },
-  ];
+  // Fetch products when filters change
+  useEffect(() => {
+    fetchProducts();
+  }, [
+    searchQuery,
+    selectedCategory,
+    selectedSizes,
+    priceRange,
+    selectedColors,
+    selectedBrands,
+    sortBy,
+    showNewArrivals,
+    showOnSale,
+  ]);
+
+  const fetchProducts = async () => {
+    setIsLoadingProducts(true);
+    try {
+      const params = new URLSearchParams();
+
+      if (searchQuery) params.append("search", searchQuery);
+      if (selectedCategory !== "all")
+        params.append("category", selectedCategory);
+      params.append("minPrice", priceRange[0].toString());
+      params.append("maxPrice", priceRange[1].toString());
+      if (selectedSizes.length > 0)
+        params.append("sizes", selectedSizes.join(","));
+      if (selectedColors.length > 0)
+        params.append("colors", selectedColors.join(","));
+      if (selectedBrands.length > 0)
+        params.append("brands", selectedBrands.join(","));
+      params.append("sortBy", sortBy);
+      if (showNewArrivals) params.append("isTrending", "true");
+      if (showOnSale) params.append("isFeatured", "true");
+
+      const response = await fetch(`/api/products/public?${params.toString()}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        setProducts(data.products);
+
+        // Extract unique brands
+        const brands = [
+          ...new Set(data.products.map((p: any) => p.brand).filter(Boolean)),
+        ];
+        setAvailableBrands(brands as string[]);
+      }
+    } catch (error) {
+      console.error("Error fetching products:", error);
+    } finally {
+      setIsLoadingProducts(false);
+    }
+  };
 
   const categories = [
     { value: "all", label: "All Items" },
-    { value: "tops", label: "Tops" },
-    { value: "bottoms", label: "Bottoms" },
-    { value: "outerwear", label: "Outerwear" },
+    { value: "men", label: "Men" },
+    { value: "women", label: "Women" },
+    { value: "unisex", label: "Unisex" },
   ];
 
   const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
@@ -355,65 +131,6 @@ export default function ProductGrid() {
     { value: "green", label: "Green", hex: "#10B981" },
     { value: "khaki", label: "Khaki", hex: "#C4B5A0" },
   ];
-
-  const brands = [
-    "YOG Basics",
-    "Urban Threads",
-    "Street Essential",
-    "Comfort Zone",
-    "Active Life",
-  ];
-
-  // Filter logic
-  const filteredProducts = products
-    .filter((product) => {
-      const matchesSearch =
-        product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.description.toLowerCase().includes(searchQuery.toLowerCase());
-
-      const matchesCategory =
-        selectedCategory === "all" || product.category === selectedCategory;
-
-      const matchesSize =
-        selectedSizes.length === 0 ||
-        selectedSizes.some((size) => product.sizes.includes(size));
-
-      const matchesPrice =
-        product.price >= priceRange[0] && product.price <= priceRange[1];
-
-      const matchesColor =
-        selectedColors.length === 0 ||
-        selectedColors.some((color) => product.colors.includes(color));
-
-      const matchesBrand =
-        selectedBrands.length === 0 || selectedBrands.includes(product.brand);
-
-      const matchesNewArrivals = !showNewArrivals || product.newArrival;
-      const matchesSale = !showOnSale || product.onSale;
-
-      return (
-        matchesSearch &&
-        matchesCategory &&
-        matchesSize &&
-        matchesPrice &&
-        matchesColor &&
-        matchesBrand &&
-        matchesNewArrivals &&
-        matchesSale
-      );
-    })
-    .sort((a, b) => {
-      switch (sortBy) {
-        case "price-low":
-          return a.price - b.price;
-        case "price-high":
-          return b.price - a.price;
-        case "name":
-          return a.title.localeCompare(b.title);
-        default:
-          return 0;
-      }
-    });
 
   const toggleSize = (size: string) => {
     setSelectedSizes((prev) =>
@@ -463,7 +180,7 @@ export default function ProductGrid() {
 
   return (
     <section ref={sectionRef} className="w-full py-20 px-10 bg-white">
-      <div className=" mx-auto">
+      <div className="mx-auto">
         {/* Section Header */}
         <div className="text-center mb-12">
           <h2
@@ -718,25 +435,31 @@ export default function ProductGrid() {
                 </button>
                 {expandedSections.brand && (
                   <div className="space-y-2">
-                    {brands.map((brand) => (
-                      <label
-                        key={brand}
-                        className="flex items-center gap-2 cursor-pointer"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selectedBrands.includes(brand)}
-                          onChange={() => toggleBrand(brand)}
-                          className="w-4 h-4 rounded border-gray-300 text-black focus:ring-black cursor-pointer"
-                        />
-                        <span
-                          className="text-sm"
-                          style={{ fontFamily: "'Poppins', sans-serif" }}
+                    {availableBrands.length > 0 ? (
+                      availableBrands.map((brand) => (
+                        <label
+                          key={brand}
+                          className="flex items-center gap-2 cursor-pointer"
                         >
-                          {brand}
-                        </span>
-                      </label>
-                    ))}
+                          <input
+                            type="checkbox"
+                            checked={selectedBrands.includes(brand)}
+                            onChange={() => toggleBrand(brand)}
+                            className="w-4 h-4 rounded border-gray-300 text-black focus:ring-black cursor-pointer"
+                          />
+                          <span
+                            className="text-sm"
+                            style={{ fontFamily: "'Poppins', sans-serif" }}
+                          >
+                            {brand}
+                          </span>
+                        </label>
+                      ))
+                    ) : (
+                      <p className="text-sm text-gray-500">
+                        No brands available
+                      </p>
+                    )}
                   </div>
                 )}
               </div>
@@ -803,8 +526,8 @@ export default function ProductGrid() {
                 className="text-gray-600"
                 style={{ fontFamily: "'Poppins', sans-serif" }}
               >
-                Showing {filteredProducts.length}{" "}
-                {filteredProducts.length === 1 ? "product" : "products"}
+                Showing {products.length}{" "}
+                {products.length === 1 ? "product" : "products"}
               </p>
               <select
                 value={sortBy}
@@ -820,9 +543,13 @@ export default function ProductGrid() {
             </div>
 
             {/* Product Grid */}
-            {filteredProducts.length > 0 ? (
+            {isLoadingProducts ? (
+              <div className="flex items-center justify-center py-20">
+                <div className="w-16 h-16 border-4 border-gray-200 border-t-black rounded-full animate-spin"></div>
+              </div>
+            ) : products.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-                {filteredProducts.map((product, index) => (
+                {products.map((product, index) => (
                   <ProductCard
                     key={product.id}
                     product={product}
@@ -857,11 +584,13 @@ export default function ProductGrid() {
 
 interface ProductCardProps {
   product: {
-    id: number;
+    id: string;
     title: string;
     description: string;
     price: number;
     image: string;
+    sizes?: string[];
+    compareAtPrice?: number | null;
   };
   index: number;
   isVisible: boolean;
@@ -886,6 +615,19 @@ function ProductCard({ product, index, isVisible }: ProductCardProps) {
             className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
             loading="lazy"
           />
+
+          {/* Discount Badge */}
+          {product.compareAtPrice && product.compareAtPrice > product.price && (
+            <div className="absolute top-3 left-3 bg-red-500 text-white px-2 py-1 rounded-lg text-xs font-bold">
+              -
+              {Math.round(
+                ((product.compareAtPrice - product.price) /
+                  product.compareAtPrice) *
+                  100,
+              )}
+              %
+            </div>
+          )}
 
           <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
@@ -920,7 +662,7 @@ function ProductCard({ product, index, isVisible }: ProductCardProps) {
         {/* Product Info */}
         <div className="px-1">
           <h3
-            className="text-gray-900 font-semibold text-base mb-1 uppercase"
+            className="text-gray-900 font-semibold text-base mb-1 uppercase line-clamp-1"
             style={{
               fontFamily: "'Poppins', sans-serif",
               letterSpacing: "0.05em",
@@ -930,7 +672,7 @@ function ProductCard({ product, index, isVisible }: ProductCardProps) {
             {product.title}
           </h3>
           <p
-            className="text-gray-500 text-sm mb-2"
+            className="text-gray-500 text-sm mb-2 line-clamp-1"
             style={{
               fontFamily: "'Poppins', sans-serif",
               fontWeight: 400,
@@ -939,33 +681,43 @@ function ProductCard({ product, index, isVisible }: ProductCardProps) {
             {product.description}
           </p>
           <div className="flex items-center justify-between">
-            <span
-              className="text-black font-bold text-lg"
-              style={{
-                fontFamily: "'Poppins', sans-serif",
-                fontWeight: 700,
-              }}
-            >
-              {product.price.toLocaleString()}{" "}
-              <span className="text-sm font-normal">ETB</span>
-            </span>
+            <div className="flex flex-col">
+              <span
+                className="text-black font-bold text-lg"
+                style={{
+                  fontFamily: "'Poppins', sans-serif",
+                  fontWeight: 700,
+                }}
+              >
+                {product.price.toLocaleString()}{" "}
+                <span className="text-sm font-normal">ETB</span>
+              </span>
+              {product.compareAtPrice &&
+                product.compareAtPrice > product.price && (
+                  <span className="text-xs text-gray-400 line-through">
+                    {product.compareAtPrice.toLocaleString()} ETB
+                  </span>
+                )}
+            </div>
 
             {/* Size Indicator */}
-            <div className="flex gap-1">
-              {["S", "M", "L"].map((size) => (
-                <span
-                  key={size}
-                  className="w-6 h-6 flex items-center justify-center text-gray-400 border border-gray-300 rounded-full hover:border-black hover:text-black transition-all duration-200 cursor-pointer"
-                  style={{
-                    fontFamily: "'Poppins', sans-serif",
-                    fontSize: "10px",
-                    fontWeight: 600,
-                  }}
-                >
-                  {size}
-                </span>
-              ))}
-            </div>
+            {product.sizes && product.sizes.length > 0 && (
+              <div className="flex gap-1">
+                {product.sizes.slice(0, 3).map((size) => (
+                  <span
+                    key={size}
+                    className="w-6 h-6 flex items-center justify-center text-gray-400 border border-gray-300 rounded-full hover:border-black hover:text-black transition-all duration-200 cursor-pointer"
+                    style={{
+                      fontFamily: "'Poppins', sans-serif",
+                      fontSize: "10px",
+                      fontWeight: 600,
+                    }}
+                  >
+                    {size}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
