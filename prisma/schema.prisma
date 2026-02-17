@@ -79,9 +79,10 @@ model Order {
   product        Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
   seller         Seller         @relation(fields: [sellerId], references: [id], onDelete: Cascade)
   
-  @@index([sellerId])
+  // OPTIMIZED INDEXES
+  @@index([sellerId, status]) // Composite index for filtering by seller + status
+  @@index([sellerId, createdAt]) // For sorting by date
   @@index([productId])
-  @@index([status])
   @@index([orderNumber])
 }
 

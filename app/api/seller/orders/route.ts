@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 
 export const dynamic = 'force-dynamic';
 
-// Get seller's orders
+// Get seller's orders - OPTIMIZED
 export async function GET(req: NextRequest) {
   try {
     const userStr = req.headers.get("x-user-data");
@@ -18,6 +18,7 @@ export async function GET(req: NextRequest) {
 
     const seller = await prisma.seller.findUnique({
       where: { userId: user.id },
+      select: { id: true }, // Only get ID, nothing else
     });
 
     if (!seller) {
@@ -39,51 +40,73 @@ export async function GET(req: NextRequest) {
       where.status = status.toUpperCase();
     }
 
-    // Fetch orders
+    // Fetch orders with MINIMAL data
     const orders = await prisma.order.findMany({
       where,
-      include: {
+      select: {
+        id: true,
+        orderNumber: true,
+        customerName: true,
+        customerPhone: true,
+        quantity: true,
+        selectedSize: true,
+        selectedColor: true,
+        finalTotal: true,
+        deliveryMethod: true,
+        deliveryAddress: true,
+        status: true,
+        createdAt: true,
         product: {
-          include: {
-            images: true,
+          select: {
+            title: true,
+            images: {
+              select: {
+                url: true,
+              },
+              take: 1, // Only get first image
+              orderBy: {
+                position: 'asc',
+              },
+            },
           },
         },
       },
       orderBy: {
         createdAt: "desc",
       },
+      take: 50, // Limit to 50 most recent orders
     });
 
-    // Get order statistics
-    const stats = await prisma.order.groupBy({
-      by: ['status'],
-      where: { sellerId: seller.id },
-      _count: true,
-    });
-
-    const totalOrders = orders.length;
-    const pendingOrders = stats.find(s => s.status === 'PENDING')?._count || 0;
-    const confirmedOrders = stats.find(s => s.status === 'CONFIRMED')?._count || 0;
-    const deliveredOrders = stats.find(s => s.status === 'DELIVERED')?._count || 0;
-
-    const totalRevenue = await prisma.order.aggregate({
-      where: {
-        sellerId: seller.id,
-        status: { in: ['CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED'] },
-      },
-      _sum: {
-        finalTotal: true,
-      },
-    });
+    // Get stats separately with OPTIMIZED queries
+    const [pendingCount, confirmedCount, deliveredCount, revenueData] = await Promise.all([
+      prisma.order.count({
+        where: { sellerId: seller.id, status: 'PENDING' },
+      }),
+      prisma.order.count({
+        where: { sellerId: seller.id, status: 'CONFIRMED' },
+      }),
+      prisma.order.count({
+        where: { sellerId: seller.id, status: 'DELIVERED' },
+      }),
+      prisma.order.aggregate({
+        where: {
+          sellerId: seller.id,
+          status: { in: ['CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED'] },
+        },
+        _sum: {
+          finalTotal: true,
+        },
+      }),
+    ]);
 
     return NextResponse.json({
       orders,
       stats: {
-        total: totalOrders,
-        pending: pendingOrders,
-        confirmed: confirmedOrders,
-        delivered: deliveredOrders,
-        revenue: totalRevenue._sum.finalTotal || 0,
+        total: orders.length,
+        pending: pendingCount,
+        confirmed: confirmedCount,
+        delivered: deliveredCount,
+        revenue: revenueData._sum.finalTotal || 0,
       },
     });
   } catch (error: any) {

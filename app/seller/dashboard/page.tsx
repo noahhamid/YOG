@@ -5,23 +5,17 @@ import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import AddProductForm from "@/components/AddProductForm";
 import EditProductForm from "@/components/EditProductForm";
+import OrdersTab from "@/components/OrdersTab";
 import {
   Plus,
   Package,
   DollarSign,
   TrendingUp,
-  Eye,
   Edit,
   Trash2,
   ShoppingBag,
   Clock,
-  CheckCircle,
-  Truck,
   XCircle,
-  Phone,
-  MapPin,
-  User,
-  Store,
 } from "lucide-react";
 
 interface Product {
@@ -47,23 +41,13 @@ interface Product {
   }>;
 }
 
-interface Order {
-  id: string;
-  orderNumber: string;
-  customerName: string;
-  customerPhone: string;
-  quantity: number;
-  selectedSize: string;
-  selectedColor: string;
-  finalTotal: number;
-  deliveryMethod: string;
-  deliveryAddress: string | null;
-  status: string;
-  createdAt: string;
-  product: {
-    title: string;
-    images: Array<{ url: string }>;
-  };
+interface OrdersCache {
+  all: any[];
+  pending: any[];
+  confirmed: any[];
+  shipped: any[];
+  delivered: any[];
+  timestamp: number;
 }
 
 export default function SellerDashboard() {
@@ -71,24 +55,97 @@ export default function SellerDashboard() {
   const [user, setUser] = useState<any>(null);
   const [sellerStatus, setSellerStatus] = useState<any>(null);
   const [products, setProducts] = useState<Product[]>([]);
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [ordersCache, setOrdersCache] = useState<OrdersCache>({
+    all: [],
+    pending: [],
+    confirmed: [],
+    shipped: [],
+    delivered: [],
+    timestamp: 0,
+  });
   const [orderStats, setOrderStats] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [activeTab, setActiveTab] = useState<"products" | "orders">("products");
-  const [orderFilter, setOrderFilter] = useState("all");
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
   useEffect(() => {
     checkAuth();
   }, []);
 
+  // Preload ALL orders with different filters in background
   useEffect(() => {
-    if (activeTab === "orders") {
-      fetchOrders();
+    const preloadAllOrders = async () => {
+      try {
+        const userStr = localStorage.getItem("yog_user");
+        if (!userStr) return;
+
+        console.log("🔄 Preloading all order filters...");
+        const startTime = performance.now();
+
+        // Fetch all filters in parallel
+        const [
+          allOrders,
+          pendingOrders,
+          confirmedOrders,
+          shippedOrders,
+          deliveredOrders,
+        ] = await Promise.all([
+          fetch("/api/seller/orders", {
+            headers: { "x-user-data": userStr },
+          }).then((res) => res.json()),
+
+          fetch("/api/seller/orders?status=pending", {
+            headers: { "x-user-data": userStr },
+          }).then((res) => res.json()),
+
+          fetch("/api/seller/orders?status=confirmed", {
+            headers: { "x-user-data": userStr },
+          }).then((res) => res.json()),
+
+          fetch("/api/seller/orders?status=shipped", {
+            headers: { "x-user-data": userStr },
+          }).then((res) => res.json()),
+
+          fetch("/api/seller/orders?status=delivered", {
+            headers: { "x-user-data": userStr },
+          }).then((res) => res.json()),
+        ]);
+
+        const endTime = performance.now();
+        console.log(
+          `✅ All orders preloaded in ${(endTime - startTime).toFixed(0)}ms`,
+        );
+
+        // Cache all the data
+        setOrdersCache({
+          all: allOrders.orders || [],
+          pending: pendingOrders.orders || [],
+          confirmed: confirmedOrders.orders || [],
+          shipped: shippedOrders.orders || [],
+          delivered: deliveredOrders.orders || [],
+          timestamp: Date.now(),
+        });
+
+        setOrderStats(allOrders.stats);
+
+        console.log("📊 Cached orders:", {
+          all: allOrders.orders?.length || 0,
+          pending: pendingOrders.orders?.length || 0,
+          confirmed: confirmedOrders.orders?.length || 0,
+          shipped: shippedOrders.orders?.length || 0,
+          delivered: deliveredOrders.orders?.length || 0,
+        });
+      } catch (error) {
+        console.error("Error preloading orders:", error);
+      }
+    };
+
+    // Only preload if user is logged in and not loading
+    if (!isLoading && user) {
+      preloadAllOrders();
     }
-  }, [activeTab, orderFilter]);
+  }, [isLoading, user]);
 
   const checkAuth = async () => {
     const userStr = localStorage.getItem("yog_user");
@@ -101,20 +158,17 @@ export default function SellerDashboard() {
     const userData = JSON.parse(userStr);
     setUser(userData);
 
-    // Only sellers and admins can access
     if (userData.role !== "SELLER" && userData.role !== "ADMIN") {
       router.push("/seller/apply");
       return;
     }
 
-    // Admin bypass - admins can always access
     if (userData.role === "ADMIN") {
       setIsLoading(false);
       await fetchProducts(userStr);
       return;
     }
 
-    // Check seller status for regular sellers
     await checkSellerStatus(userStr);
     await fetchProducts(userStr);
   };
@@ -130,8 +184,6 @@ export default function SellerDashboard() {
       const data = await response.json();
       setSellerStatus(data);
       setIsLoading(false);
-
-      console.log("Seller Status:", data); // Debug log
     } catch (error) {
       console.error("Error checking seller status:", error);
       setIsLoading(false);
@@ -153,33 +205,6 @@ export default function SellerDashboard() {
       }
     } catch (error) {
       console.error("Error fetching products:", error);
-    }
-  };
-
-  const fetchOrders = async () => {
-    try {
-      const userStr = localStorage.getItem("yog_user");
-      if (!userStr) return;
-
-      const params = new URLSearchParams();
-      if (orderFilter !== "all") {
-        params.append("status", orderFilter);
-      }
-
-      const response = await fetch(`/api/seller/orders?${params.toString()}`, {
-        headers: {
-          "x-user-data": userStr,
-        },
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setOrders(data.orders);
-        setOrderStats(data.stats);
-      }
-    } catch (error) {
-      console.error("Error fetching orders:", error);
     }
   };
 
@@ -210,66 +235,52 @@ export default function SellerDashboard() {
     }
   };
 
-  const updateOrderStatus = async (orderId: string, newStatus: string) => {
+  // Refresh orders cache (call this after updating an order)
+  const refreshOrdersCache = async () => {
+    const userStr = localStorage.getItem("yog_user");
+    if (!userStr) return;
+
     try {
-      const userStr = localStorage.getItem("yog_user");
-      const response = await fetch(`/api/seller/orders/${orderId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          "x-user-data": userStr || "",
-        },
-        body: JSON.stringify({ status: newStatus }),
+      const [
+        allOrders,
+        pendingOrders,
+        confirmedOrders,
+        shippedOrders,
+        deliveredOrders,
+      ] = await Promise.all([
+        fetch("/api/seller/orders", {
+          headers: { "x-user-data": userStr },
+        }).then((res) => res.json()),
+
+        fetch("/api/seller/orders?status=pending", {
+          headers: { "x-user-data": userStr },
+        }).then((res) => res.json()),
+
+        fetch("/api/seller/orders?status=confirmed", {
+          headers: { "x-user-data": userStr },
+        }).then((res) => res.json()),
+
+        fetch("/api/seller/orders?status=shipped", {
+          headers: { "x-user-data": userStr },
+        }).then((res) => res.json()),
+
+        fetch("/api/seller/orders?status=delivered", {
+          headers: { "x-user-data": userStr },
+        }).then((res) => res.json()),
+      ]);
+
+      setOrdersCache({
+        all: allOrders.orders || [],
+        pending: pendingOrders.orders || [],
+        confirmed: confirmedOrders.orders || [],
+        shipped: shippedOrders.orders || [],
+        delivered: deliveredOrders.orders || [],
+        timestamp: Date.now(),
       });
 
-      if (response.ok) {
-        alert("Order status updated!");
-        fetchOrders();
-        setSelectedOrder(null);
-      } else {
-        const data = await response.json();
-        alert(data.error || "Failed to update order");
-      }
+      setOrderStats(allOrders.stats);
     } catch (error) {
-      console.error("Error updating order:", error);
-      alert("Failed to update order");
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "PENDING":
-        return "bg-yellow-100 text-yellow-800";
-      case "CONFIRMED":
-        return "bg-blue-100 text-blue-800";
-      case "PROCESSING":
-        return "bg-purple-100 text-purple-800";
-      case "SHIPPED":
-        return "bg-indigo-100 text-indigo-800";
-      case "DELIVERED":
-        return "bg-green-100 text-green-800";
-      case "CANCELLED":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "PENDING":
-        return <Clock size={16} />;
-      case "CONFIRMED":
-      case "DELIVERED":
-        return <CheckCircle size={16} />;
-      case "PROCESSING":
-        return <Package size={16} />;
-      case "SHIPPED":
-        return <Truck size={16} />;
-      case "CANCELLED":
-        return <XCircle size={16} />;
-      default:
-        return <Clock size={16} />;
+      console.error("Error refreshing orders cache:", error);
     }
   };
 
@@ -281,7 +292,6 @@ export default function SellerDashboard() {
     );
   }
 
-  // Pending seller - check seller.approved field
   if (
     sellerStatus?.seller &&
     !sellerStatus.seller.approved &&
@@ -317,7 +327,6 @@ export default function SellerDashboard() {
     );
   }
 
-  // Rejected seller - check seller.rejectionReason field
   if (sellerStatus?.seller?.rejectionReason) {
     return (
       <>
@@ -352,7 +361,6 @@ export default function SellerDashboard() {
     );
   }
 
-  // Main dashboard - if approved, show dashboard
   const totalStock = products.reduce(
     (sum, product) =>
       sum + product.variants.reduce((vSum, v) => vSum + v.quantity, 0),
@@ -394,7 +402,6 @@ export default function SellerDashboard() {
       <Navbar />
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pt-20 pb-12 px-4">
         <div className="max-w-7xl mx-auto">
-          {/* Header */}
           <div className="mb-8">
             <h1
               className="text-4xl font-bold text-gray-900 mb-2"
@@ -410,7 +417,6 @@ export default function SellerDashboard() {
             </p>
           </div>
 
-          {/* Stats */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             {stats.map((stat, i) => {
               const Icon = stat.icon;
@@ -445,13 +451,16 @@ export default function SellerDashboard() {
             })}
           </div>
 
-          {/* Tabs */}
           <div className="mb-6">
             <div className="border-b border-gray-200">
               <div className="flex gap-6">
                 <button
                   onClick={() => setActiveTab("products")}
-                  className={`pb-4 font-semibold transition-colors relative ${activeTab === "products" ? "text-black" : "text-gray-400 hover:text-gray-600"}`}
+                  className={`pb-4 font-semibold transition-colors relative ${
+                    activeTab === "products"
+                      ? "text-black"
+                      : "text-gray-400 hover:text-gray-600"
+                  }`}
                   style={{ fontFamily: "'Poppins', sans-serif" }}
                 >
                   Products ({products.length})
@@ -461,7 +470,11 @@ export default function SellerDashboard() {
                 </button>
                 <button
                   onClick={() => setActiveTab("orders")}
-                  className={`pb-4 font-semibold transition-colors relative ${activeTab === "orders" ? "text-black" : "text-gray-400 hover:text-gray-600"}`}
+                  className={`pb-4 font-semibold transition-colors relative ${
+                    activeTab === "orders"
+                      ? "text-black"
+                      : "text-gray-400 hover:text-gray-600"
+                  }`}
                   style={{ fontFamily: "'Poppins', sans-serif" }}
                 >
                   Orders ({orderStats?.total || 0})
@@ -473,7 +486,6 @@ export default function SellerDashboard() {
             </div>
           </div>
 
-          {/* Products Tab */}
           {activeTab === "products" && (
             <>
               <div className="mb-6 flex items-center justify-between">
@@ -513,7 +525,11 @@ export default function SellerDashboard() {
                         />
                         <div className="absolute top-3 right-3">
                           <span
-                            className={`px-3 py-1 rounded-full text-xs font-semibold ${product.status === "PUBLISHED" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}`}
+                            className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                              product.status === "PUBLISHED"
+                                ? "bg-green-100 text-green-800"
+                                : "bg-gray-100 text-gray-800"
+                            }`}
                           >
                             {product.status}
                           </span>
@@ -600,177 +616,16 @@ export default function SellerDashboard() {
             </>
           )}
 
-          {/* Orders Tab */}
           {activeTab === "orders" && (
-            <>
-              <div className="mb-6 flex gap-3 overflow-x-auto pb-2">
-                {[
-                  { value: "all", label: "All Orders" },
-                  { value: "pending", label: "Pending" },
-                  { value: "confirmed", label: "Confirmed" },
-                  { value: "shipped", label: "Shipped" },
-                  { value: "delivered", label: "Delivered" },
-                ].map((filter) => (
-                  <button
-                    key={filter.value}
-                    onClick={() => setOrderFilter(filter.value)}
-                    className={`px-4 py-2 rounded-full font-semibold whitespace-nowrap transition-colors ${orderFilter === filter.value ? "bg-black text-white" : "bg-white text-gray-700 hover:bg-gray-100"}`}
-                    style={{ fontFamily: "'Poppins', sans-serif" }}
-                  >
-                    {filter.label}
-                  </button>
-                ))}
-              </div>
-
-              {orders.length > 0 ? (
-                <div className="space-y-4">
-                  {orders.map((order) => (
-                    <div
-                      key={order.id}
-                      className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100"
-                    >
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex gap-4">
-                          <img
-                            src={
-                              order.product.images[0]?.url ||
-                              "https://via.placeholder.com/100"
-                            }
-                            alt={order.product.title}
-                            className="w-20 h-20 rounded-lg object-cover"
-                          />
-                          <div>
-                            <h3
-                              className="font-bold text-lg mb-1"
-                              style={{ fontFamily: "'Poppins', sans-serif" }}
-                            >
-                              {order.product.title}
-                            </h3>
-                            <p className="text-sm text-gray-600 mb-2">
-                              Order #{order.orderNumber}
-                            </p>
-                            <div className="flex items-center gap-2">
-                              <span
-                                className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 ${getStatusColor(order.status)}`}
-                              >
-                                {getStatusIcon(order.status)}
-                                {order.status}
-                              </span>
-                              <span className="text-xs text-gray-500">
-                                {new Date(order.createdAt).toLocaleDateString()}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm text-gray-600 mb-1">Total</p>
-                          <p
-                            className="text-2xl font-bold"
-                            style={{ fontFamily: "'Poppins', sans-serif" }}
-                          >
-                            {order.finalTotal.toLocaleString()} ETB
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4 pt-4 border-t border-gray-100">
-                        <div>
-                          <p className="text-xs text-gray-600 mb-1 flex items-center gap-1">
-                            <User size={12} />
-                            Customer
-                          </p>
-                          <p className="font-semibold text-sm">
-                            {order.customerName}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-600 mb-1 flex items-center gap-1">
-                            <Phone size={12} />
-                            Phone
-                          </p>
-                          <p className="font-semibold text-sm">
-                            {order.customerPhone}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-600 mb-1">
-                            Size / Color
-                          </p>
-                          <p className="font-semibold text-sm">
-                            {order.selectedSize} / {order.selectedColor}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-600 mb-1">Quantity</p>
-                          <p className="font-semibold text-sm">
-                            {order.quantity}x
-                          </p>
-                        </div>
-                      </div>
-
-                      {order.deliveryMethod === "DELIVERY" &&
-                        order.deliveryAddress && (
-                          <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                            <p className="text-xs text-gray-600 mb-1 flex items-center gap-1">
-                              <MapPin size={12} />
-                              Delivery Address
-                            </p>
-                            <p className="text-sm">{order.deliveryAddress}</p>
-                          </div>
-                        )}
-
-                      {order.deliveryMethod === "MEETUP" && (
-                        <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-                          <p className="text-sm text-blue-800 flex items-center gap-2">
-                            <Store size={16} />
-                            Meet-up - Contact customer to arrange location
-                          </p>
-                        </div>
-                      )}
-
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => setSelectedOrder(order)}
-                          className="flex-1 bg-black text-white py-2 rounded-lg font-semibold hover:bg-gray-800 transition-colors"
-                          style={{ fontFamily: "'Poppins', sans-serif" }}
-                        >
-                          Update Status
-                        </button>
-                        <a
-                          href={`tel:${order.customerPhone}`}
-                          className="flex-1 bg-green-50 text-green-700 py-2 rounded-lg font-semibold hover:bg-green-100 transition-colors flex items-center justify-center gap-2"
-                          style={{ fontFamily: "'Poppins', sans-serif" }}
-                        >
-                          <Phone size={16} />
-                          Call
-                        </a>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-20 bg-white rounded-2xl border border-gray-100">
-                  <ShoppingBag
-                    size={64}
-                    className="mx-auto text-gray-300 mb-4"
-                  />
-                  <h3
-                    className="text-xl font-semibold mb-2"
-                    style={{ fontFamily: "'Poppins', sans-serif" }}
-                  >
-                    No orders yet
-                  </h3>
-                  <p className="text-gray-600">
-                    Orders will appear here when customers place them
-                  </p>
-                </div>
-              )}
-            </>
+            <OrdersTab
+              isActive={activeTab === "orders"}
+              ordersCache={ordersCache}
+              onRefreshCache={refreshOrdersCache}
+            />
           )}
         </div>
       </div>
 
-      {/* Modals */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -796,54 +651,6 @@ export default function SellerDashboard() {
                 fetchProducts();
               }}
             />
-          </div>
-        </div>
-      )}
-
-      {selectedOrder && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6">
-            <h2
-              className="text-2xl font-bold mb-4"
-              style={{ fontFamily: "'Poppins', sans-serif" }}
-            >
-              Update Order Status
-            </h2>
-            <p className="text-sm text-gray-600 mb-6">
-              Order #{selectedOrder.orderNumber}
-            </p>
-            <div className="space-y-3">
-              {[
-                { value: "PENDING", label: "Pending", icon: Clock },
-                { value: "CONFIRMED", label: "Confirmed", icon: CheckCircle },
-                { value: "PROCESSING", label: "Processing", icon: Package },
-                { value: "SHIPPED", label: "Shipped", icon: Truck },
-                { value: "DELIVERED", label: "Delivered", icon: CheckCircle },
-                { value: "CANCELLED", label: "Cancelled", icon: XCircle },
-              ].map((status) => {
-                const Icon = status.icon;
-                return (
-                  <button
-                    key={status.value}
-                    onClick={() =>
-                      updateOrderStatus(selectedOrder.id, status.value)
-                    }
-                    className={`w-full p-4 rounded-lg border-2 font-semibold transition-all flex items-center gap-3 ${selectedOrder.status === status.value ? "border-black bg-black text-white" : "border-gray-200 hover:border-gray-400"}`}
-                    style={{ fontFamily: "'Poppins', sans-serif" }}
-                  >
-                    <Icon size={20} />
-                    {status.label}
-                  </button>
-                );
-              })}
-            </div>
-            <button
-              onClick={() => setSelectedOrder(null)}
-              className="w-full mt-4 py-3 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition-colors"
-              style={{ fontFamily: "'Poppins', sans-serif" }}
-            >
-              Cancel
-            </button>
           </div>
         </div>
       )}
