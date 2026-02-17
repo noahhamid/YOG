@@ -11,7 +11,6 @@ import {
   DollarSign,
   TrendingUp,
   Eye,
-  Store,
   Edit,
   Trash2,
   ShoppingBag,
@@ -22,7 +21,7 @@ import {
   Phone,
   MapPin,
   User,
-  Calendar,
+  Store,
 } from "lucide-react";
 
 interface Product {
@@ -53,25 +52,17 @@ interface Order {
   orderNumber: string;
   customerName: string;
   customerPhone: string;
-  customerEmail: string | null;
   quantity: number;
   selectedSize: string;
   selectedColor: string;
-  unitPrice: number;
-  totalPrice: number;
-  deliveryFee: number;
   finalTotal: number;
   deliveryMethod: string;
   deliveryAddress: string | null;
   status: string;
-  notes: string | null;
   createdAt: string;
   product: {
-    id: string;
     title: string;
-    images: Array<{
-      url: string;
-    }>;
+    images: Array<{ url: string }>;
   };
 }
 
@@ -110,11 +101,20 @@ export default function SellerDashboard() {
     const userData = JSON.parse(userStr);
     setUser(userData);
 
+    // Only sellers and admins can access
     if (userData.role !== "SELLER" && userData.role !== "ADMIN") {
       router.push("/seller/apply");
       return;
     }
 
+    // Admin bypass - admins can always access
+    if (userData.role === "ADMIN") {
+      setIsLoading(false);
+      await fetchProducts(userStr);
+      return;
+    }
+
+    // Check seller status for regular sellers
     await checkSellerStatus(userStr);
     await fetchProducts(userStr);
   };
@@ -129,13 +129,11 @@ export default function SellerDashboard() {
 
       const data = await response.json();
       setSellerStatus(data);
+      setIsLoading(false);
 
-      if (!data.approved && data.status !== "pending") {
-        router.push("/seller/apply");
-      }
+      console.log("Seller Status:", data); // Debug log
     } catch (error) {
       console.error("Error checking seller status:", error);
-    } finally {
       setIsLoading(false);
     }
   };
@@ -238,6 +236,43 @@ export default function SellerDashboard() {
     }
   };
 
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "PENDING":
+        return "bg-yellow-100 text-yellow-800";
+      case "CONFIRMED":
+        return "bg-blue-100 text-blue-800";
+      case "PROCESSING":
+        return "bg-purple-100 text-purple-800";
+      case "SHIPPED":
+        return "bg-indigo-100 text-indigo-800";
+      case "DELIVERED":
+        return "bg-green-100 text-green-800";
+      case "CANCELLED":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "PENDING":
+        return <Clock size={16} />;
+      case "CONFIRMED":
+      case "DELIVERED":
+        return <CheckCircle size={16} />;
+      case "PROCESSING":
+        return <Package size={16} />;
+      case "SHIPPED":
+        return <Truck size={16} />;
+      case "CANCELLED":
+        return <XCircle size={16} />;
+      default:
+        return <Clock size={16} />;
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -246,11 +281,11 @@ export default function SellerDashboard() {
     );
   }
 
-  // Pending status screen
+  // Pending seller - check seller.approved field
   if (
-    sellerStatus &&
-    !sellerStatus.approved &&
-    sellerStatus.status === "pending"
+    sellerStatus?.seller &&
+    !sellerStatus.seller.approved &&
+    !sellerStatus.seller.rejectionReason
   ) {
     return (
       <>
@@ -267,9 +302,8 @@ export default function SellerDashboard() {
               Application Under Review
             </h1>
             <p className="text-gray-600 mb-6">
-              Thank you for applying to become a seller! Our team is currently
-              reviewing your application. This typically takes 2-3 business
-              days.
+              Thank you for applying! Our team is reviewing your application.
+              This typically takes 2-3 business days.
             </p>
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
               <p className="text-sm text-blue-800">
@@ -283,8 +317,8 @@ export default function SellerDashboard() {
     );
   }
 
-  // Rejected status screen
-  if (sellerStatus && !sellerStatus.approved && sellerStatus.rejectionReason) {
+  // Rejected seller - check seller.rejectionReason field
+  if (sellerStatus?.seller?.rejectionReason) {
     return (
       <>
         <Navbar />
@@ -300,20 +334,10 @@ export default function SellerDashboard() {
               Application Not Approved
             </h1>
             <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
-              <p className="text-sm text-red-800 font-semibold mb-2">
-                Reason for rejection:
-              </p>
+              <p className="text-sm text-red-800 font-semibold mb-2">Reason:</p>
               <p className="text-sm text-red-700">
-                {sellerStatus.rejectionReason}
+                {sellerStatus.seller.rejectionReason}
               </p>
-            </div>
-            <div className="bg-gray-50 rounded-xl p-4 mb-6">
-              <p className="text-sm font-semibold mb-2">What You Can Do:</p>
-              <ul className="text-sm text-gray-700 space-y-1">
-                <li>• Review the rejection reason above</li>
-                <li>• Address the concerns mentioned</li>
-                <li>• Submit a new application</li>
-              </ul>
             </div>
             <button
               onClick={() => router.push("/seller/apply")}
@@ -328,17 +352,15 @@ export default function SellerDashboard() {
     );
   }
 
-  // Main dashboard for approved sellers
+  // Main dashboard - if approved, show dashboard
   const totalStock = products.reduce(
     (sum, product) =>
       sum + product.variants.reduce((vSum, v) => vSum + v.quantity, 0),
     0,
   );
-
   const publishedCount = products.filter(
     (p) => p.status === "PUBLISHED",
   ).length;
-  const draftCount = products.filter((p) => p.status === "DRAFT").length;
 
   const stats = [
     {
@@ -367,44 +389,6 @@ export default function SellerDashboard() {
     },
   ];
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "PENDING":
-        return "bg-yellow-100 text-yellow-800";
-      case "CONFIRMED":
-        return "bg-blue-100 text-blue-800";
-      case "PROCESSING":
-        return "bg-purple-100 text-purple-800";
-      case "SHIPPED":
-        return "bg-indigo-100 text-indigo-800";
-      case "DELIVERED":
-        return "bg-green-100 text-green-800";
-      case "CANCELLED":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "PENDING":
-        return <Clock size={16} />;
-      case "CONFIRMED":
-        return <CheckCircle size={16} />;
-      case "PROCESSING":
-        return <Package size={16} />;
-      case "SHIPPED":
-        return <Truck size={16} />;
-      case "DELIVERED":
-        return <CheckCircle size={16} />;
-      case "CANCELLED":
-        return <XCircle size={16} />;
-      default:
-        return <Clock size={16} />;
-    }
-  };
-
   return (
     <>
       <Navbar />
@@ -426,13 +410,13 @@ export default function SellerDashboard() {
             </p>
           </div>
 
-          {/* Stats Grid */}
+          {/* Stats */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {stats.map((stat, index) => {
+            {stats.map((stat, i) => {
               const Icon = stat.icon;
               return (
                 <div
-                  key={index}
+                  key={i}
                   className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100"
                 >
                   <div className="flex items-center gap-4">
@@ -467,11 +451,7 @@ export default function SellerDashboard() {
               <div className="flex gap-6">
                 <button
                   onClick={() => setActiveTab("products")}
-                  className={`pb-4 font-semibold transition-colors relative ${
-                    activeTab === "products"
-                      ? "text-black"
-                      : "text-gray-400 hover:text-gray-600"
-                  }`}
+                  className={`pb-4 font-semibold transition-colors relative ${activeTab === "products" ? "text-black" : "text-gray-400 hover:text-gray-600"}`}
                   style={{ fontFamily: "'Poppins', sans-serif" }}
                 >
                   Products ({products.length})
@@ -481,11 +461,7 @@ export default function SellerDashboard() {
                 </button>
                 <button
                   onClick={() => setActiveTab("orders")}
-                  className={`pb-4 font-semibold transition-colors relative ${
-                    activeTab === "orders"
-                      ? "text-black"
-                      : "text-gray-400 hover:text-gray-600"
-                  }`}
+                  className={`pb-4 font-semibold transition-colors relative ${activeTab === "orders" ? "text-black" : "text-gray-400 hover:text-gray-600"}`}
                   style={{ fontFamily: "'Poppins', sans-serif" }}
                 >
                   Orders ({orderStats?.total || 0})
@@ -500,14 +476,10 @@ export default function SellerDashboard() {
           {/* Products Tab */}
           {activeTab === "products" && (
             <>
-              {/* Add Product Button */}
               <div className="mb-6 flex items-center justify-between">
                 <div className="flex gap-4">
                   <span className="text-sm text-gray-600">
                     Published: {publishedCount}
-                  </span>
-                  <span className="text-sm text-gray-600">
-                    Drafts: {draftCount}
                   </span>
                   <span className="text-sm text-gray-600">
                     Total Stock: {totalStock}
@@ -523,7 +495,6 @@ export default function SellerDashboard() {
                 </button>
               </div>
 
-              {/* Products Grid */}
               {products.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                   {products.map((product) => (
@@ -542,11 +513,7 @@ export default function SellerDashboard() {
                         />
                         <div className="absolute top-3 right-3">
                           <span
-                            className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                              product.status === "PUBLISHED"
-                                ? "bg-green-100 text-green-800"
-                                : "bg-gray-100 text-gray-800"
-                            }`}
+                            className={`px-3 py-1 rounded-full text-xs font-semibold ${product.status === "PUBLISHED" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}`}
                           >
                             {product.status}
                           </span>
@@ -636,25 +603,18 @@ export default function SellerDashboard() {
           {/* Orders Tab */}
           {activeTab === "orders" && (
             <>
-              {/* Order Filters */}
               <div className="mb-6 flex gap-3 overflow-x-auto pb-2">
                 {[
                   { value: "all", label: "All Orders" },
                   { value: "pending", label: "Pending" },
                   { value: "confirmed", label: "Confirmed" },
-                  { value: "processing", label: "Processing" },
                   { value: "shipped", label: "Shipped" },
                   { value: "delivered", label: "Delivered" },
-                  { value: "cancelled", label: "Cancelled" },
                 ].map((filter) => (
                   <button
                     key={filter.value}
                     onClick={() => setOrderFilter(filter.value)}
-                    className={`px-4 py-2 rounded-full font-semibold whitespace-nowrap transition-colors ${
-                      orderFilter === filter.value
-                        ? "bg-black text-white"
-                        : "bg-white text-gray-700 hover:bg-gray-100"
-                    }`}
+                    className={`px-4 py-2 rounded-full font-semibold whitespace-nowrap transition-colors ${orderFilter === filter.value ? "bg-black text-white" : "bg-white text-gray-700 hover:bg-gray-100"}`}
                     style={{ fontFamily: "'Poppins', sans-serif" }}
                   >
                     {filter.label}
@@ -662,7 +622,6 @@ export default function SellerDashboard() {
                 ))}
               </div>
 
-              {/* Orders List */}
               {orders.length > 0 ? (
                 <div className="space-y-4">
                   {orders.map((order) => (
@@ -764,8 +723,7 @@ export default function SellerDashboard() {
                         <div className="mb-4 p-3 bg-blue-50 rounded-lg">
                           <p className="text-sm text-blue-800 flex items-center gap-2">
                             <Store size={16} />
-                            Meet-up arrangement - Contact customer to arrange
-                            meeting point
+                            Meet-up - Contact customer to arrange location
                           </p>
                         </div>
                       )}
@@ -784,7 +742,7 @@ export default function SellerDashboard() {
                           style={{ fontFamily: "'Poppins', sans-serif" }}
                         >
                           <Phone size={16} />
-                          Call Customer
+                          Call
                         </a>
                       </div>
                     </div>
@@ -812,7 +770,7 @@ export default function SellerDashboard() {
         </div>
       </div>
 
-      {/* Add Product Modal */}
+      {/* Modals */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -827,7 +785,6 @@ export default function SellerDashboard() {
         </div>
       )}
 
-      {/* Edit Product Modal */}
       {editingProduct && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -843,7 +800,6 @@ export default function SellerDashboard() {
         </div>
       )}
 
-      {/* Update Order Status Modal */}
       {selectedOrder && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6">
@@ -872,11 +828,7 @@ export default function SellerDashboard() {
                     onClick={() =>
                       updateOrderStatus(selectedOrder.id, status.value)
                     }
-                    className={`w-full p-4 rounded-lg border-2 font-semibold transition-all flex items-center gap-3 ${
-                      selectedOrder.status === status.value
-                        ? "border-black bg-black text-white"
-                        : "border-gray-200 hover:border-gray-400"
-                    }`}
+                    className={`w-full p-4 rounded-lg border-2 font-semibold transition-all flex items-center gap-3 ${selectedOrder.status === status.value ? "border-black bg-black text-white" : "border-gray-200 hover:border-gray-400"}`}
                     style={{ fontFamily: "'Poppins', sans-serif" }}
                   >
                     <Icon size={20} />
