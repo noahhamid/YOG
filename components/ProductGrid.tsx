@@ -10,6 +10,7 @@ import {
   ChevronUp,
 } from "lucide-react";
 import Link from "next/link";
+import { useCart } from "@/context/CartContext";
 
 export default function ProductGrid() {
   const [isVisible, setIsVisible] = useState(false);
@@ -590,13 +591,53 @@ interface ProductCardProps {
     price: number;
     image: string;
     sizes?: string[];
+    colors?: string[];
     compareAtPrice?: number | null;
+    brand?: string;
+    seller?: {
+      id: string;
+      name: string;
+      slug: string;
+    };
+    stock?: number;
   };
   index: number;
   isVisible: boolean;
 }
 
 function ProductCard({ product, index, isVisible }: ProductCardProps) {
+  const { addToCart } = useCart();
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Get first available size or default to M
+    const firstSize =
+      product.sizes && product.sizes.length > 0 ? product.sizes[0] : "M";
+
+    // Get first available color or default to black
+    const firstColor =
+      product.colors && product.colors.length > 0 ? product.colors[0] : "black";
+
+    addToCart({
+      productId: product.id,
+      title: product.title,
+      price: product.price,
+      image: product.image,
+      size: firstSize,
+      color: firstColor,
+      maxStock: product.stock || 10,
+      sellerId: product.seller?.id || "unknown",
+      sellerName: product.seller?.name || "Unknown Seller",
+    });
+
+    // Show success feedback
+    alert(
+      `✅ Added "${product.title}" to cart!\nSize: ${firstSize} • Color: ${firstColor}`,
+    );
+  };
+
   return (
     <Link href={`/product/${product.id}`}>
       <div
@@ -635,6 +676,8 @@ function ProductCard({ product, index, isVisible }: ProductCardProps) {
           <button
             onClick={(e) => {
               e.preventDefault();
+              e.stopPropagation();
+              alert("Wishlist feature coming soon!");
             }}
             className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm p-2.5 rounded-full shadow-lg hover:bg-white transition-all duration-300 opacity-0 translate-x-5 scale-90 group-hover:opacity-100 group-hover:translate-x-0 group-hover:scale-100"
             aria-label="Add to wishlist"
@@ -644,9 +687,7 @@ function ProductCard({ product, index, isVisible }: ProductCardProps) {
 
           {/* Add to Cart Button */}
           <button
-            onClick={(e) => {
-              e.preventDefault();
-            }}
+            onClick={handleAddToCart}
             className="absolute bottom-4 left-4 right-4 bg-black text-white py-3 rounded-full font-semibold text-sm uppercase flex items-center justify-center gap-2 hover:bg-gray-900 transition-all duration-300 opacity-0 translate-y-5 group-hover:opacity-100 group-hover:translate-y-0"
             style={{
               fontFamily: "'Poppins', sans-serif",

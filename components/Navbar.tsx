@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useCart } from "@/context/CartContext";
 import {
   ShoppingBag,
   Menu,
@@ -24,6 +25,8 @@ const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [user, setUser] = useState<UserData | null>(null);
+  const { getCartCount } = useCart();
+  const cartCount = getCartCount();
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 50);
@@ -350,12 +353,20 @@ const Navbar = () => {
             {/* Shopping Bag */}
             <Link
               href="/cart"
-              className="hover:opacity-60 transition-all hover:scale-110"
+              className="hover:opacity-60 transition-all hover:scale-110 relative"
               style={{
                 color: isScrolled ? "white" : "black",
               }}
             >
               <ShoppingBag size={22} strokeWidth={1.5} />
+              {cartCount > 0 && (
+                <span
+                  className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"
+                  style={{ fontFamily: "'Poppins', sans-serif" }}
+                >
+                  {cartCount > 99 ? "99+" : cartCount}
+                </span>
+              )}
             </Link>
 
             {/* Mobile Menu */}
