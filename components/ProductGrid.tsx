@@ -621,6 +621,7 @@ function ProductCard({ product, index, isVisible }: ProductCardProps) {
       product.colors && product.colors.length > 0 ? product.colors[0] : "black";
 
     addToCart({
+      id: `${product.id}-${firstSize}-${firstColor}`,
       productId: product.id,
       title: product.title,
       price: product.price,
