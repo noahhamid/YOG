@@ -12,6 +12,16 @@ import {
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
 
+interface ProductsCache {
+  all: any[];
+  men: any[];
+  women: any[];
+  unisex: any[];
+  onSale: any[];
+  newArrivals: any[];
+  timestamp: number;
+}
+
 export default function ProductGrid() {
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
@@ -27,8 +37,18 @@ export default function ProductGrid() {
   const [showNewArrivals, setShowNewArrivals] = useState(false);
   const [showOnSale, setShowOnSale] = useState(false);
 
-  // Products state
-  const [products, setProducts] = useState<any[]>([]);
+  // Products cache
+  const [productsCache, setProductsCache] = useState<ProductsCache>({
+    all: [],
+    men: [],
+    women: [],
+    unisex: [],
+    onSale: [],
+    newArrivals: [],
+    timestamp: 0,
+  });
+
+  const [displayedProducts, setDisplayedProducts] = useState<any[]>([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [availableBrands, setAvailableBrands] = useState<string[]>([]);
 
@@ -60,9 +80,14 @@ export default function ProductGrid() {
     return () => observer.disconnect();
   }, [isVisible]);
 
-  // Fetch products when filters change
+  // Preload ALL categories on mount
   useEffect(() => {
-    fetchProducts();
+    preloadAllCategories();
+  }, []);
+
+  // Filter from cache when filters change
+  useEffect(() => {
+    filterFromCache();
   }, [
     searchQuery,
     selectedCategory,
@@ -73,45 +98,176 @@ export default function ProductGrid() {
     sortBy,
     showNewArrivals,
     showOnSale,
+    productsCache,
   ]);
 
-  const fetchProducts = async () => {
+  const preloadAllCategories = async () => {
     setIsLoadingProducts(true);
+    console.log("🔄 Preloading all product categories...");
+    const startTime = performance.now();
+
     try {
-      const params = new URLSearchParams();
+      // Fetch all categories in parallel
+      const [
+        allProducts,
+        menProducts,
+        womenProducts,
+        unisexProducts,
+        onSaleProducts,
+        newProducts,
+      ] = await Promise.all([
+        fetch("/api/products/public").then((res) => res.json()),
+        fetch("/api/products/public?category=men").then((res) => res.json()),
+        fetch("/api/products/public?category=women").then((res) => res.json()),
+        fetch("/api/products/public?category=unisex").then((res) => res.json()),
+        fetch("/api/products/public?isFeatured=true").then((res) => res.json()),
+        fetch("/api/products/public?isTrending=true").then((res) => res.json()),
+      ]);
 
-      if (searchQuery) params.append("search", searchQuery);
-      if (selectedCategory !== "all")
-        params.append("category", selectedCategory);
-      params.append("minPrice", priceRange[0].toString());
-      params.append("maxPrice", priceRange[1].toString());
-      if (selectedSizes.length > 0)
-        params.append("sizes", selectedSizes.join(","));
-      if (selectedColors.length > 0)
-        params.append("colors", selectedColors.join(","));
-      if (selectedBrands.length > 0)
-        params.append("brands", selectedBrands.join(","));
-      params.append("sortBy", sortBy);
-      if (showNewArrivals) params.append("isTrending", "true");
-      if (showOnSale) params.append("isFeatured", "true");
+      const endTime = performance.now();
+      console.log(
+        `✅ All categories preloaded in ${(endTime - startTime).toFixed(0)}ms`,
+      );
 
-      const response = await fetch(`/api/products/public?${params.toString()}`);
-      const data = await response.json();
+      // Cache all results
+      setProductsCache({
+        all: allProducts.products || [],
+        men: menProducts.products || [],
+        women: womenProducts.products || [],
+        unisex: unisexProducts.products || [],
+        onSale: onSaleProducts.products || [],
+        newArrivals: newProducts.products || [],
+        timestamp: Date.now(),
+      });
 
-      if (response.ok) {
-        setProducts(data.products);
+      // Set initial displayed products
+      setDisplayedProducts(allProducts.products || []);
 
-        // Extract unique brands
-        const brands = [
-          ...new Set(data.products.map((p: any) => p.brand).filter(Boolean)),
-        ];
-        setAvailableBrands(brands as string[]);
-      }
+      // Extract unique brands
+      const brands = [
+        ...new Set(
+          allProducts.products.map((p: any) => p.brand).filter(Boolean),
+        ),
+      ];
+      setAvailableBrands(brands as string[]);
+
+      console.log("📊 Cached products:", {
+        all: allProducts.products?.length || 0,
+        men: menProducts.products?.length || 0,
+        women: womenProducts.products?.length || 0,
+        unisex: unisexProducts.products?.length || 0,
+        onSale: onSaleProducts.products?.length || 0,
+        newArrivals: newProducts.products?.length || 0,
+      });
     } catch (error) {
-      console.error("Error fetching products:", error);
+      console.error("Error preloading products:", error);
     } finally {
       setIsLoadingProducts(false);
     }
+  };
+
+  const filterFromCache = () => {
+    let filtered = [...productsCache.all];
+
+    // Start with cached category if no other filters
+    if (
+      selectedCategory !== "all" &&
+      !searchQuery &&
+      selectedSizes.length === 0 &&
+      selectedColors.length === 0 &&
+      selectedBrands.length === 0 &&
+      !showNewArrivals &&
+      !showOnSale
+    ) {
+      filtered = [
+        ...(productsCache[selectedCategory as keyof ProductsCache] as any[]),
+      ];
+    } else if (selectedCategory !== "all") {
+      filtered = filtered.filter(
+        (p) => p.category.toLowerCase() === selectedCategory.toLowerCase(),
+      );
+    }
+
+    // Use cached on sale if applicable
+    if (
+      showOnSale &&
+      !searchQuery &&
+      selectedSizes.length === 0 &&
+      selectedColors.length === 0 &&
+      selectedBrands.length === 0
+    ) {
+      filtered = [...productsCache.onSale];
+    } else if (showOnSale) {
+      filtered = filtered.filter((p) => p.onSale);
+    }
+
+    // Use cached new arrivals if applicable
+    if (
+      showNewArrivals &&
+      !searchQuery &&
+      selectedSizes.length === 0 &&
+      selectedColors.length === 0 &&
+      selectedBrands.length === 0
+    ) {
+      filtered = [...productsCache.newArrivals];
+    } else if (showNewArrivals) {
+      filtered = filtered.filter((p) => p.newArrival);
+    }
+
+    // Search
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (p) =>
+          p.title.toLowerCase().includes(query) ||
+          p.description.toLowerCase().includes(query) ||
+          p.brand?.toLowerCase().includes(query),
+      );
+    }
+
+    // Price range
+    filtered = filtered.filter(
+      (p) => p.price >= priceRange[0] && p.price <= priceRange[1],
+    );
+
+    // Sizes
+    if (selectedSizes.length > 0) {
+      filtered = filtered.filter((p) =>
+        p.sizes?.some((size: string) => selectedSizes.includes(size)),
+      );
+    }
+
+    // Colors
+    if (selectedColors.length > 0) {
+      filtered = filtered.filter((p) =>
+        p.colors?.some((color: string) =>
+          selectedColors.includes(color.toLowerCase()),
+        ),
+      );
+    }
+
+    // Brands
+    if (selectedBrands.length > 0) {
+      filtered = filtered.filter((p) => selectedBrands.includes(p.brand));
+    }
+
+    // Sort
+    switch (sortBy) {
+      case "price-low":
+        filtered.sort((a, b) => a.price - b.price);
+        break;
+      case "price-high":
+        filtered.sort((a, b) => b.price - a.price);
+        break;
+      case "name":
+        filtered.sort((a, b) => a.title.localeCompare(b.title));
+        break;
+      default:
+        // Keep featured order
+        break;
+    }
+
+    setDisplayedProducts(filtered);
   };
 
   const categories = [
@@ -527,8 +683,8 @@ export default function ProductGrid() {
                 className="text-gray-600"
                 style={{ fontFamily: "'Poppins', sans-serif" }}
               >
-                Showing {products.length}{" "}
-                {products.length === 1 ? "product" : "products"}
+                Showing {displayedProducts.length}{" "}
+                {displayedProducts.length === 1 ? "product" : "products"}
               </p>
               <select
                 value={sortBy}
@@ -548,9 +704,9 @@ export default function ProductGrid() {
               <div className="flex items-center justify-center py-20">
                 <div className="w-16 h-16 border-4 border-gray-200 border-t-black rounded-full animate-spin"></div>
               </div>
-            ) : products.length > 0 ? (
+            ) : displayedProducts.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-                {products.map((product, index) => (
+                {displayedProducts.map((product, index) => (
                   <ProductCard
                     key={product.id}
                     product={product}
@@ -620,8 +776,8 @@ function ProductCard({ product, index, isVisible }: ProductCardProps) {
     const firstColor =
       product.colors && product.colors.length > 0 ? product.colors[0] : "black";
 
+    // ID is auto-generated in CartContext - don't pass it!
     addToCart({
-      id: `${product.id}-${firstSize}-${firstColor}`,
       productId: product.id,
       title: product.title,
       price: product.price,

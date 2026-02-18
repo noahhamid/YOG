@@ -18,7 +18,9 @@ interface CartItem {
 
 interface CartContextType {
   cart: CartItem[];
-  addToCart: (item: Omit<CartItem, "quantity"> & { quantity?: number }) => void;
+  addToCart: (
+    item: Omit<CartItem, "id" | "quantity"> & { quantity?: number },
+  ) => void;
   removeFromCart: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
   clearCart: () => void;
@@ -49,7 +51,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [cart, isLoaded]);
 
   const addToCart = (
-    item: Omit<CartItem, "quantity"> & { quantity?: number },
+    item: Omit<CartItem, "id" | "quantity"> & { quantity?: number },
   ) => {
     setCart((prevCart) => {
       // Check if item with same product, size, and color already exists
@@ -75,7 +77,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           return prevCart;
         }
       } else {
-        // Add new item
+        // Add new item with auto-generated ID
         return [
           ...prevCart,
           {
