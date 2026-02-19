@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
     const where: any = {
       status: "PUBLISHED",
       seller: {
-        approved: true,
+        approved: true, // ⚠️ THIS IS THE FILTER!
       },
     };
 
@@ -61,6 +61,8 @@ export async function GET(req: NextRequest) {
       };
     }
 
+    console.log("🔍 Fetching products with where clause:", JSON.stringify(where, null, 2));
+
     // Fetch products
     let products = await prisma.product.findMany({
       where,
@@ -74,6 +76,7 @@ export async function GET(req: NextRequest) {
             id: true,
             brandName: true,
             storeSlug: true,
+            approved: true, // Include approval status in response
           },
         },
       },
@@ -87,20 +90,26 @@ export async function GET(req: NextRequest) {
               : { createdAt: "desc" },
     });
 
+    console.log(`✅ Found ${products.length} products from approved sellers`);
+
     // Filter by sizes (need to check variants)
     if (sizes.length > 0) {
+      const beforeSize = products.length;
       products = products.filter((product) =>
         product.variants.some((variant) => sizes.includes(variant.size))
       );
+      console.log(`📏 Size filter: ${beforeSize} → ${products.length}`);
     }
 
     // Filter by colors (need to check variants)
     if (colors.length > 0) {
+      const beforeColor = products.length;
       products = products.filter((product) =>
         product.variants.some((variant) =>
           colors.includes(variant.color.toLowerCase())
         )
       );
+      console.log(`🎨 Color filter: ${beforeColor} → ${products.length}`);
     }
 
     // Transform data for frontend
@@ -116,11 +125,17 @@ export async function GET(req: NextRequest) {
       images: product.images.map((img) => img.url),
       sizes: [...new Set(product.variants.map((v) => v.size))],
       colors: [...new Set(product.variants.map((v) => v.color.toLowerCase()))],
-      newArrival: new Date(product.createdAt).getTime() > Date.now() - 30 * 24 * 60 * 60 * 1000, // Last 30 days
+      newArrival: new Date(product.createdAt).getTime() > Date.now() - 30 * 24 * 60 * 60 * 1000,
       onSale: product.compareAtPrice ? product.compareAtPrice > product.price : false,
-      seller: product.seller,
+      seller: {
+        id: product.seller.id,
+        name: product.seller.brandName,
+        slug: product.seller.storeSlug,
+      },
       stock: product.variants.reduce((sum, v) => sum + v.quantity, 0),
     }));
+
+    console.log(`📦 Returning ${transformedProducts.length} products to frontend`);
 
     return NextResponse.json({
       products: transformedProducts,
@@ -129,7 +144,7 @@ export async function GET(req: NextRequest) {
   } catch (error: any) {
     console.error("❌ Error fetching products:", error);
     return NextResponse.json(
-      { error: "Failed to fetch products" },
+      { error: "Failed to fetch products", details: error.message },
       { status: 500 }
     );
   }

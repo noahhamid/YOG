@@ -318,7 +318,7 @@ export default function ProductGrid() {
     setSearchQuery("");
     setSelectedCategory("all");
     setSelectedSizes([]);
-    setPriceRange([0, 5000]);
+    setPriceRange([0, 10000]);
     setSelectedColors([]);
     setSelectedBrands([]);
     setSortBy("featured");
