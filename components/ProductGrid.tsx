@@ -22,6 +22,9 @@ interface ProductsCache {
   timestamp: number;
 }
 
+const CACHE_KEY = "yog_products_cache";
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
 export default function ProductGrid() {
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
@@ -30,7 +33,7 @@ export default function ProductGrid() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 5000]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000]); // ✅ Updated to 10000
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState("featured");
@@ -80,9 +83,9 @@ export default function ProductGrid() {
     return () => observer.disconnect();
   }, [isVisible]);
 
-  // Preload ALL categories on mount
+  // Load from cache or fetch on mount
   useEffect(() => {
-    preloadAllCategories();
+    loadProductsWithCache();
   }, []);
 
   // Filter from cache when filters change
@@ -101,9 +104,47 @@ export default function ProductGrid() {
     productsCache,
   ]);
 
-  const preloadAllCategories = async () => {
+  const loadProductsWithCache = async () => {
     setIsLoadingProducts(true);
-    console.log("🔄 Preloading all product categories...");
+
+    // Try to load from localStorage first
+    const cachedData = localStorage.getItem(CACHE_KEY);
+
+    if (cachedData) {
+      try {
+        const parsed: ProductsCache = JSON.parse(cachedData);
+        const cacheAge = Date.now() - parsed.timestamp;
+
+        // Check if cache is still valid (less than 5 minutes old)
+        if (cacheAge < CACHE_DURATION) {
+          console.log(
+            `⚡ Using cached products (${Math.round(cacheAge / 1000)}s old)`,
+          );
+          setProductsCache(parsed);
+          setDisplayedProducts(parsed.all);
+
+          // Extract unique brands
+          const brands = [
+            ...new Set(parsed.all.map((p: any) => p.brand).filter(Boolean)),
+          ];
+          setAvailableBrands(brands as string[]);
+
+          setIsLoadingProducts(false);
+          return; // Use cache, don't fetch
+        } else {
+          console.log("🔄 Cache expired, fetching fresh data...");
+        }
+      } catch (error) {
+        console.error("Error parsing cache:", error);
+      }
+    }
+
+    // Cache miss or expired - fetch fresh data
+    await preloadAllCategories();
+  };
+
+  const preloadAllCategories = async () => {
+    console.log("🔄 Fetching all product categories...");
     const startTime = performance.now();
 
     try {
@@ -126,11 +167,11 @@ export default function ProductGrid() {
 
       const endTime = performance.now();
       console.log(
-        `✅ All categories preloaded in ${(endTime - startTime).toFixed(0)}ms`,
+        `✅ All categories fetched in ${(endTime - startTime).toFixed(0)}ms`,
       );
 
-      // Cache all results
-      setProductsCache({
+      // Create cache object
+      const cacheData: ProductsCache = {
         all: allProducts.products || [],
         men: menProducts.products || [],
         women: womenProducts.products || [],
@@ -138,10 +179,19 @@ export default function ProductGrid() {
         onSale: onSaleProducts.products || [],
         newArrivals: newProducts.products || [],
         timestamp: Date.now(),
-      });
+      };
 
-      // Set initial displayed products
-      setDisplayedProducts(allProducts.products || []);
+      // Save to state
+      setProductsCache(cacheData);
+      setDisplayedProducts(cacheData.all);
+
+      // Save to localStorage
+      try {
+        localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+        console.log("💾 Products cached to localStorage");
+      } catch (error) {
+        console.error("Failed to cache products:", error);
+      }
 
       // Extract unique brands
       const brands = [
@@ -160,7 +210,7 @@ export default function ProductGrid() {
         newArrivals: newProducts.products?.length || 0,
       });
     } catch (error) {
-      console.error("Error preloading products:", error);
+      console.error("Error fetching products:", error);
     } finally {
       setIsLoadingProducts(false);
     }
@@ -270,6 +320,18 @@ export default function ProductGrid() {
     setDisplayedProducts(filtered);
   };
 
+  const clearFilters = () => {
+    setSearchQuery("");
+    setSelectedCategory("all");
+    setSelectedSizes([]);
+    setPriceRange([0, 10000]); // ✅ Updated to 10000
+    setSelectedColors([]);
+    setSelectedBrands([]);
+    setSortBy("featured");
+    setShowNewArrivals(false);
+    setShowOnSale(false);
+  };
+
   const categories = [
     { value: "all", label: "All Items" },
     { value: "men", label: "Men" },
@@ -314,24 +376,12 @@ export default function ProductGrid() {
     }));
   };
 
-  const clearFilters = () => {
-    setSearchQuery("");
-    setSelectedCategory("all");
-    setSelectedSizes([]);
-    setPriceRange([0, 10000]);
-    setSelectedColors([]);
-    setSelectedBrands([]);
-    setSortBy("featured");
-    setShowNewArrivals(false);
-    setShowOnSale(false);
-  };
-
   const activeFiltersCount =
     (selectedCategory !== "all" ? 1 : 0) +
     selectedSizes.length +
     selectedColors.length +
     selectedBrands.length +
-    (priceRange[0] !== 0 || priceRange[1] !== 5000 ? 1 : 0) +
+    (priceRange[0] !== 0 || priceRange[1] !== 10000 ? 1 : 0) + // ✅ Updated to 10000
     (showNewArrivals ? 1 : 0) +
     (showOnSale ? 1 : 0);
 
@@ -470,7 +520,7 @@ export default function ProductGrid() {
                     <input
                       type="range"
                       min="0"
-                      max="5000"
+                      max="10000" // ✅ Updated to 10000
                       step="100"
                       value={priceRange[1]}
                       onChange={(e) =>
@@ -768,15 +818,11 @@ function ProductCard({ product, index, isVisible }: ProductCardProps) {
     e.preventDefault();
     e.stopPropagation();
 
-    // Get first available size or default to M
     const firstSize =
       product.sizes && product.sizes.length > 0 ? product.sizes[0] : "M";
-
-    // Get first available color or default to black
     const firstColor =
       product.colors && product.colors.length > 0 ? product.colors[0] : "black";
 
-    // ID is auto-generated in CartContext - don't pass it!
     addToCart({
       productId: product.id,
       title: product.title,
@@ -789,7 +835,6 @@ function ProductCard({ product, index, isVisible }: ProductCardProps) {
       sellerName: product.seller?.name || "Unknown Seller",
     });
 
-    // Show success feedback
     alert(
       `✅ Added "${product.title}" to cart!\nSize: ${firstSize} • Color: ${firstColor}`,
     );
@@ -805,7 +850,6 @@ function ProductCard({ product, index, isVisible }: ProductCardProps) {
           transition: `opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1) ${index * 0.05}s, transform 0.5s cubic-bezier(0.4, 0, 0.2, 1) ${index * 0.05}s`,
         }}
       >
-        {/* Product Image Container */}
         <div className="relative bg-gray-100 rounded-2xl overflow-hidden mb-4 aspect-[3/4]">
           <img
             src={product.image}
@@ -814,7 +858,6 @@ function ProductCard({ product, index, isVisible }: ProductCardProps) {
             loading="lazy"
           />
 
-          {/* Discount Badge */}
           {product.compareAtPrice && product.compareAtPrice > product.price && (
             <div className="absolute top-3 left-3 bg-red-500 text-white px-2 py-1 rounded-lg text-xs font-bold">
               -
@@ -829,7 +872,6 @@ function ProductCard({ product, index, isVisible }: ProductCardProps) {
 
           <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-          {/* Wishlist Button */}
           <button
             onClick={(e) => {
               e.preventDefault();
@@ -842,7 +884,6 @@ function ProductCard({ product, index, isVisible }: ProductCardProps) {
             <Heart size={18} className="text-gray-800" />
           </button>
 
-          {/* Add to Cart Button */}
           <button
             onClick={handleAddToCart}
             className="absolute bottom-4 left-4 right-4 bg-black text-white py-3 rounded-full font-semibold text-sm uppercase flex items-center justify-center gap-2 hover:bg-gray-900 transition-all duration-300 opacity-0 translate-y-5 group-hover:opacity-100 group-hover:translate-y-0"
@@ -857,7 +898,6 @@ function ProductCard({ product, index, isVisible }: ProductCardProps) {
           </button>
         </div>
 
-        {/* Product Info */}
         <div className="px-1">
           <h3
             className="text-gray-900 font-semibold text-base mb-1 uppercase line-clamp-1"
@@ -898,7 +938,6 @@ function ProductCard({ product, index, isVisible }: ProductCardProps) {
                 )}
             </div>
 
-            {/* Size Indicator */}
             {product.sizes && product.sizes.length > 0 && (
               <div className="flex gap-1">
                 {product.sizes.slice(0, 3).map((size) => (
@@ -919,7 +958,6 @@ function ProductCard({ product, index, isVisible }: ProductCardProps) {
           </div>
         </div>
 
-        {/* Bottom Accent Line */}
         <div className="mt-3 h-0.5 bg-black rounded-full w-0 group-hover:w-full transition-all duration-400 ease-out" />
       </div>
     </Link>
