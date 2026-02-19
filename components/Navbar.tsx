@@ -211,16 +211,40 @@ const Navbar = () => {
           <div className="flex items-center gap-6">
             {/* If NOT logged in */}
             {!user && (
-              <Link
-                href="/login"
-                className="text-[11px] font-semibold uppercase tracking-[0.15em] whitespace-nowrap hover:opacity-60 relative group"
-                style={{
-                  color: isScrolled ? "white" : "black",
-                  transition: "all 0.3s ease-out",
-                }}
-              >
-                Sign In
-              </Link>
+              <>
+                <Link
+                  href="/login"
+                  className="text-[11px] font-semibold uppercase tracking-[0.15em] whitespace-nowrap hover:opacity-60 relative group"
+                  style={{
+                    color: isScrolled ? "white" : "black",
+                    transition: "all 0.3s ease-out",
+                  }}
+                >
+                  Log In
+                  <span
+                    className="absolute bottom-0 left-0 w-0 h-[1px] transition-all duration-300 group-hover:w-full"
+                    style={{
+                      backgroundColor: isScrolled ? "white" : "black",
+                    }}
+                  />
+                </Link>
+                <Link
+                  href="/signup"
+                  className="text-[11px] font-semibold uppercase tracking-[0.15em] whitespace-nowrap hover:opacity-60 relative group"
+                  style={{
+                    color: isScrolled ? "white" : "black",
+                    transition: "all 0.3s ease-out",
+                  }}
+                >
+                  Sign Up
+                  <span
+                    className="absolute bottom-0 left-0 w-0 h-[1px] transition-all duration-300 group-hover:w-full"
+                    style={{
+                      backgroundColor: isScrolled ? "white" : "black",
+                    }}
+                  />
+                </Link>
+              </>
             )}
 
             {/* If logged in */}

@@ -3,14 +3,24 @@ import { Resend } from "resend";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
-
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-// Store OTPs temporarily (in production, use Redis)
-const otpStore = new Map<string, { code: string; expiresAt: number; attempts: number }>();
+// Store OTPs and user data temporarily - FIXED TYPE SYNTAX
+interface OTPData {
+  code: string;
+  expiresAt: number;
+  attempts: number;
+  userData?: {
+    name: string;
+    email: string;
+    password: string;
+    phone?: string;
+  };
+}
 
-// Rate limiting
+const otpStore = new Map<string, OTPData>();
 const rateLimitMap = new Map<string, number>();
+
 const RATE_LIMIT_MINUTES = 1;
 const MAX_ATTEMPTS = 5;
 
@@ -18,9 +28,10 @@ function generateOTP(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
+// POST - Send OTP for sign up
 export async function POST(req: NextRequest) {
   try {
-    const { email } = await req.json();
+    const { email, name, password, phone } = await req.json();
 
     if (!email || !email.includes("@")) {
       return NextResponse.json(
@@ -29,12 +40,40 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (!name || !password) {
+      return NextResponse.json(
+        { error: "Name and password are required" },
+        { status: 400 }
+      );
+    }
+
+    if (password.length < 6) {
+      return NextResponse.json(
+        { error: "Password must be at least 6 characters" },
+        { status: 400 }
+      );
+    }
+
+    // Check if user already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email: email.toLowerCase() },
+    });
+
+    if (existingUser) {
+      return NextResponse.json(
+        { error: "An account with this email already exists" },
+        { status: 400 }
+      );
+    }
+
     // Rate limiting
     const lastSent = rateLimitMap.get(email.toLowerCase());
     const now = Date.now();
-    
+
     if (lastSent && now - lastSent < RATE_LIMIT_MINUTES * 60 * 1000) {
-      const waitTime = Math.ceil((RATE_LIMIT_MINUTES * 60 * 1000 - (now - lastSent)) / 1000);
+      const waitTime = Math.ceil(
+        (RATE_LIMIT_MINUTES * 60 * 1000 - (now - lastSent)) / 1000
+      );
       return NextResponse.json(
         { error: `Please wait ${waitTime} seconds before requesting a new code` },
         { status: 429 }
@@ -42,17 +81,26 @@ export async function POST(req: NextRequest) {
     }
 
     const otp = generateOTP();
-    
-    // Store OTP
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Store OTP with user data
     otpStore.set(email.toLowerCase(), {
       code: otp,
       expiresAt: Date.now() + 5 * 60 * 1000, // 5 minutes
       attempts: 0,
+      userData: {
+        name,
+        email: email.toLowerCase(),
+        password: hashedPassword,
+        phone,
+      },
     });
-    
+
     rateLimitMap.set(email.toLowerCase(), now);
 
-    console.log(`📧 OTP for ${email}: ${otp}`); // DEBUG - see OTP in terminal
+    console.log(`📧 OTP for ${email}: ${otp}`); // DEBUG
 
     // Send email via Resend
     const { error } = await resend.emails.send({
@@ -83,8 +131,8 @@ export async function POST(req: NextRequest) {
             <div class="container">
               <div class="header"><div class="logo">YOG</div></div>
               <div class="content">
-                <div class="title">Verify Your Email</div>
-                <div class="message">Welcome to YOG! To continue, please use the verification code below:</div>
+                <div class="title">Welcome to YOG, ${name}!</div>
+                <div class="message">To complete your registration, please use the verification code below:</div>
                 <div class="otp-box">
                   <div class="otp-code">${otp}</div>
                   <div class="otp-label">Your Verification Code</div>
@@ -105,10 +153,7 @@ export async function POST(req: NextRequest) {
 
     if (error) {
       console.error("Resend error:", error);
-      return NextResponse.json(
-        { error: "Failed to send email" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Failed to send email" }, { status: 500 });
     }
 
     return NextResponse.json({
@@ -117,14 +162,11 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error("Server error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
-// Verify OTP and create/find user
+// PUT - Verify OTP and create account
 export async function PUT(req: NextRequest) {
   try {
     const { email, otp } = await req.json();
@@ -157,7 +199,7 @@ export async function PUT(req: NextRequest) {
 
     if (stored.code !== otp) {
       stored.attempts++;
-      
+
       if (stored.attempts >= MAX_ATTEMPTS) {
         otpStore.delete(email.toLowerCase());
         return NextResponse.json(
@@ -175,34 +217,29 @@ export async function PUT(req: NextRequest) {
 
     console.log(`✅ OTP verified!`);
 
-    // OTP is valid - delete it
-    otpStore.delete(email.toLowerCase());
+    // OTP is valid - create user
+    if (!stored.userData) {
+      return NextResponse.json({ error: "User data not found" }, { status: 400 });
+    }
 
-    // Find or create user in PostgreSQL
-    let user = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() },
+    const { name, email: userEmail, password, phone } = stored.userData;
+
+    // Create user in database
+    const user = await prisma.user.create({
+      data: {
+        name,
+        email: userEmail,
+        password,
+        phone: phone || null,
+        provider: "credentials",
+        role: "USER",
+      },
     });
 
-    if (!user) {
-      console.log(`👤 Creating new user for ${email}`);
-      
-      // Create new user with random password
-      const randomPassword = await bcrypt.hash(Math.random().toString(36), 10);
-      
-      user = await prisma.user.create({
-        data: {
-          email: email.toLowerCase(),
-          name: email.split('@')[0], // Use email prefix as name
-          phone: `+251${Math.floor(Math.random() * 1000000000)}`, // Temp phone
-          password: randomPassword,
-          role: "USER",
-        },
-      });
+    console.log(`✅ New user created: ${user.id}`);
 
-      console.log(`✅ New user created in PostgreSQL: ${user.id}`);
-    } else {
-      console.log(`✅ Existing user found: ${user.id}`);
-    }
+    // Delete OTP
+    otpStore.delete(email.toLowerCase());
 
     // Return user data
     return NextResponse.json({
@@ -216,9 +253,6 @@ export async function PUT(req: NextRequest) {
     });
   } catch (error) {
     console.error("❌ Verification error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

@@ -114,16 +114,24 @@ model User {
   id        String   @id @default(cuid())
   name      String
   email     String   @unique
-  phone     String   @unique
-  password  String
+  phone     String?  @unique  // Make phone optional for OAuth users
+  password  String?  // Make password optional for OAuth users
   role      UserRole @default(USER)
+  
+  // OAuth fields
+  provider  String?  // "google", "credentials", etc.
+  providerId String? // Google ID, etc.
+  image     String?  // Profile picture from OAuth
+  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   seller Seller?
-  reviews      Review[]
+  reviews Review[]
+  
   @@index([email])
   @@index([phone])
+  @@index([provider])
 }
 
 model Seller {
