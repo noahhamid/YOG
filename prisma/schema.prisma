@@ -41,6 +41,30 @@ enum DeliveryMethod {
   MEETUP
 }
 
+model Review {
+  id        String   @id @default(cuid())
+  productId String
+  userId    String
+  userName  String
+  userEmail String
+  rating    Int      // 1-5 stars
+  comment   String   @db.Text
+  helpful   Int      @default(0) // Count of helpful votes
+  verified  Boolean  @default(false) // Verified purchase
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([productId])
+  @@index([userId])
+  @@index([rating])
+}
+
+
 model Order {
   id             String         @id @default(cuid())
   orderNumber    String         @unique
@@ -97,7 +121,7 @@ model User {
   updatedAt DateTime @updatedAt
 
   seller Seller?
-
+  reviews      Review[]
   @@index([email])
   @@index([phone])
 }
@@ -173,7 +197,8 @@ model Product {
   seller   Seller           @relation(fields: [sellerId], references: [id], onDelete: Cascade)
   variants ProductVariant[]
   images   ProductImage[]
-  orders   Order[] 
+  orders   Order[]
+  reviews      Review[] 
   @@index([sellerId])
   @@index([status])
   @@index([category])

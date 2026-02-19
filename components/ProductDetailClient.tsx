@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Heart,
   Share2,
@@ -10,16 +10,18 @@ import {
   Truck,
   Shield,
   RefreshCw,
-  MessageCircle,
   Store,
   Check,
   Clock,
   Package,
   CreditCard,
   X,
+  ShoppingCart,
+  User,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useCart } from "@/context/CartContext";
 
 interface ProductDetailClientProps {
   product: {
@@ -68,11 +70,34 @@ interface ProductDetailClientProps {
   }>;
 }
 
+interface Review {
+  id: string;
+  userName: string;
+  rating: number;
+  comment: string;
+  verified: boolean;
+  helpful: number;
+  createdAt: string;
+}
+
+interface ReviewStats {
+  totalReviews: number;
+  averageRating: number;
+  ratingDistribution: {
+    5: number;
+    4: number;
+    3: number;
+    2: number;
+    1: number;
+  };
+}
+
 export default function ProductDetailClient({
   product,
   relatedProducts,
 }: ProductDetailClientProps) {
   const router = useRouter();
+  const { addToCart } = useCart();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [selectedSize, setSelectedSize] = useState("");
   const [selectedColor, setSelectedColor] = useState(
@@ -92,10 +117,91 @@ export default function ProductDetailClient({
     address: "",
   });
 
+  // Review states
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviewStats, setReviewStats] = useState<ReviewStats | null>(null);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [reviewForm, setReviewForm] = useState({
+    rating: 5,
+    comment: "",
+  });
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [user, setUser] = useState<any>(null);
+
   const delivery = {
     standard: { days: "3-5", price: 50 },
     express: { days: "1-2", price: 150 },
     freeShippingThreshold: 2000,
+  };
+
+  // Load user on mount
+  useEffect(() => {
+    const userStr = localStorage.getItem("yog_user");
+    if (userStr) {
+      setUser(JSON.parse(userStr));
+    }
+  }, []);
+
+  // Fetch reviews
+  useEffect(() => {
+    fetchReviews();
+  }, [product.id]);
+
+  const fetchReviews = async () => {
+    try {
+      const response = await fetch(`/api/reviews?productId=${product.id}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        setReviews(data.reviews);
+        setReviewStats(data.stats);
+      }
+    } catch (error) {
+      console.error("Error fetching reviews:", error);
+    }
+  };
+
+  const handleSubmitReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!user) {
+      alert("Please sign in to leave a review");
+      return;
+    }
+
+    setIsSubmittingReview(true);
+
+    try {
+      const userStr = localStorage.getItem("yog_user");
+      const response = await fetch("/api/reviews", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-user-data": userStr || "",
+        },
+        body: JSON.stringify({
+          productId: product.id,
+          rating: reviewForm.rating,
+          comment: reviewForm.comment,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert("✅ Review submitted successfully!");
+        setShowReviewForm(false);
+        setReviewForm({ rating: 5, comment: "" });
+        fetchReviews(); // Refresh reviews
+      } else {
+        alert(`❌ ${data.error || "Failed to submit review"}`);
+      }
+    } catch (error) {
+      console.error("Error submitting review:", error);
+      alert("❌ Failed to submit review");
+    } finally {
+      setIsSubmittingReview(false);
+    }
   };
 
   const nextImage = () => {
@@ -119,6 +225,35 @@ export default function ProductDetailClient({
   const deliveryFee =
     totalPrice >= delivery.freeShippingThreshold ? 0 : delivery.standard.price;
 
+  const handleAddToCart = () => {
+    if (!selectedSize) {
+      alert("Please select a size");
+      return;
+    }
+
+    if (!selectedColor) {
+      alert("Please select a color");
+      return;
+    }
+
+    addToCart({
+      productId: product.id,
+      title: product.title,
+      price: product.price,
+      image: product.images[0],
+      size: selectedSize,
+      color: selectedColor,
+      quantity: quantity,
+      maxStock: product.totalStock,
+      sellerId: product.seller.id,
+      sellerName: product.seller.name,
+    });
+
+    alert(
+      `✅ Added "${product.title}" to cart!\nSize: ${selectedSize} • Color: ${selectedColor} • Qty: ${quantity}`,
+    );
+  };
+
   const handleOrderSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -132,7 +267,6 @@ export default function ProductDetailClient({
       return;
     }
 
-    // Show loading state
     const submitButton = e.currentTarget.querySelector(
       'button[type="submit"]',
     ) as HTMLButtonElement;
@@ -151,7 +285,7 @@ export default function ProductDetailClient({
           productId: product.id,
           customerName: orderForm.name,
           customerPhone: orderForm.phone,
-          customerEmail: "", // Optional: add email field if needed
+          customerEmail: "",
           quantity,
           selectedSize,
           selectedColor,
@@ -159,19 +293,17 @@ export default function ProductDetailClient({
           deliveryAddress:
             orderForm.deliveryMethod === "delivery" ? orderForm.address : null,
           unitPrice: product.price,
-          deliveryFee: orderForm.deliveryMethod === "delivery" ? 50 : 0, // Adjust as needed
+          deliveryFee: orderForm.deliveryMethod === "delivery" ? 50 : 0,
         }),
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        // Success!
         alert(
           `✅ Order Placed Successfully!\n\nOrder Number: ${data.order.orderNumber}\n\nThe seller will contact you soon to confirm your order.\n\nThank you for shopping with us! 🎉`,
         );
 
-        // Reset form
         setShowOrderModal(false);
         setOrderForm({
           name: "",
@@ -187,12 +319,20 @@ export default function ProductDetailClient({
       console.error("Error placing order:", error);
       alert("❌ Failed to place order. Please try again.");
     } finally {
-      // Reset button
       if (submitButton) {
         submitButton.disabled = false;
         submitButton.textContent = "Submit Order";
       }
     }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
   };
 
   return (
@@ -225,99 +365,233 @@ export default function ProductDetailClient({
 
       <div className="max-w-6xl mx-auto px-4 py-4">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Left Column - Images */}
-          <div className="space-y-3">
-            {/* Main Image with Zoom */}
-            <div
-              className="relative aspect-square bg-gray-100 rounded-xl overflow-hidden"
-              onMouseEnter={() => !isHoveringControls && setIsZoomed(true)}
-              onMouseLeave={() => setIsZoomed(false)}
-              onMouseMove={handleMouseMove}
-            >
+          {/* Left Column - Images + Reviews */}
+          <div className="space-y-6">
+            {/* Images Section */}
+            <div className="space-y-3">
+              {/* Main Image with Zoom */}
               <div
-                className={`w-full h-full transition-transform duration-100 ease-out ${isZoomed && !isHoveringControls ? "scale-150" : "scale-100"}`}
-                style={{
-                  transformOrigin: `${zoomPosition.x}% ${zoomPosition.y}%`,
-                  cursor:
-                    isZoomed && !isHoveringControls ? "zoom-out" : "zoom-in",
-                  pointerEvents: isHoveringControls ? "none" : "auto",
-                }}
+                className="relative aspect-square bg-gray-100 rounded-xl overflow-hidden"
+                onMouseEnter={() => !isHoveringControls && setIsZoomed(true)}
+                onMouseLeave={() => setIsZoomed(false)}
+                onMouseMove={handleMouseMove}
               >
-                <img
-                  src={product.images[currentImageIndex]}
-                  alt={product.title}
-                  className="w-full h-full object-cover"
-                  draggable={false}
-                />
+                <div
+                  className={`w-full h-full transition-transform duration-100 ease-out ${isZoomed && !isHoveringControls ? "scale-150" : "scale-100"}`}
+                  style={{
+                    transformOrigin: `${zoomPosition.x}% ${zoomPosition.y}%`,
+                    cursor:
+                      isZoomed && !isHoveringControls ? "zoom-out" : "zoom-in",
+                    pointerEvents: isHoveringControls ? "none" : "auto",
+                  }}
+                >
+                  <img
+                    src={product.images[currentImageIndex]}
+                    alt={product.title}
+                    className="w-full h-full object-cover"
+                    draggable={false}
+                  />
+                </div>
+
+                {product.discount > 0 && (
+                  <div className="absolute top-3 left-3 bg-red-500 text-white px-2.5 py-1 rounded-full text-xs font-semibold z-10">
+                    -{product.discount}%
+                  </div>
+                )}
+
+                {product.images.length > 1 && (
+                  <>
+                    <button
+                      onMouseEnter={() => {
+                        setIsHoveringControls(true);
+                        setIsZoomed(false);
+                      }}
+                      onMouseLeave={() => setIsHoveringControls(false)}
+                      onClick={prevImage}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-sm p-1.5 rounded-full shadow-lg hover:bg-white transition-all z-20"
+                    >
+                      <ChevronLeft size={18} />
+                    </button>
+                    <button
+                      onMouseEnter={() => {
+                        setIsHoveringControls(true);
+                        setIsZoomed(false);
+                      }}
+                      onMouseLeave={() => setIsHoveringControls(false)}
+                      onClick={nextImage}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-sm p-1.5 rounded-full shadow-lg hover:bg-white transition-all z-20"
+                    >
+                      <ChevronRight size={18} />
+                    </button>
+                  </>
+                )}
+
+                <div
+                  className="absolute bottom-3 right-3 bg-black/70 text-white px-2.5 py-1 rounded-full text-xs z-10"
+                  onMouseEnter={() => {
+                    setIsHoveringControls(true);
+                    setIsZoomed(false);
+                  }}
+                  onMouseLeave={() => setIsHoveringControls(false)}
+                >
+                  {currentImageIndex + 1} / {product.images.length}
+                </div>
               </div>
 
-              {/* Discount Badge */}
-              {product.discount > 0 && (
-                <div className="absolute top-3 left-3 bg-red-500 text-white px-2.5 py-1 rounded-full text-xs font-semibold z-10">
-                  -{product.discount}%
-                </div>
-              )}
-
-              {/* Navigation Arrows */}
-              {product.images.length > 1 && (
-                <>
+              {/* Thumbnail Images */}
+              <div className="flex gap-2 overflow-x-auto pb-2">
+                {product.images.map((image, index) => (
                   <button
-                    onMouseEnter={() => {
-                      setIsHoveringControls(true);
-                      setIsZoomed(false);
-                    }}
-                    onMouseLeave={() => setIsHoveringControls(false)}
-                    onClick={prevImage}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-sm p-1.5 rounded-full shadow-lg hover:bg-white transition-all z-20"
+                    key={index}
+                    onClick={() => setCurrentImageIndex(index)}
+                    className={`relative flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
+                      currentImageIndex === index
+                        ? "border-black"
+                        : "border-gray-200 hover:border-gray-400"
+                    }`}
                   >
-                    <ChevronLeft size={18} />
+                    <img
+                      src={image}
+                      alt={`${product.title} ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
                   </button>
-                  <button
-                    onMouseEnter={() => {
-                      setIsHoveringControls(true);
-                      setIsZoomed(false);
-                    }}
-                    onMouseLeave={() => setIsHoveringControls(false)}
-                    onClick={nextImage}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-sm p-1.5 rounded-full shadow-lg hover:bg-white transition-all z-20"
-                  >
-                    <ChevronRight size={18} />
-                  </button>
-                </>
-              )}
-
-              {/* Image Counter */}
-              <div
-                className="absolute bottom-3 right-3 bg-black/70 text-white px-2.5 py-1 rounded-full text-xs z-10"
-                onMouseEnter={() => {
-                  setIsHoveringControls(true);
-                  setIsZoomed(false);
-                }}
-                onMouseLeave={() => setIsHoveringControls(false)}
-              >
-                {currentImageIndex + 1} / {product.images.length}
+                ))}
               </div>
             </div>
 
-            {/* Thumbnail Images */}
-            <div className="flex gap-2 overflow-x-auto pb-2">
-              {product.images.map((image, index) => (
-                <button
-                  key={index}
-                  onClick={() => setCurrentImageIndex(index)}
-                  className={`relative flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
-                    currentImageIndex === index
-                      ? "border-black"
-                      : "border-gray-200 hover:border-gray-400"
-                  }`}
+            {/* REVIEWS SECTION */}
+            <div className="border-t border-gray-200 pt-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2
+                  className="text-2xl font-bold"
+                  style={{ fontFamily: "'Poppins', sans-serif" }}
                 >
-                  <img
-                    src={image}
-                    alt={`${product.title} ${index + 1}`}
-                    className="w-full h-full object-cover"
-                  />
+                  Customer Reviews
+                </h2>
+                <button
+                  onClick={() => setShowReviewForm(true)}
+                  className="px-4 py-2 bg-black text-white rounded-full font-semibold hover:bg-gray-800 transition-colors text-sm"
+                  style={{ fontFamily: "'Poppins', sans-serif" }}
+                >
+                  Write a Review
                 </button>
-              ))}
+              </div>
+
+              {/* Review Stats */}
+              {reviewStats && reviewStats.totalReviews > 0 && (
+                <div className="bg-gray-50 rounded-xl p-6 mb-6">
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="text-center">
+                      <div className="text-5xl font-bold mb-2">
+                        {reviewStats.averageRating.toFixed(1)}
+                      </div>
+                      <div className="flex items-center justify-center gap-1 mb-1">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star
+                            key={star}
+                            size={20}
+                            className={
+                              star <= Math.round(reviewStats.averageRating)
+                                ? "fill-yellow-400 text-yellow-400"
+                                : "text-gray-300"
+                            }
+                          />
+                        ))}
+                      </div>
+                      <p className="text-sm text-gray-600">
+                        Based on {reviewStats.totalReviews} reviews
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      {[5, 4, 3, 2, 1].map((rating) => (
+                        <div key={rating} className="flex items-center gap-2">
+                          <div className="flex items-center gap-1 w-12">
+                            <span className="text-sm font-medium">
+                              {rating}
+                            </span>
+                            <Star
+                              size={14}
+                              className="fill-yellow-400 text-yellow-400"
+                            />
+                          </div>
+                          <div className="flex-1 bg-gray-200 rounded-full h-2">
+                            <div
+                              className="bg-yellow-400 h-2 rounded-full"
+                              style={{
+                                width: `${(reviewStats.ratingDistribution[rating as keyof typeof reviewStats.ratingDistribution] / reviewStats.totalReviews) * 100}%`,
+                              }}
+                            ></div>
+                          </div>
+                          <span className="text-sm text-gray-600 w-8">
+                            {
+                              reviewStats.ratingDistribution[
+                                rating as keyof typeof reviewStats.ratingDistribution
+                              ]
+                            }
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Review List */}
+              <div className="space-y-4">
+                {reviews.length > 0 ? (
+                  reviews.map((review) => (
+                    <div
+                      key={review.id}
+                      className="border border-gray-200 rounded-xl p-4"
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
+                            <User size={20} className="text-gray-600" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <p className="font-semibold">{review.userName}</p>
+                              {review.verified && (
+                                <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">
+                                  Verified Purchase
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-gray-500">
+                              {formatDate(review.createdAt)}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <Star
+                              key={star}
+                              size={16}
+                              className={
+                                star <= review.rating
+                                  ? "fill-yellow-400 text-yellow-400"
+                                  : "text-gray-300"
+                              }
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      <p className="text-gray-700">{review.comment}</p>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-12 bg-gray-50 rounded-xl">
+                    <Star size={48} className="mx-auto text-gray-300 mb-3" />
+                    <p className="text-gray-600 mb-4">No reviews yet</p>
+                    <p className="text-sm text-gray-500">
+                      Be the first to review this product
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -391,9 +665,11 @@ export default function ProductDetailClient({
               <div className="flex items-center gap-3 flex-wrap text-sm">
                 <div className="flex items-center gap-1">
                   <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                  <span className="font-semibold">{product.rating}</span>
+                  <span className="font-semibold">
+                    {reviewStats?.averageRating.toFixed(1) || product.rating}
+                  </span>
                   <span className="text-gray-600">
-                    ({product.reviewCount} reviews)
+                    ({reviewStats?.totalReviews || product.reviewCount} reviews)
                   </span>
                 </div>
                 {product.sold > 0 && (
@@ -549,11 +825,13 @@ export default function ProductDetailClient({
                 Order Now
               </button>
               <button
-                className="w-full border-2 border-black text-black py-3 rounded-full font-semibold hover:bg-gray-50 transition-all flex items-center justify-center gap-2"
+                onClick={handleAddToCart}
+                disabled={!product.inStock || !selectedSize}
+                className="w-full border-2 border-black text-black py-3 rounded-full font-semibold hover:bg-gray-50 transition-all flex items-center justify-center gap-2 disabled:border-gray-300 disabled:text-gray-300 disabled:cursor-not-allowed"
                 style={{ fontFamily: "'Poppins', sans-serif" }}
               >
-                <MessageCircle size={18} />
-                Contact Seller
+                <ShoppingCart size={18} />
+                Add to Cart
               </button>
             </div>
 
@@ -763,11 +1041,6 @@ export default function ProductDetailClient({
                       </p>
                     </div>
                   </div>
-
-                  <button className="w-full bg-black text-white py-2.5 rounded-full font-semibold hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 text-sm">
-                    <MessageCircle size={16} />
-                    Chat with Seller
-                  </button>
                 </div>
               </div>
             )}
@@ -826,6 +1099,92 @@ export default function ProductDetailClient({
           </div>
         )}
       </div>
+
+      {/* Review Form Modal */}
+      {showReviewForm && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2
+                className="text-2xl font-bold"
+                style={{ fontFamily: "'Poppins', sans-serif" }}
+              >
+                Write a Review
+              </h2>
+              <button
+                onClick={() => setShowReviewForm(false)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitReview} className="space-y-4">
+              {/* Rating */}
+              <div>
+                <label
+                  className="block text-sm font-semibold mb-2"
+                  style={{ fontFamily: "'Poppins', sans-serif" }}
+                >
+                  Rating
+                </label>
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() =>
+                        setReviewForm({ ...reviewForm, rating: star })
+                      }
+                      className="transition-transform hover:scale-110"
+                    >
+                      <Star
+                        size={32}
+                        className={
+                          star <= reviewForm.rating
+                            ? "fill-yellow-400 text-yellow-400"
+                            : "text-gray-300"
+                        }
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Comment */}
+              <div>
+                <label
+                  className="block text-sm font-semibold mb-2"
+                  style={{ fontFamily: "'Poppins', sans-serif" }}
+                >
+                  Your Review
+                </label>
+                <textarea
+                  required
+                  value={reviewForm.comment}
+                  onChange={(e) =>
+                    setReviewForm({ ...reviewForm, comment: e.target.value })
+                  }
+                  placeholder="Tell us about your experience with this product..."
+                  rows={5}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent resize-none"
+                  style={{ fontFamily: "'Poppins', sans-serif" }}
+                />
+              </div>
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={isSubmittingReview}
+                className="w-full bg-black text-white py-3 rounded-full font-semibold hover:bg-gray-800 transition-all disabled:bg-gray-400"
+                style={{ fontFamily: "'Poppins', sans-serif" }}
+              >
+                {isSubmittingReview ? "Submitting..." : "Submit Review"}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Order Modal */}
       {showOrderModal && (
