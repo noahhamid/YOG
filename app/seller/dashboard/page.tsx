@@ -1,4 +1,6 @@
 "use client";
+import Link from "next/link";
+import { Settings } from "lucide-react"; // Add this link somewhere in your dashboard
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -505,6 +507,15 @@ export default function SellerDashboard() {
                   <Plus size={20} />
                   Add Product
                 </button>
+
+                <Link
+                  href="/seller/settings"
+                  className="flex items-center gap-3 px-6 py-3 bg-white border-2 border-gray-200 rounded-xl hover:border-black transition-all"
+                  style={{ fontFamily: "'Poppins', sans-serif" }}
+                >
+                  <Settings size={20} />
+                  <span className="font-semibold">Store Settings</span>
+                </Link>
               </div>
 
               {products.length > 0 ? (
