@@ -207,12 +207,15 @@ model Product {
   variants ProductVariant[]
   images   ProductImage[]
   orders   Order[]
-  reviews      Review[] 
-  @@index([sellerId])
-  @@index([status])
-  @@index([category])
-  @@index([isFeatured])
-  @@index([isTrending])
+  reviews  Review[]
+  
+  // ✅ OPTIMIZED INDEXES
+  @@index([sellerId, status]) // Compound index
+  @@index([status, category]) // For filtering published by category
+  @@index([isFeatured, status]) // For featured products
+  @@index([isTrending, status]) // For trending products
+  @@index([createdAt]) // For sorting by date
+  @@index([category, status, createdAt]) // Compound for common query
 }
 
 model ProductVariant {

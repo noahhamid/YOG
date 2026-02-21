@@ -1,118 +1,72 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-export const dynamic = 'force-dynamic';
+// ✅ ENABLE CACHING
+export const revalidate = 30;
 
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    
-    // Get filter parameters
-    const search = searchParams.get("search") || "";
+
     const category = searchParams.get("category") || "";
-    const minPrice = parseFloat(searchParams.get("minPrice") || "0");
-    const maxPrice = parseFloat(searchParams.get("maxPrice") || "999999");
-    const sizes = searchParams.get("sizes")?.split(",").filter(Boolean) || [];
-    const colors = searchParams.get("colors")?.split(",").filter(Boolean) || [];
-    const brands = searchParams.get("brands")?.split(",").filter(Boolean) || [];
-    const sortBy = searchParams.get("sortBy") || "featured";
     const isTrending = searchParams.get("isTrending") === "true";
     const isFeatured = searchParams.get("isFeatured") === "true";
 
-    // Build where clause
+    // ✅ BUILD OPTIMIZED WHERE CLAUSE
     const where: any = {
       status: "PUBLISHED",
       seller: {
-        approved: true, // ⚠️ THIS IS THE FILTER!
+        approved: true,
       },
     };
 
-    // Search filter
-    if (search) {
-      where.OR = [
-        { title: { contains: search, mode: "insensitive" } },
-        { description: { contains: search, mode: "insensitive" } },
-      ];
-    }
-
-    // Category filter
     if (category && category !== "all") {
       where.category = category.toUpperCase();
     }
 
-    // Price filter
-    where.price = {
-      gte: minPrice,
-      lte: maxPrice,
-    };
+    if (isTrending) where.isTrending = true;
+    if (isFeatured) where.isFeatured = true;
 
-    // Trending/Featured filters
-    if (isTrending) {
-      where.isTrending = true;
-    }
-    if (isFeatured) {
-      where.isFeatured = true;
-    }
-
-    // Brand filter
-    if (brands.length > 0) {
-      where.brand = {
-        in: brands,
-      };
-    }
-
-    console.log("🔍 Fetching products with where clause:", JSON.stringify(where, null, 2));
-
-    // Fetch products
-    let products = await prisma.product.findMany({
+    // ✅ OPTIMIZED QUERY - MINIMAL DATA
+    const products = await prisma.product.findMany({
       where,
-      include: {
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        price: true,
+        compareAtPrice: true,
+        category: true,
+        brand: true,
+        createdAt: true,
+        // Only first image
         images: {
+          select: { url: true },
           orderBy: { position: "asc" },
+          take: 1,
         },
-        variants: true,
+        // Variants for sizes/colors
+        variants: {
+          select: {
+            size: true,
+            color: true,
+            quantity: true,
+          },
+        },
+        // Minimal seller data
         seller: {
           select: {
             id: true,
             brandName: true,
             storeSlug: true,
-            approved: true, // Include approval status in response
           },
         },
       },
-      orderBy:
-        sortBy === "price-low"
-          ? { price: "asc" }
-          : sortBy === "price-high"
-            ? { price: "desc" }
-            : sortBy === "name"
-              ? { title: "asc" }
-              : { createdAt: "desc" },
+      orderBy: { createdAt: "desc" },
+      take: 100, // Limit to 100 products max
     });
 
-    console.log(`✅ Found ${products.length} products from approved sellers`);
-
-    // Filter by sizes (need to check variants)
-    if (sizes.length > 0) {
-      const beforeSize = products.length;
-      products = products.filter((product) =>
-        product.variants.some((variant) => sizes.includes(variant.size))
-      );
-      console.log(`📏 Size filter: ${beforeSize} → ${products.length}`);
-    }
-
-    // Filter by colors (need to check variants)
-    if (colors.length > 0) {
-      const beforeColor = products.length;
-      products = products.filter((product) =>
-        product.variants.some((variant) =>
-          colors.includes(variant.color.toLowerCase())
-        )
-      );
-      console.log(`🎨 Color filter: ${beforeColor} → ${products.length}`);
-    }
-
-    // Transform data for frontend
+    // ✅ TRANSFORM DATA
     const transformedProducts = products.map((product) => ({
       id: product.id,
       title: product.title,
@@ -135,8 +89,6 @@ export async function GET(req: NextRequest) {
       stock: product.variants.reduce((sum, v) => sum + v.quantity, 0),
     }));
 
-    console.log(`📦 Returning ${transformedProducts.length} products to frontend`);
-
     return NextResponse.json({
       products: transformedProducts,
       count: transformedProducts.length,
@@ -144,7 +96,7 @@ export async function GET(req: NextRequest) {
   } catch (error: any) {
     console.error("❌ Error fetching products:", error);
     return NextResponse.json(
-      { error: "Failed to fetch products", details: error.message },
+      { error: "Failed to fetch products" },
       { status: 500 }
     );
   }

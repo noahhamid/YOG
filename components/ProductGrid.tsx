@@ -1,16 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import {
-  ShoppingCart,
-  Heart,
-  Search,
-  X,
-  ChevronDown,
-  ChevronUp,
-} from "lucide-react";
+import { ShoppingCart, Heart } from "lucide-react";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
+import FilterSidebar from "./FilterSidebar";
 
 interface ProductsCache {
   all: any[];
@@ -33,7 +27,7 @@ export default function ProductGrid() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000]); // ✅ Updated to 10000
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState("featured");
@@ -52,7 +46,7 @@ export default function ProductGrid() {
   });
 
   const [displayedProducts, setDisplayedProducts] = useState<any[]>([]);
-  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(false); // ✅ Start as false
   const [availableBrands, setAvailableBrands] = useState<string[]>([]);
 
   // Accordion states for filters
@@ -83,12 +77,10 @@ export default function ProductGrid() {
     return () => observer.disconnect();
   }, [isVisible]);
 
-  // Load from cache or fetch on mount
   useEffect(() => {
     loadProductsWithCache();
   }, []);
 
-  // Filter from cache when filters change
   useEffect(() => {
     filterFromCache();
   }, [
@@ -105,9 +97,7 @@ export default function ProductGrid() {
   ]);
 
   const loadProductsWithCache = async () => {
-    setIsLoadingProducts(true);
-
-    // Try to load from localStorage first
+    // ✅ TRY CACHE FIRST - NO LOADING STATE
     const cachedData = localStorage.getItem(CACHE_KEY);
 
     if (cachedData) {
@@ -115,7 +105,7 @@ export default function ProductGrid() {
         const parsed: ProductsCache = JSON.parse(cachedData);
         const cacheAge = Date.now() - parsed.timestamp;
 
-        // Check if cache is still valid (less than 5 minutes old)
+        // Use cache if less than 5 minutes old
         if (cacheAge < CACHE_DURATION) {
           console.log(
             `⚡ Using cached products (${Math.round(cacheAge / 1000)}s old)`,
@@ -123,32 +113,33 @@ export default function ProductGrid() {
           setProductsCache(parsed);
           setDisplayedProducts(parsed.all);
 
-          // Extract unique brands
           const brands = [
             ...new Set(parsed.all.map((p: any) => p.brand).filter(Boolean)),
           ];
           setAvailableBrands(brands as string[]);
 
-          setIsLoadingProducts(false);
-          return; // Use cache, don't fetch
-        } else {
-          console.log("🔄 Cache expired, fetching fresh data...");
+          // ✅ BACKGROUND REFRESH IF CACHE IS OLDER THAN 2 MINUTES
+          if (cacheAge > 2 * 60 * 1000) {
+            console.log("🔄 Refreshing cache in background...");
+            preloadAllCategories(true); // Silent refresh
+          }
+
+          return; // Don't show loading
         }
       } catch (error) {
         console.error("Error parsing cache:", error);
       }
     }
 
-    // Cache miss or expired - fetch fresh data
-    await preloadAllCategories();
+    // ✅ ONLY SHOW LOADING IF NO CACHE EXISTS
+    setIsLoadingProducts(true);
+    await preloadAllCategories(false);
   };
 
-  const preloadAllCategories = async () => {
-    console.log("🔄 Fetching all product categories...");
+  const preloadAllCategories = async (silent = false) => {
     const startTime = performance.now();
 
     try {
-      // Fetch all categories in parallel
       const [
         allProducts,
         menProducts,
@@ -166,11 +157,8 @@ export default function ProductGrid() {
       ]);
 
       const endTime = performance.now();
-      console.log(
-        `✅ All categories fetched in ${(endTime - startTime).toFixed(0)}ms`,
-      );
+      console.log(`✅ Fetched in ${(endTime - startTime).toFixed(0)}ms`);
 
-      // Create cache object
       const cacheData: ProductsCache = {
         all: allProducts.products || [],
         men: menProducts.products || [],
@@ -181,19 +169,11 @@ export default function ProductGrid() {
         timestamp: Date.now(),
       };
 
-      // Save to state
       setProductsCache(cacheData);
       setDisplayedProducts(cacheData.all);
 
-      // Save to localStorage
-      try {
-        localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
-        console.log("💾 Products cached to localStorage");
-      } catch (error) {
-        console.error("Failed to cache products:", error);
-      }
+      localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
 
-      // Extract unique brands
       const brands = [
         ...new Set(
           allProducts.products.map((p: any) => p.brand).filter(Boolean),
@@ -201,25 +181,21 @@ export default function ProductGrid() {
       ];
       setAvailableBrands(brands as string[]);
 
-      console.log("📊 Cached products:", {
-        all: allProducts.products?.length || 0,
-        men: menProducts.products?.length || 0,
-        women: womenProducts.products?.length || 0,
-        unisex: unisexProducts.products?.length || 0,
-        onSale: onSaleProducts.products?.length || 0,
-        newArrivals: newProducts.products?.length || 0,
-      });
+      if (!silent) {
+        console.log("💾 Products cached");
+      }
     } catch (error) {
       console.error("Error fetching products:", error);
     } finally {
-      setIsLoadingProducts(false);
+      if (!silent) {
+        setIsLoadingProducts(false);
+      }
     }
   };
 
   const filterFromCache = () => {
     let filtered = [...productsCache.all];
 
-    // Start with cached category if no other filters
     if (
       selectedCategory !== "all" &&
       !searchQuery &&
@@ -238,33 +214,9 @@ export default function ProductGrid() {
       );
     }
 
-    // Use cached on sale if applicable
-    if (
-      showOnSale &&
-      !searchQuery &&
-      selectedSizes.length === 0 &&
-      selectedColors.length === 0 &&
-      selectedBrands.length === 0
-    ) {
-      filtered = [...productsCache.onSale];
-    } else if (showOnSale) {
-      filtered = filtered.filter((p) => p.onSale);
-    }
+    if (showOnSale) filtered = filtered.filter((p) => p.onSale);
+    if (showNewArrivals) filtered = filtered.filter((p) => p.newArrival);
 
-    // Use cached new arrivals if applicable
-    if (
-      showNewArrivals &&
-      !searchQuery &&
-      selectedSizes.length === 0 &&
-      selectedColors.length === 0 &&
-      selectedBrands.length === 0
-    ) {
-      filtered = [...productsCache.newArrivals];
-    } else if (showNewArrivals) {
-      filtered = filtered.filter((p) => p.newArrival);
-    }
-
-    // Search
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
@@ -275,19 +227,16 @@ export default function ProductGrid() {
       );
     }
 
-    // Price range
     filtered = filtered.filter(
       (p) => p.price >= priceRange[0] && p.price <= priceRange[1],
     );
 
-    // Sizes
     if (selectedSizes.length > 0) {
       filtered = filtered.filter((p) =>
         p.sizes?.some((size: string) => selectedSizes.includes(size)),
       );
     }
 
-    // Colors
     if (selectedColors.length > 0) {
       filtered = filtered.filter((p) =>
         p.colors?.some((color: string) =>
@@ -296,12 +245,10 @@ export default function ProductGrid() {
       );
     }
 
-    // Brands
     if (selectedBrands.length > 0) {
       filtered = filtered.filter((p) => selectedBrands.includes(p.brand));
     }
 
-    // Sort
     switch (sortBy) {
       case "price-low":
         filtered.sort((a, b) => a.price - b.price);
@@ -312,9 +259,6 @@ export default function ProductGrid() {
       case "name":
         filtered.sort((a, b) => a.title.localeCompare(b.title));
         break;
-      default:
-        // Keep featured order
-        break;
     }
 
     setDisplayedProducts(filtered);
@@ -324,32 +268,13 @@ export default function ProductGrid() {
     setSearchQuery("");
     setSelectedCategory("all");
     setSelectedSizes([]);
-    setPriceRange([0, 10000]); // ✅ Updated to 10000
+    setPriceRange([0, 10000]);
     setSelectedColors([]);
     setSelectedBrands([]);
     setSortBy("featured");
     setShowNewArrivals(false);
     setShowOnSale(false);
   };
-
-  const categories = [
-    { value: "all", label: "All Items" },
-    { value: "men", label: "Men" },
-    { value: "women", label: "Women" },
-    { value: "unisex", label: "Unisex" },
-  ];
-
-  const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
-
-  const colors = [
-    { value: "black", label: "Black", hex: "#000000" },
-    { value: "white", label: "White", hex: "#FFFFFF" },
-    { value: "gray", label: "Gray", hex: "#9CA3AF" },
-    { value: "blue", label: "Blue", hex: "#3B82F6" },
-    { value: "red", label: "Red", hex: "#EF4444" },
-    { value: "green", label: "Green", hex: "#10B981" },
-    { value: "khaki", label: "Khaki", hex: "#C4B5A0" },
-  ];
 
   const toggleSize = (size: string) => {
     setSelectedSizes((prev) =>
@@ -370,10 +295,7 @@ export default function ProductGrid() {
   };
 
   const toggleSection = (section: keyof typeof expandedSections) => {
-    setExpandedSections((prev) => ({
-      ...prev,
-      [section]: !prev[section],
-    }));
+    setExpandedSections((prev) => ({ ...prev, [section]: !prev[section] }));
   };
 
   const activeFiltersCount =
@@ -381,14 +303,14 @@ export default function ProductGrid() {
     selectedSizes.length +
     selectedColors.length +
     selectedBrands.length +
-    (priceRange[0] !== 0 || priceRange[1] !== 10000 ? 1 : 0) + // ✅ Updated to 10000
+    (priceRange[0] !== 0 || priceRange[1] !== 10000 ? 1 : 0) +
     (showNewArrivals ? 1 : 0) +
     (showOnSale ? 1 : 0);
 
   return (
     <section ref={sectionRef} className="w-full py-20 px-10 bg-white">
       <div className="mx-auto">
-        {/* Section Header */}
+        {/* Header */}
         <div className="text-center mb-12">
           <h2
             className="text-black font-light uppercase text-[56px] mb-3"
@@ -417,315 +339,34 @@ export default function ProductGrid() {
           </p>
         </div>
 
-        {/* Main Layout: Sidebar + Products */}
+        {/* Main Layout */}
         <div className="flex gap-6">
-          {/* LEFT SIDEBAR - FIXED/STICKY FILTERS */}
-          <div className="w-64 flex-shrink-0">
-            <div className="sticky top-24 bg-gray-50 rounded-2xl p-5 border border-gray-200 max-h-[calc(100vh-120px)] overflow-y-auto">
-              {/* Search Bar */}
-              <div className="mb-6">
-                <div className="relative">
-                  <Search
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                    size={18}
-                  />
-                  <input
-                    type="text"
-                    placeholder="Search products..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent text-sm"
-                    style={{ fontFamily: "'Poppins', sans-serif" }}
-                  />
-                </div>
-              </div>
+          {/* Filter Sidebar */}
+          <FilterSidebar
+            searchQuery={searchQuery}
+            selectedCategory={selectedCategory}
+            selectedSizes={selectedSizes}
+            priceRange={priceRange}
+            selectedColors={selectedColors}
+            selectedBrands={selectedBrands}
+            showNewArrivals={showNewArrivals}
+            showOnSale={showOnSale}
+            availableBrands={availableBrands}
+            onSearchChange={setSearchQuery}
+            onCategoryChange={setSelectedCategory}
+            onSizeToggle={toggleSize}
+            onPriceChange={setPriceRange}
+            onColorToggle={toggleColor}
+            onBrandToggle={toggleBrand}
+            onNewArrivalsChange={setShowNewArrivals}
+            onSaleChange={setShowOnSale}
+            onClearFilters={clearFilters}
+            activeFiltersCount={activeFiltersCount}
+            expandedSections={expandedSections}
+            onToggleSection={toggleSection}
+          />
 
-              {/* Clear All Filters */}
-              {activeFiltersCount > 0 && (
-                <button
-                  onClick={clearFilters}
-                  className="w-full mb-6 px-4 py-2 bg-gray-200 text-gray-700 rounded-full text-sm font-semibold hover:bg-gray-300 transition-colors flex items-center justify-center gap-2"
-                  style={{ fontFamily: "'Poppins', sans-serif" }}
-                >
-                  <X size={16} />
-                  Clear All ({activeFiltersCount})
-                </button>
-              )}
-
-              {/* Category Filter */}
-              <div className="mb-6 pb-6 border-b border-gray-300">
-                <button
-                  onClick={() => toggleSection("category")}
-                  className="w-full flex items-center justify-between mb-3"
-                >
-                  <h4
-                    className="font-semibold text-sm"
-                    style={{ fontFamily: "'Poppins', sans-serif" }}
-                  >
-                    Category
-                  </h4>
-                  {expandedSections.category ? (
-                    <ChevronUp size={16} />
-                  ) : (
-                    <ChevronDown size={16} />
-                  )}
-                </button>
-                {expandedSections.category && (
-                  <div className="space-y-2">
-                    {categories.map((category) => (
-                      <label
-                        key={category.value}
-                        className="flex items-center gap-2 cursor-pointer"
-                      >
-                        <input
-                          type="radio"
-                          name="category"
-                          value={category.value}
-                          checked={selectedCategory === category.value}
-                          onChange={(e) => setSelectedCategory(e.target.value)}
-                          className="w-4 h-4 accent-black cursor-pointer"
-                        />
-                        <span
-                          className="text-sm"
-                          style={{ fontFamily: "'Poppins', sans-serif" }}
-                        >
-                          {category.label}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Price Range */}
-              <div className="mb-6 pb-6 border-b border-gray-300">
-                <button
-                  onClick={() => toggleSection("price")}
-                  className="w-full flex items-center justify-between mb-3"
-                >
-                  <h4
-                    className="font-semibold text-sm"
-                    style={{ fontFamily: "'Poppins', sans-serif" }}
-                  >
-                    Price Range
-                  </h4>
-                  {expandedSections.price ? (
-                    <ChevronUp size={16} />
-                  ) : (
-                    <ChevronDown size={16} />
-                  )}
-                </button>
-                {expandedSections.price && (
-                  <div className="space-y-3">
-                    <input
-                      type="range"
-                      min="0"
-                      max="10000" // ✅ Updated to 10000
-                      step="100"
-                      value={priceRange[1]}
-                      onChange={(e) =>
-                        setPriceRange([priceRange[0], parseInt(e.target.value)])
-                      }
-                      className="w-full accent-black"
-                    />
-                    <div
-                      className="flex items-center justify-between text-sm"
-                      style={{ fontFamily: "'Poppins', sans-serif" }}
-                    >
-                      <span className="text-gray-600">0 ETB</span>
-                      <span className="font-semibold">
-                        {priceRange[1].toLocaleString()} ETB
-                      </span>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Size Filter */}
-              <div className="mb-6 pb-6 border-b border-gray-300">
-                <button
-                  onClick={() => toggleSection("size")}
-                  className="w-full flex items-center justify-between mb-3"
-                >
-                  <h4
-                    className="font-semibold text-sm"
-                    style={{ fontFamily: "'Poppins', sans-serif" }}
-                  >
-                    Size
-                  </h4>
-                  {expandedSections.size ? (
-                    <ChevronUp size={16} />
-                  ) : (
-                    <ChevronDown size={16} />
-                  )}
-                </button>
-                {expandedSections.size && (
-                  <div className="flex flex-wrap gap-1.5">
-                    {sizes.map((size) => (
-                      <button
-                        key={size}
-                        onClick={() => toggleSize(size)}
-                        className={`px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all ${
-                          selectedSizes.includes(size)
-                            ? "bg-black text-white border-black"
-                            : "bg-white text-gray-700 border-gray-300 hover:border-black"
-                        }`}
-                        style={{ fontFamily: "'Poppins', sans-serif" }}
-                      >
-                        {size}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Color Filter */}
-              <div className="mb-6 pb-6 border-b border-gray-300">
-                <button
-                  onClick={() => toggleSection("color")}
-                  className="w-full flex items-center justify-between mb-3"
-                >
-                  <h4
-                    className="font-semibold text-sm"
-                    style={{ fontFamily: "'Poppins', sans-serif" }}
-                  >
-                    Color
-                  </h4>
-                  {expandedSections.color ? (
-                    <ChevronUp size={16} />
-                  ) : (
-                    <ChevronDown size={16} />
-                  )}
-                </button>
-                {expandedSections.color && (
-                  <div className="flex flex-wrap gap-1.5">
-                    {colors.map((color) => (
-                      <button
-                        key={color.value}
-                        onClick={() => toggleColor(color.value)}
-                        className={`w-8 h-8 rounded-full border-2 transition-all ${
-                          selectedColors.includes(color.value)
-                            ? "border-black scale-110"
-                            : "border-gray-300 hover:border-gray-400"
-                        }`}
-                        style={{
-                          backgroundColor: color.hex,
-                          boxShadow:
-                            color.hex === "#FFFFFF"
-                              ? "inset 0 0 0 1px #e5e7eb"
-                              : "none",
-                        }}
-                        title={color.label}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Brand Filter */}
-              <div className="mb-6 pb-6 border-b border-gray-300">
-                <button
-                  onClick={() => toggleSection("brand")}
-                  className="w-full flex items-center justify-between mb-3"
-                >
-                  <h4
-                    className="font-semibold text-sm"
-                    style={{ fontFamily: "'Poppins', sans-serif" }}
-                  >
-                    Brand
-                  </h4>
-                  {expandedSections.brand ? (
-                    <ChevronUp size={16} />
-                  ) : (
-                    <ChevronDown size={16} />
-                  )}
-                </button>
-                {expandedSections.brand && (
-                  <div className="space-y-2">
-                    {availableBrands.length > 0 ? (
-                      availableBrands.map((brand) => (
-                        <label
-                          key={brand}
-                          className="flex items-center gap-2 cursor-pointer"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={selectedBrands.includes(brand)}
-                            onChange={() => toggleBrand(brand)}
-                            className="w-4 h-4 rounded border-gray-300 text-black focus:ring-black cursor-pointer"
-                          />
-                          <span
-                            className="text-sm"
-                            style={{ fontFamily: "'Poppins', sans-serif" }}
-                          >
-                            {brand}
-                          </span>
-                        </label>
-                      ))
-                    ) : (
-                      <p className="text-sm text-gray-500">
-                        No brands available
-                      </p>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Other Filters */}
-              <div>
-                <button
-                  onClick={() => toggleSection("other")}
-                  className="w-full flex items-center justify-between mb-3"
-                >
-                  <h4
-                    className="font-semibold text-sm"
-                    style={{ fontFamily: "'Poppins', sans-serif" }}
-                  >
-                    Other Filters
-                  </h4>
-                  {expandedSections.other ? (
-                    <ChevronUp size={16} />
-                  ) : (
-                    <ChevronDown size={16} />
-                  )}
-                </button>
-                {expandedSections.other && (
-                  <div className="space-y-2">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={showNewArrivals}
-                        onChange={(e) => setShowNewArrivals(e.target.checked)}
-                        className="w-4 h-4 rounded border-gray-300 text-black focus:ring-black cursor-pointer"
-                      />
-                      <span
-                        className="text-sm"
-                        style={{ fontFamily: "'Poppins', sans-serif" }}
-                      >
-                        New Arrivals
-                      </span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={showOnSale}
-                        onChange={(e) => setShowOnSale(e.target.checked)}
-                        className="w-4 h-4 rounded border-gray-300 text-black focus:ring-black cursor-pointer"
-                      />
-                      <span
-                        className="text-sm"
-                        style={{ fontFamily: "'Poppins', sans-serif" }}
-                      >
-                        On Sale
-                      </span>
-                    </label>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* RIGHT SIDE - PRODUCTS */}
+          {/* Products */}
           <div className="flex-1">
             {/* Top Bar */}
             <div className="flex items-center justify-between mb-6">
@@ -739,7 +380,7 @@ export default function ProductGrid() {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="px-6 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent cursor-pointer"
+                className="px-6 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
                 style={{ fontFamily: "'Poppins', sans-serif" }}
               >
                 <option value="featured">Featured</option>
@@ -767,16 +408,10 @@ export default function ProductGrid() {
               </div>
             ) : (
               <div className="text-center py-20">
-                <p
-                  className="text-2xl text-gray-400 mb-4"
-                  style={{ fontFamily: "'Poppins', sans-serif" }}
-                >
-                  No products found
-                </p>
+                <p className="text-2xl text-gray-400 mb-4">No products found</p>
                 <button
                   onClick={clearFilters}
                   className="px-6 py-3 bg-black text-white rounded-full hover:bg-gray-800 transition-colors"
-                  style={{ fontFamily: "'Poppins', sans-serif" }}
                 >
                   Clear Filters
                 </button>
@@ -789,39 +424,15 @@ export default function ProductGrid() {
   );
 }
 
-interface ProductCardProps {
-  product: {
-    id: string;
-    title: string;
-    description: string;
-    price: number;
-    image: string;
-    sizes?: string[];
-    colors?: string[];
-    compareAtPrice?: number | null;
-    brand?: string;
-    seller?: {
-      id: string;
-      name: string;
-      slug: string;
-    };
-    stock?: number;
-  };
-  index: number;
-  isVisible: boolean;
-}
-
-function ProductCard({ product, index, isVisible }: ProductCardProps) {
+function ProductCard({ product, index, isVisible }: any) {
   const { addToCart } = useCart();
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
-    const firstSize =
-      product.sizes && product.sizes.length > 0 ? product.sizes[0] : "M";
-    const firstColor =
-      product.colors && product.colors.length > 0 ? product.colors[0] : "black";
+    const firstSize = product.sizes?.[0] || "M";
+    const firstColor = product.colors?.[0] || "black";
 
     addToCart({
       productId: product.id,
@@ -835,9 +446,7 @@ function ProductCard({ product, index, isVisible }: ProductCardProps) {
       sellerName: product.seller?.name || "Unknown Seller",
     });
 
-    alert(
-      `✅ Added "${product.title}" to cart!\nSize: ${firstSize} • Color: ${firstColor}`,
-    );
+    alert(`✅ Added "${product.title}" to cart!`);
   };
 
   return (
@@ -879,7 +488,6 @@ function ProductCard({ product, index, isVisible }: ProductCardProps) {
               alert("Wishlist feature coming soon!");
             }}
             className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm p-2.5 rounded-full shadow-lg hover:bg-white transition-all duration-300 opacity-0 translate-x-5 scale-90 group-hover:opacity-100 group-hover:translate-x-0 group-hover:scale-100"
-            aria-label="Add to wishlist"
           >
             <Heart size={18} className="text-gray-800" />
           </button>
@@ -940,7 +548,7 @@ function ProductCard({ product, index, isVisible }: ProductCardProps) {
 
             {product.sizes && product.sizes.length > 0 && (
               <div className="flex gap-1">
-                {product.sizes.slice(0, 3).map((size) => (
+                {product.sizes.slice(0, 3).map((size: string) => (
                   <span
                     key={size}
                     className="w-6 h-6 flex items-center justify-center text-gray-400 border border-gray-300 rounded-full hover:border-black hover:text-black transition-all duration-200 cursor-pointer"
