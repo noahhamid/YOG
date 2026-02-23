@@ -4,10 +4,33 @@ import { ProductCategory } from "@prisma/client";
 import ProductDetailClient from "@/components/ProductDetailClient";
 import { Suspense, cache } from "react";
 
-export const revalidate = 300;
+// ✅ REDUCE REVALIDATION TIME
+export const revalidate = 60; // Cache for 1 minute
 
 interface PageProps {
   params: Promise<{ id: string }>;
+}
+
+// ✅ PRE-GENERATE POPULAR PRODUCTS AT BUILD TIME
+export async function generateStaticParams() {
+  try {
+    const products = await prisma.product.findMany({
+      where: {
+        status: "PUBLISHED",
+        seller: { approved: true },
+      },
+      select: { id: true },
+      take: 100, // Pre-generate top 100 products
+      orderBy: [{ createdAt: "desc" }],
+    });
+
+    return products.map((product) => ({
+      id: product.id,
+    }));
+  } catch (error) {
+    console.error("Error generating static params:", error);
+    return [];
+  }
 }
 
 const getCachedProduct = cache(async (id: string) => {
@@ -43,7 +66,6 @@ const getCachedProduct = cache(async (id: string) => {
           _count: { select: { followersList: true } },
         },
       },
-      // ✅ ADD REVIEWS TO QUERY
       reviews: {
         select: {
           rating: true,
@@ -52,6 +74,8 @@ const getCachedProduct = cache(async (id: string) => {
     },
   });
 });
+
+// Rest of your code stays the same...
 
 export default async function ProductPage({ params }: PageProps) {
   const { id } = await params;

@@ -1,21 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, Heart, Share2 } from "lucide-react";
 import ProductImageGallery from "./product/ProductImageGallery";
 import ProductInfo from "./product/ProductInfo";
 import SellerCard from "./product/SellerCard";
 import ProductReviews from "./product/ProductReviews";
+import { productCache } from "@/lib/productCache";
 
 interface Props {
   product: any;
 }
 
-// ✅ MAKE SURE IT'S DEFAULT EXPORT
 export default function ProductDetailClient({ product }: Props) {
   const router = useRouter();
   const [isFavorite, setIsFavorite] = useState(false);
+
+  // ✅ CACHE THE PRODUCT DATA WHEN COMPONENT MOUNTS
+  useEffect(() => {
+    productCache.set(product.id, product);
+  }, [product]);
 
   return (
     <div className="min-h-screen bg-white">

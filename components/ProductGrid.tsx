@@ -17,7 +17,7 @@ interface ProductsCache {
 }
 
 const CACHE_KEY = "yog_products_cache";
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const CACHE_DURATION = 5 * 60 * 1000;
 
 export default function ProductGrid() {
   const [isVisible, setIsVisible] = useState(false);
@@ -34,7 +34,7 @@ export default function ProductGrid() {
   const [showNewArrivals, setShowNewArrivals] = useState(false);
   const [showOnSale, setShowOnSale] = useState(false);
 
-  // Products cache
+  // Products cache - ALWAYS START EMPTY
   const [productsCache, setProductsCache] = useState<ProductsCache>({
     all: [],
     men: [],
@@ -46,10 +46,11 @@ export default function ProductGrid() {
   });
 
   const [displayedProducts, setDisplayedProducts] = useState<any[]>([]);
-  const [isLoadingProducts, setIsLoadingProducts] = useState(false); // ✅ Start as false
   const [availableBrands, setAvailableBrands] = useState<string[]>([]);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
 
-  // Accordion states for filters
+  const hasFetchedRef = useRef(false);
+
   const [expandedSections, setExpandedSections] = useState({
     category: true,
     price: true,
@@ -77,8 +78,47 @@ export default function ProductGrid() {
     return () => observer.disconnect();
   }, [isVisible]);
 
+  // ✅ LOAD CACHE IMMEDIATELY ON MOUNT
   useEffect(() => {
-    loadProductsWithCache();
+    if (hasFetchedRef.current) return;
+    hasFetchedRef.current = true;
+
+    // Check localStorage (client-side only)
+    if (typeof window !== "undefined") {
+      const cachedData = localStorage.getItem(CACHE_KEY);
+      if (cachedData) {
+        try {
+          const parsed: ProductsCache = JSON.parse(cachedData);
+          const cacheAge = Date.now() - parsed.timestamp;
+
+          if (cacheAge < CACHE_DURATION) {
+            console.log(
+              `⚡ Using cached products (${Math.round(cacheAge / 1000)}s old)`,
+            );
+            setProductsCache(parsed);
+            setDisplayedProducts(parsed.all);
+
+            const brands = [
+              ...new Set(parsed.all.map((p: any) => p.brand).filter(Boolean)),
+            ];
+            setAvailableBrands(brands as string[]);
+            setIsLoadingProducts(false);
+
+            // Background refresh if old
+            if (cacheAge > 2 * 60 * 1000) {
+              console.log("🔄 Refreshing cache in background...");
+              preloadAllCategories(true);
+            }
+            return;
+          }
+        } catch (error) {
+          console.error("Error parsing cache:", error);
+        }
+      }
+    }
+
+    // Fetch fresh data
+    preloadAllCategories(false);
   }, []);
 
   useEffect(() => {
@@ -96,47 +136,9 @@ export default function ProductGrid() {
     productsCache,
   ]);
 
-  const loadProductsWithCache = async () => {
-    // ✅ TRY CACHE FIRST - NO LOADING STATE
-    const cachedData = localStorage.getItem(CACHE_KEY);
-
-    if (cachedData) {
-      try {
-        const parsed: ProductsCache = JSON.parse(cachedData);
-        const cacheAge = Date.now() - parsed.timestamp;
-
-        // Use cache if less than 5 minutes old
-        if (cacheAge < CACHE_DURATION) {
-          console.log(
-            `⚡ Using cached products (${Math.round(cacheAge / 1000)}s old)`,
-          );
-          setProductsCache(parsed);
-          setDisplayedProducts(parsed.all);
-
-          const brands = [
-            ...new Set(parsed.all.map((p: any) => p.brand).filter(Boolean)),
-          ];
-          setAvailableBrands(brands as string[]);
-
-          // ✅ BACKGROUND REFRESH IF CACHE IS OLDER THAN 2 MINUTES
-          if (cacheAge > 2 * 60 * 1000) {
-            console.log("🔄 Refreshing cache in background...");
-            preloadAllCategories(true); // Silent refresh
-          }
-
-          return; // Don't show loading
-        }
-      } catch (error) {
-        console.error("Error parsing cache:", error);
-      }
-    }
-
-    // ✅ ONLY SHOW LOADING IF NO CACHE EXISTS
-    setIsLoadingProducts(true);
-    await preloadAllCategories(false);
-  };
-
   const preloadAllCategories = async (silent = false) => {
+    if (!silent) setIsLoadingProducts(true);
+
     const startTime = performance.now();
 
     try {
@@ -172,7 +174,9 @@ export default function ProductGrid() {
       setProductsCache(cacheData);
       setDisplayedProducts(cacheData.all);
 
-      localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+      if (typeof window !== "undefined") {
+        localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+      }
 
       const brands = [
         ...new Set(
@@ -392,8 +396,33 @@ export default function ProductGrid() {
 
             {/* Product Grid */}
             {isLoadingProducts ? (
-              <div className="flex items-center justify-center py-20">
-                <div className="w-16 h-16 border-4 border-gray-200 border-t-black rounded-full animate-spin"></div>
+              // ✅ SKELETON WITH SHIMMER EFFECT
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => (
+                  <div key={i} className="relative overflow-hidden">
+                    {/* Shimmer overlay */}
+                    <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+
+                    {/* Image Skeleton */}
+                    <div className="relative bg-gray-200 rounded-2xl overflow-hidden mb-4 aspect-[3/4]" />
+
+                    {/* Content Skeleton */}
+                    <div className="px-1 space-y-2">
+                      <div className="h-4 bg-gray-200 rounded w-3/4" />
+                      <div className="h-3 bg-gray-200 rounded w-1/2" />
+
+                      {/* Price & Sizes */}
+                      <div className="flex items-center justify-between pt-2">
+                        <div className="h-5 bg-gray-200 rounded w-24" />
+                        <div className="flex gap-1">
+                          <div className="w-6 h-6 bg-gray-200 rounded-full" />
+                          <div className="w-6 h-6 bg-gray-200 rounded-full" />
+                          <div className="w-6 h-6 bg-gray-200 rounded-full" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : displayedProducts.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
@@ -450,7 +479,8 @@ function ProductCard({ product, index, isVisible }: any) {
   };
 
   return (
-    <Link href={`/product/${product.id}`}>
+    // ✅ CHANGE FROM <Link> TO <a> - EXACTLY LIKE RELATED PRODUCTS
+    <a href={`/product/${product.id}`} className="block">
       <div
         className="group relative cursor-pointer will-change-transform"
         style={{
@@ -568,6 +598,6 @@ function ProductCard({ product, index, isVisible }: any) {
 
         <div className="mt-3 h-0.5 bg-black rounded-full w-0 group-hover:w-full transition-all duration-400 ease-out" />
       </div>
-    </Link>
+    </a>
   );
 }
