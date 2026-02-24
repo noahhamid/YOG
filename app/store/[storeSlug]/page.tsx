@@ -1,122 +1,116 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import StorePageClient from "@/components/store/StorePageClient";
-import { cache } from "react";
-
-export const revalidate = 30;
+import SellerStoreClient from "@/components/store/StorePageClient";
 
 interface PageProps {
   params: Promise<{ storeSlug: string }>;
 }
 
-const getStoreData = cache(async (storeSlug: string) => {
-  try {
-    const seller = await prisma.seller.findUnique({
-      where: {
-        storeSlug,
-        approved: true,
-      },
-      select: {
-        id: true,
-        brandName: true,
-        storeSlug: true,
-        storeDescription: true,
-        location: true,
-        instagram: true,
-        totalViews: true,
-        totalSales: true,
-        followers: true,
-        createdAt: true,
-        _count: {
-          select: {
-            products: {
-              where: { status: "PUBLISHED" },
-            },
-          },
-        },
-        products: {
-          where: { status: "PUBLISHED" },
-          select: {
-            id: true,
-            title: true,
-            price: true,
-            compareAtPrice: true,
-            // ✅ ADD IMAGES
-            images: {
-              select: { url: true },
-              orderBy: { position: "asc" },
-              take: 1,
-            },
-          },
-          orderBy: { createdAt: "desc" },
-          take: 50,
-        },
-      },
-    });
-
-    if (!seller) return null;
-
-    // Non-blocking view increment
-    setImmediate(() => {
-      prisma.seller
-        .update({
-          where: { id: seller.id },
-          data: { totalViews: { increment: 1 } },
-        })
-        .catch(() => {});
-    });
-
-    return {
-      id: seller.id,
-      brandName: seller.brandName,
-      storeSlug: seller.storeSlug,
-      storeDescription: seller.storeDescription,
-      location: seller.location,
-      instagram: seller.instagram,
-      totalViews: seller.totalViews,
-      totalSales: seller.totalSales,
-      followers: seller.followers,
-      totalProducts: seller._count.products,
-      createdAt: seller.createdAt,
-      // ✅ MAP TO INCLUDE IMAGE
-      products: seller.products.map((p) => ({
-        id: p.id,
-        title: p.title,
-        price: p.price,
-        compareAtPrice: p.compareAtPrice,
-        image: p.images[0]?.url || null,
-      })),
-    };
-  } catch (error) {
-    console.error("Error fetching store:", error);
-    return null;
-  }
-});
-
 export default async function StorePage({ params }: PageProps) {
   const { storeSlug } = await params;
-  const storeData = await getStoreData(storeSlug);
 
-  if (!storeData) {
+  // Fetch seller data
+  const seller = await prisma.seller.findUnique({
+    where: {
+      storeSlug,
+      approved: true, // Only show approved sellers
+    },
+    include: {
+      products: {
+        where: { status: "PUBLISHED" },
+        include: {
+          images: {
+            orderBy: { position: "asc" },
+          },
+          variants: true,
+        },
+        orderBy: { createdAt: "desc" },
+      },
+      followersList: true,
+    },
+  });
+
+  if (!seller) {
     notFound();
   }
 
-  return <StorePageClient storeData={storeData} />;
+  // Increment view count
+  await prisma.seller.update({
+    where: { id: seller.id },
+    data: { totalViews: { increment: 1 } },
+  });
+
+  // Calculate stats
+  const totalStock = seller.products.reduce(
+    (sum, product) =>
+      sum + product.variants.reduce((vSum, v) => vSum + v.quantity, 0),
+    0,
+  );
+
+  const averageRating = 4.8; // TODO: Calculate from reviews when implemented
+  const totalReviews = 0; // TODO: Count from reviews when implemented
+
+  return (
+    <SellerStoreClient
+      seller={{
+        id: seller.id,
+        name: seller.brandName,
+        slug: seller.storeSlug || storeSlug,
+        logo:
+          seller.storeLogo ||
+          `https://ui-avatars.com/api/?name=${encodeURIComponent(seller.brandName)}&size=200&background=000&color=fff&bold=true`,
+        coverImage:
+          seller.storeCover ||
+          "https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?w=1200&q=80",
+        verified: seller.approved,
+        location: seller.location,
+        joined: seller.createdAt.toLocaleDateString("en-US", {
+          month: "long",
+          year: "numeric",
+        }),
+        description:
+          seller.storeDescription ||
+          seller.description ||
+          "Welcome to our store!",
+        rating: averageRating,
+        totalReviews,
+        followers: seller.followersList.length,
+        totalViews: seller.totalViews,
+        totalSales: seller.totalSales,
+        totalProducts: seller.products.length,
+        totalStock,
+        instagram: seller.instagram,
+      }}
+      products={seller.products.map((product) => ({
+        id: product.id,
+        title: product.title,
+        price: product.price,
+        compareAtPrice: product.compareAtPrice,
+        image: product.images[0]?.url || "https://via.placeholder.com/400",
+        sold: 0, // TODO: Calculate from orders when implemented
+      }))}
+    />
+  );
 }
 
 export async function generateMetadata({ params }: PageProps) {
   const { storeSlug } = await params;
-  const storeData = await getStoreData(storeSlug);
 
-  if (!storeData) {
+  const seller = await prisma.seller.findUnique({
+    where: { storeSlug },
+  });
+
+  if (!seller) {
     return {
-      title: "Store Not Found - YOG Marketplace",
+      title: "Store Not Found",
     };
   }
 
   return {
-    title: `${storeData.brandName} - YOG Marketplace`,
+    title: `${seller.brandName} - YOG Marketplace`,
     description:
-      storeData.storeDescription || `Shop from ${storeData.brandName}`,
+      seller.storeDescription ||
+      seller.description ||
+      `Shop from ${seller.brandName}`,
   };
 }
