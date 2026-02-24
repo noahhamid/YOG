@@ -1,7 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    // ✅ USE REMOTE PATTERNS INSTEAD OF DOMAINS
     remotePatterns: [
       {
         protocol: "https",
@@ -19,6 +18,17 @@ const nextConfig = {
         protocol: "https",
         hostname: "i.pinimg.com",
       },
+      // ✅ ADD YOUR UPLOAD CDN HERE (if using UploadThing, Cloudinary, etc)
+      {
+        protocol: "https",
+        hostname: "utfs.io", // UploadThing
+      },
+      // OR
+      {
+        protocol: "https",
+        hostname: "res.cloudinary.com", // Cloudinary
+      },
+      // OR whatever CDN you're using for store logos/covers
     ],
   },
   experimental: {

@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import Navbar from "@/components/Navbar";
+import Image from "next/image";
 import {
   MapPin,
-  Star,
   Heart,
   Share2,
   Package,
@@ -12,87 +12,27 @@ import {
   ShoppingBag,
   Users,
   Calendar,
-  Instagram,
-  ExternalLink,
 } from "lucide-react";
 import Link from "next/link";
 
 interface StorePageClientProps {
   storeSlug: string;
+  initialData: {
+    seller: any;
+    products: any[];
+  };
 }
 
-// ✅ CLIENT-SIDE CACHE TO PREVENT DUPLICATE CALLS
-const storeCache = new Map<string, any>();
-
-export default function StorePageClient({ storeSlug }: StorePageClientProps) {
-  const [seller, setSeller] = useState<any>(null);
-  const [products, setProducts] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+export default function StorePageClient({
+  storeSlug,
+  initialData,
+}: StorePageClientProps) {
+  const [seller] = useState(initialData.seller);
+  const [products] = useState(initialData.products);
   const [isFollowing, setIsFollowing] = useState(false);
-  const [followerCount, setFollowerCount] = useState(0);
-
-  const hasFetchedRef = useRef(false); // ✅ Prevent double fetch
-
-  // ✅ FETCH ONCE - USE CACHE
-  useEffect(() => {
-    if (hasFetchedRef.current) return;
-    hasFetchedRef.current = true;
-
-    // Check cache first
-    const cached = storeCache.get(storeSlug);
-    if (cached) {
-      setSeller(cached.seller);
-      setProducts(cached.products);
-      setFollowerCount(cached.seller.followers);
-      setIsLoading(false);
-      checkFollow(cached.seller.id);
-      return;
-    }
-
-    fetchStore();
-  }, [storeSlug]);
-
-  const fetchStore = async () => {
-    try {
-      const res = await fetch(`/api/store/${storeSlug}`);
-      const data = await res.json();
-
-      if (res.ok) {
-        // ✅ CACHE THE RESPONSE
-        storeCache.set(storeSlug, data);
-
-        setSeller(data.seller);
-        setProducts(data.products);
-        setFollowerCount(data.seller.followers);
-        setIsLoading(false);
-
-        // Check follow (non-blocking)
-        checkFollow(data.seller.id);
-      } else {
-        setIsLoading(false);
-      }
-    } catch (error) {
-      console.error("Error:", error);
-      setIsLoading(false);
-    }
-  };
-
-  const checkFollow = async (sellerId: string) => {
-    const userStr = localStorage.getItem("yog_user");
-    if (!userStr) return;
-
-    try {
-      const res = await fetch(`/api/follow?sellerId=${sellerId}`, {
-        headers: { "x-user-data": userStr },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setIsFollowing(data.isFollowing);
-      }
-    } catch (error) {
-      // Silently fail
-    }
-  };
+  const [followerCount, setFollowerCount] = useState(
+    initialData.seller.followers,
+  );
 
   const handleFollow = async () => {
     const userStr = localStorage.getItem("yog_user");
@@ -101,7 +41,6 @@ export default function StorePageClient({ storeSlug }: StorePageClientProps) {
       return;
     }
 
-    // Optimistic update
     const wasFollowing = isFollowing;
     setIsFollowing(!isFollowing);
     setFollowerCount((prev) => (wasFollowing ? prev - 1 : prev + 1));
@@ -119,7 +58,6 @@ export default function StorePageClient({ storeSlug }: StorePageClientProps) {
         }),
       });
     } catch (error) {
-      // Revert on error
       setIsFollowing(wasFollowing);
       setFollowerCount((prev) => (wasFollowing ? prev + 1 : prev - 1));
     }
@@ -133,36 +71,6 @@ export default function StorePageClient({ storeSlug }: StorePageClientProps) {
       alert("Link copied!");
     }
   };
-
-  if (isLoading) {
-    return (
-      <>
-        <Navbar />
-        <div className="min-h-screen bg-gray-50 pt-20">
-          <div className="h-64 bg-gray-200 animate-pulse" />
-          <div className="max-w-7xl mx-auto px-4 -mt-20">
-            <div className="w-32 h-32 bg-gray-300 rounded-2xl animate-pulse" />
-          </div>
-        </div>
-      </>
-    );
-  }
-
-  if (!seller) {
-    return (
-      <>
-        <Navbar />
-        <div className="min-h-screen bg-gray-50 pt-20 flex items-center justify-center">
-          <div className="text-center">
-            <h2 className="text-2xl font-bold mb-4">Store Not Found</h2>
-            <Link href="/" className="text-blue-600">
-              Go Home
-            </Link>
-          </div>
-        </div>
-      </>
-    );
-  }
 
   const stats = [
     { icon: Eye, label: "Views", value: seller.totalViews.toLocaleString() },
@@ -179,31 +87,54 @@ export default function StorePageClient({ storeSlug }: StorePageClientProps) {
     <>
       <Navbar />
       <main className="min-h-screen bg-gray-50 pt-20">
-        {/* Cover */}
+        {/* Cover - ✅ USE NEXT IMAGE */}
         <div className="relative h-64 bg-gray-900 overflow-hidden">
-          <img
-            src={
-              seller.storeCover ||
-              "https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?w=1200"
-            }
-            alt="Cover"
-            className="w-full h-full object-cover opacity-40"
-          />
+          {seller.storeCover ? (
+            <Image
+              src={seller.storeCover}
+              alt="Store cover"
+              fill
+              className="object-cover opacity-40"
+              priority
+              sizes="100vw"
+            />
+          ) : (
+            <Image
+              src="https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?w=1200"
+              alt="Default cover"
+              fill
+              className="object-cover opacity-40"
+              priority
+              sizes="100vw"
+            />
+          )}
         </div>
 
         <div className="max-w-7xl mx-auto px-4 -mt-20 relative z-10">
           {/* Header */}
           <div className="bg-white rounded-3xl shadow-xl p-8 mb-8">
             <div className="flex gap-6">
-              <div className="w-32 h-32 rounded-2xl overflow-hidden border-4 border-white shadow-lg bg-white">
-                <img
-                  src={
-                    seller.storeLogo ||
-                    `https://ui-avatars.com/api/?name=${encodeURIComponent(seller.brandName)}`
-                  }
-                  alt={seller.brandName}
-                  className="w-full h-full object-cover"
-                />
+              {/* Logo - ✅ USE NEXT IMAGE */}
+              <div className="w-32 h-32 rounded-2xl overflow-hidden border-4 border-white shadow-lg bg-white flex-shrink-0">
+                {seller.storeLogo ? (
+                  <Image
+                    src={seller.storeLogo}
+                    alt={seller.brandName}
+                    width={128}
+                    height={128}
+                    className="w-full h-full object-cover"
+                    priority
+                  />
+                ) : (
+                  <Image
+                    src={`https://ui-avatars.com/api/?name=${encodeURIComponent(seller.brandName)}&size=128`}
+                    alt={seller.brandName}
+                    width={128}
+                    height={128}
+                    className="w-full h-full object-cover"
+                    priority
+                  />
+                )}
               </div>
 
               <div className="flex-1">
@@ -229,8 +160,10 @@ export default function StorePageClient({ storeSlug }: StorePageClientProps) {
                 <div className="flex gap-3">
                   <button
                     onClick={handleFollow}
-                    className={`px-6 py-3 rounded-full font-semibold flex items-center gap-2 ${
-                      isFollowing ? "bg-gray-100" : "bg-black text-white"
+                    className={`px-6 py-3 rounded-full font-semibold flex items-center gap-2 transition-colors ${
+                      isFollowing
+                        ? "bg-gray-100 hover:bg-gray-200"
+                        : "bg-black text-white hover:bg-gray-800"
                     }`}
                   >
                     <Heart
@@ -241,7 +174,7 @@ export default function StorePageClient({ storeSlug }: StorePageClientProps) {
                   </button>
                   <button
                     onClick={handleShare}
-                    className="p-3 bg-gray-100 rounded-full"
+                    className="p-3 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors"
                   >
                     <Share2 size={18} />
                   </button>
@@ -251,11 +184,14 @@ export default function StorePageClient({ storeSlug }: StorePageClientProps) {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-4 gap-4 mb-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
             {stats.map((stat) => {
               const Icon = stat.icon;
               return (
-                <div key={stat.label} className="bg-white rounded-2xl p-6">
+                <div
+                  key={stat.label}
+                  className="bg-white rounded-2xl p-6 hover:shadow-lg transition-shadow"
+                >
                   <Icon size={24} className="mb-2 text-gray-600" />
                   <p className="text-sm text-gray-600">{stat.label}</p>
                   <p className="text-2xl font-bold">{stat.value}</p>
@@ -275,25 +211,32 @@ export default function StorePageClient({ storeSlug }: StorePageClientProps) {
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                 {products.map((product: any) => (
-                  <Link key={product.id} href={`/product/${product.id}`}>
-                    <div className="group">
-                      <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden mb-3">
-                        <img
-                          src={
-                            product.image || "https://via.placeholder.com/400"
-                          }
+                  <Link
+                    key={product.id}
+                    href={`/product/${product.id}`}
+                    className="group"
+                  >
+                    <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden mb-3 relative">
+                      {product.image ? (
+                        <Image
+                          src={product.image}
                           alt={product.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition"
-                          loading="lazy"
+                          fill
+                          className="object-cover group-hover:scale-105 transition-transform"
+                          sizes="(max-width: 768px) 50vw, (max-width: 1024px) 25vw, 16vw"
                         />
-                      </div>
-                      <h3 className="font-semibold text-sm line-clamp-2 mb-1">
-                        {product.title}
-                      </h3>
-                      <p className="font-bold">
-                        {product.price.toLocaleString()} ETB
-                      </p>
+                      ) : (
+                        <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                          <Package size={32} className="text-gray-400" />
+                        </div>
+                      )}
                     </div>
+                    <h3 className="font-semibold text-sm line-clamp-2 mb-1">
+                      {product.title}
+                    </h3>
+                    <p className="font-bold">
+                      {product.price.toLocaleString()} ETB
+                    </p>
                   </Link>
                 ))}
               </div>
