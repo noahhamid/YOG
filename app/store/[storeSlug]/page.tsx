@@ -3,90 +3,95 @@ import { prisma } from "@/lib/prisma";
 import StorePageClient from "@/components/store/StorePageClient";
 import { cache } from "react";
 
-// ✅ REMOVE THIS - IT'S CAUSING THE ISSUE
-// export const revalidate = 60;
-
-// ✅ ADD THIS INSTEAD - MAKE IT FULLY DYNAMIC
-export const dynamic = "force-dynamic";
+// ✅ CACHE FOR 30 SECONDS
+export const revalidate = 30;
 
 interface PageProps {
   params: Promise<{ storeSlug: string }>;
 }
 
-// ✅ REMOVE generateStaticParams - IT'S TOO LARGE
-// export async function generateStaticParams() { ... }
-
-const getCachedStore = cache(async (storeSlug: string) => {
+// ✅ OPTIMIZED QUERY WITH REACT CACHE
+const getStoreData = cache(async (storeSlug: string) => {
   try {
-    const [seller, products] = await Promise.all([
-      prisma.seller.findUnique({
-        where: {
-          storeSlug,
-          approved: true,
-        },
-        select: {
-          id: true,
-          brandName: true,
-          storeSlug: true,
-          storeLogo: true,
-          storeCover: true,
-          storeDescription: true,
-          description: true,
-          location: true,
-          instagram: true,
-          totalViews: true,
-          totalSales: true,
-          followers: true,
-          createdAt: true,
-          _count: {
-            select: {
-              products: {
-                where: { status: "PUBLISHED" },
-              },
+    // ✅ SINGLE OPTIMIZED QUERY
+    const seller = await prisma.seller.findUnique({
+      where: {
+        storeSlug,
+        approved: true,
+      },
+      select: {
+        id: true,
+        brandName: true,
+        storeSlug: true,
+        storeLogo: true,
+        storeCover: true,
+        storeDescription: true,
+        description: true,
+        location: true,
+        instagram: true,
+        totalViews: true,
+        totalSales: true,
+        followers: true,
+        createdAt: true,
+        // ✅ GET PRODUCT COUNT EFFICIENTLY
+        _count: {
+          select: {
+            products: {
+              where: { status: "PUBLISHED" },
             },
           },
         },
-      }),
-
-      // ✅ REDUCE FROM 24 TO 12 PRODUCTS
-      prisma.product.findMany({
-        where: {
-          seller: { storeSlug },
-          status: "PUBLISHED",
-        },
-        select: {
-          id: true,
-          title: true,
-          price: true,
-          compareAtPrice: true,
-          images: {
-            select: { url: true },
-            orderBy: { position: "asc" },
-            take: 1,
+        // ✅ GET PRODUCTS IN SAME QUERY
+        products: {
+          where: { status: "PUBLISHED" },
+          select: {
+            id: true,
+            title: true,
+            price: true,
+            compareAtPrice: true,
+            images: {
+              select: { url: true },
+              orderBy: { position: "asc" },
+              take: 1,
+            },
           },
+          orderBy: { createdAt: "desc" },
+          take: 24,
         },
-        orderBy: { createdAt: "desc" },
-        take: 12, // ✅ REDUCE TO 12
-      }),
-    ]);
+      },
+    });
 
     if (!seller) return null;
 
-    // ✅ NON-BLOCKING VIEW INCREMENT
-    prisma.seller
-      .update({
-        where: { id: seller.id },
-        data: { totalViews: { increment: 1 } },
-      })
-      .catch(() => {});
+    // ✅ NON-BLOCKING VIEW INCREMENT (FIRE AND FORGET)
+    setImmediate(() => {
+      prisma.seller
+        .update({
+          where: { id: seller.id },
+          data: { totalViews: { increment: 1 } },
+        })
+        .catch(() => {});
+    });
 
     return {
-      seller: {
-        ...seller,
-        totalProducts: seller._count.products,
-      },
-      products: products.map((p) => ({
-        ...p,
+      id: seller.id,
+      brandName: seller.brandName,
+      storeSlug: seller.storeSlug,
+      storeLogo: seller.storeLogo,
+      storeCover: seller.storeCover,
+      storeDescription: seller.storeDescription || seller.description,
+      location: seller.location,
+      instagram: seller.instagram,
+      totalViews: seller.totalViews,
+      totalSales: seller.totalSales,
+      followers: seller.followers,
+      totalProducts: seller._count.products,
+      createdAt: seller.createdAt,
+      products: seller.products.map((p) => ({
+        id: p.id,
+        title: p.title,
+        price: p.price,
+        compareAtPrice: p.compareAtPrice,
         image: p.images[0]?.url || null,
       })),
     };
@@ -98,35 +103,34 @@ const getCachedStore = cache(async (storeSlug: string) => {
 
 export default async function StorePage({ params }: PageProps) {
   const { storeSlug } = await params;
-  const data = await getCachedStore(storeSlug);
+  const storeData = await getStoreData(storeSlug);
 
-  if (!data) {
+  if (!storeData) {
     notFound();
   }
 
-  return <StorePageClient initialData={data} storeSlug={storeSlug} />;
+  return <StorePageClient storeData={storeData} />;
 }
 
+// ✅ DYNAMIC METADATA
 export async function generateMetadata({ params }: PageProps) {
   const { storeSlug } = await params;
-  const data = await getCachedStore(storeSlug);
+  const storeData = await getStoreData(storeSlug);
 
-  if (!data) {
+  if (!storeData) {
     return {
       title: "Store Not Found - YOG Marketplace",
     };
   }
 
   return {
-    title: `${data.seller.brandName} - YOG Marketplace`,
+    title: `${storeData.brandName} - YOG Marketplace`,
     description:
-      data.seller.storeDescription ||
-      data.seller.description ||
-      "Shop from verified sellers",
+      storeData.storeDescription || `Shop from ${storeData.brandName}`,
     openGraph: {
-      title: data.seller.brandName,
-      description: data.seller.storeDescription || data.seller.description,
-      images: [data.seller.storeLogo || data.seller.storeCover].filter(Boolean),
+      title: storeData.brandName,
+      description: storeData.storeDescription,
+      images: [storeData.storeLogo, storeData.storeCover].filter(Boolean),
     },
   };
 }

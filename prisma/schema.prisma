@@ -111,6 +111,7 @@ model Seller {
   @@index([storeSlug])
   @@index([approved])
   @@index([userId])
+  @@index([approved, storeSlug])  // ✅ ADD THIS
 }
 
 model Follow {
@@ -151,6 +152,8 @@ model Product {
   @@index([isTrending])
   @@index([sellerId])
   @@index([status])
+  @@index([sellerId, status])              // ✅ ADD THIS
+  @@index([sellerId, status, createdAt])   // ✅ ADD THIS
 }
 
 model ProductVariant {
@@ -173,6 +176,7 @@ model ProductImage {
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([productId])
+  @@index([productId, position])  // ✅ ADD THIS
 }
 
 enum UserRole {
