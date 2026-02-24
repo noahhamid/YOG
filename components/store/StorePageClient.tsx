@@ -29,8 +29,8 @@ export default function StorePageClient({
 }: StorePageClientProps) {
   const [seller] = useState(initialData.seller);
   const [products] = useState(initialData.products);
-  const [isFollowing, setIsFollowing] = useState(false);
-  const [followerCount, setFollowerCount] = useState(
+  const [isFollowing, setIsFollowing] = useState<boolean>(false);
+  const [followerCount, setFollowerCount] = useState<number>( // ✅ ADD TYPE HERE
     initialData.seller.followers,
   );
 
@@ -43,7 +43,7 @@ export default function StorePageClient({
 
     const wasFollowing = isFollowing;
     setIsFollowing(!isFollowing);
-    setFollowerCount((prev) => (wasFollowing ? prev - 1 : prev + 1));
+    setFollowerCount((prev) => (wasFollowing ? prev - 1 : prev + 1)); // ✅ NOW TypeScript knows prev is number
 
     try {
       await fetch("/api/follow", {
@@ -63,6 +63,7 @@ export default function StorePageClient({
     }
   };
 
+  // ... rest of your component stays the same
   const handleShare = () => {
     if (navigator.share) {
       navigator.share({ title: seller?.brandName, url: window.location.href });

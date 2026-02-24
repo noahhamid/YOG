@@ -18,17 +18,18 @@ const nextConfig = {
         protocol: "https",
         hostname: "i.pinimg.com",
       },
-      // ✅ ADD YOUR UPLOAD CDN HERE (if using UploadThing, Cloudinary, etc)
+      // ✅ ADD THIS - FOR USER UPLOADED IMAGES
       {
         protocol: "https",
-        hostname: "utfs.io", // UploadThing
+        hostname: "wantsandneeds.com",
       },
-      // OR
+      // ✅ ADD WILDCARD FOR ANY DOMAIN (USE WITH CAUTION)
+      // This allows images from any source - good for development
+      // Remove in production if you want strict control
       {
         protocol: "https",
-        hostname: "res.cloudinary.com", // Cloudinary
+        hostname: "**",
       },
-      // OR whatever CDN you're using for store logos/covers
     ],
   },
   experimental: {
