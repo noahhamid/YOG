@@ -3,13 +3,19 @@ import { prisma } from "@/lib/prisma";
 import StorePageClient from "@/components/store/StorePageClient";
 import { cache } from "react";
 
-export const revalidate = 60;
+// ✅ REMOVE THIS - IT'S CAUSING THE ISSUE
+// export const revalidate = 60;
+
+// ✅ ADD THIS INSTEAD - MAKE IT FULLY DYNAMIC
+export const dynamic = "force-dynamic";
 
 interface PageProps {
   params: Promise<{ storeSlug: string }>;
 }
 
-// ✅ CACHED SERVER-SIDE FETCH
+// ✅ REMOVE generateStaticParams - IT'S TOO LARGE
+// export async function generateStaticParams() { ... }
+
 const getCachedStore = cache(async (storeSlug: string) => {
   try {
     const [seller, products] = await Promise.all([
@@ -42,6 +48,7 @@ const getCachedStore = cache(async (storeSlug: string) => {
         },
       }),
 
+      // ✅ REDUCE FROM 24 TO 12 PRODUCTS
       prisma.product.findMany({
         where: {
           seller: { storeSlug },
@@ -59,7 +66,7 @@ const getCachedStore = cache(async (storeSlug: string) => {
           },
         },
         orderBy: { createdAt: "desc" },
-        take: 24,
+        take: 12, // ✅ REDUCE TO 12
       }),
     ]);
 
@@ -122,18 +129,4 @@ export async function generateMetadata({ params }: PageProps) {
       images: [data.seller.storeLogo || data.seller.storeCover].filter(Boolean),
     },
   };
-}
-
-// ✅ PRE-GENERATE POPULAR STORES
-export async function generateStaticParams() {
-  const sellers = await prisma.seller.findMany({
-    where: { approved: true },
-    select: { storeSlug: true },
-    take: 50,
-    orderBy: { totalViews: "desc" },
-  });
-
-  return sellers.map((seller) => ({
-    storeSlug: seller.storeSlug,
-  }));
 }
