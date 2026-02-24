@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
+import Image from "next/image";
 import {
   Camera,
   Save,
@@ -21,6 +22,8 @@ export default function SellerSettingsPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -76,36 +79,7 @@ export default function SellerSettingsPage() {
     }
   };
 
-  const compressImage = (
-    file: File,
-    maxWidth: number,
-    maxHeight: number,
-  ): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement("canvas");
-          const ctx = canvas.getContext("2d");
-
-          canvas.width = maxWidth;
-          canvas.height = maxHeight;
-
-          ctx?.drawImage(img, 0, 0, maxWidth, maxHeight);
-
-          // Compress to 70% quality JPEG
-          const compressed = canvas.toDataURL("image/jpeg", 0.7);
-          resolve(compressed);
-        };
-        img.onerror = reject;
-        img.src = e.target?.result as string;
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-  };
-
+  // ✅ NEW: UPLOAD TO CLOUDINARY
   const handleImageUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
     type: "logo" | "cover",
@@ -119,19 +93,44 @@ export default function SellerSettingsPage() {
       return;
     }
 
-    try {
-      const compressed = await compressImage(
-        file,
-        type === "logo" ? 400 : 1200,
-        type === "logo" ? 400 : 400,
-      );
+    const userStr = localStorage.getItem("yog_user");
+    if (!userStr) return;
 
-      setFormData({
-        ...formData,
-        [type === "logo" ? "storeLogo" : "storeCover"]: compressed,
+    // Set loading state
+    if (type === "logo") setIsUploadingLogo(true);
+    else setIsUploadingCover(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("type", type);
+
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        headers: {
+          "x-user-data": userStr,
+        },
+        body: formData,
       });
-    } catch (err) {
-      setError("Failed to process image");
+
+      const data = await res.json();
+
+      if (res.ok && data.url) {
+        setFormData((prev) => ({
+          ...prev,
+          [type === "logo" ? "storeLogo" : "storeCover"]: data.url,
+        }));
+        setSuccess(`${type === "logo" ? "Logo" : "Cover"} uploaded!`);
+        setTimeout(() => setSuccess(""), 3000);
+      } else {
+        throw new Error(data.error || "Upload failed");
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to upload image");
+      setTimeout(() => setError(""), 3000);
+    } finally {
+      if (type === "logo") setIsUploadingLogo(false);
+      else setIsUploadingCover(false);
     }
   };
 
@@ -221,13 +220,16 @@ export default function SellerSettingsPage() {
 
           {/* Main Card */}
           <div className="bg-white rounded-3xl shadow-lg border border-gray-200 overflow-hidden">
-            {/* Cover Image */}
+            {/* Cover Image - ✅ USE NEXT IMAGE */}
             <div className="relative h-72 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 group">
               {formData.storeCover ? (
-                <img
+                <Image
                   src={formData.storeCover}
                   alt="Cover"
-                  className="w-full h-full object-cover"
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 1280px) 100vw, 1280px"
+                  priority
                 />
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center">
@@ -239,26 +241,39 @@ export default function SellerSettingsPage() {
               )}
 
               <label className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-                <div className="bg-white text-black px-8 py-3 rounded-full font-bold shadow-xl">
-                  Change Cover
-                </div>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleImageUpload(e, "cover")}
-                  className="hidden"
-                />
+                {isUploadingCover ? (
+                  <div className="bg-white text-black px-8 py-3 rounded-full font-bold shadow-xl flex items-center gap-2">
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Uploading...
+                  </div>
+                ) : (
+                  <>
+                    <div className="bg-white text-black px-8 py-3 rounded-full font-bold shadow-xl">
+                      Change Cover
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleImageUpload(e, "cover")}
+                      className="hidden"
+                      disabled={isUploadingCover}
+                    />
+                  </>
+                )}
               </label>
             </div>
 
-            {/* Logo */}
+            {/* Logo - ✅ USE NEXT IMAGE */}
             <div className="px-10 -mt-20 relative z-10 mb-8">
               <div className="relative w-40 h-40 group">
                 {formData.storeLogo ? (
-                  <img
+                  <Image
                     src={formData.storeLogo}
                     alt="Logo"
+                    width={160}
+                    height={160}
                     className="w-full h-full object-cover rounded-3xl border-8 border-white shadow-2xl"
+                    priority
                   />
                 ) : (
                   <div className="w-full h-full bg-gradient-to-br from-black to-gray-700 rounded-3xl border-8 border-white shadow-2xl flex items-center justify-center">
@@ -267,18 +282,25 @@ export default function SellerSettingsPage() {
                 )}
 
                 <label className="absolute inset-0 flex items-center justify-center bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer rounded-3xl">
-                  <Camera size={32} className="text-white" />
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => handleImageUpload(e, "logo")}
-                    className="hidden"
-                  />
+                  {isUploadingLogo ? (
+                    <Loader2 size={32} className="text-white animate-spin" />
+                  ) : (
+                    <>
+                      <Camera size={32} className="text-white" />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleImageUpload(e, "logo")}
+                        className="hidden"
+                        disabled={isUploadingLogo}
+                      />
+                    </>
+                  )}
                 </label>
               </div>
             </div>
 
-            {/* Form */}
+            {/* Form - SAME AS BEFORE */}
             <div className="px-10 pb-10 space-y-6">
               {/* Store Name */}
               <div>

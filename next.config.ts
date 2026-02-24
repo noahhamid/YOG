@@ -23,9 +23,10 @@ const nextConfig = {
         protocol: "https",
         hostname: "wantsandneeds.com",
       },
-      // ✅ ADD WILDCARD FOR ANY DOMAIN (USE WITH CAUTION)
-      // This allows images from any source - good for development
-      // Remove in production if you want strict control
+      {
+        protocol: "https",
+        hostname: "res.cloudinary.com", // ✅ ADD THIS
+      },
       {
         protocol: "https",
         hostname: "**",
