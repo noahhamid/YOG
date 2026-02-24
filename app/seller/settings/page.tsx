@@ -18,6 +18,17 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
+interface SellerSettings {
+  id: string;
+  brandName: string;
+  storeSlug: string | null;
+  storeLogo: string | null;
+  storeCover: string | null;
+  storeDescription: string | null;
+  instagram: string | null;
+  location: string;
+}
+
 export default function SellerSettingsPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
@@ -59,9 +70,11 @@ export default function SellerSettingsPage() {
         headers: { "x-user-data": userStr },
       });
 
+      if (!res.ok) throw new Error("Failed to load");
+
       const data = await res.json();
 
-      if (res.ok && data.seller) {
+      if (data.seller) {
         setFormData({
           brandName: data.seller.brandName || "",
           storeSlug: data.seller.storeSlug || "",
@@ -79,7 +92,6 @@ export default function SellerSettingsPage() {
     }
   };
 
-  // ✅ NEW: UPLOAD TO CLOUDINARY
   const handleImageUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
     type: "logo" | "cover",
@@ -96,34 +108,33 @@ export default function SellerSettingsPage() {
     const userStr = localStorage.getItem("yog_user");
     if (!userStr) return;
 
-    // Set loading state
     if (type === "logo") setIsUploadingLogo(true);
     else setIsUploadingCover(true);
 
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("type", type);
+      const uploadFormData = new FormData();
+      uploadFormData.append("file", file);
+      uploadFormData.append("type", type);
 
       const res = await fetch("/api/upload", {
         method: "POST",
         headers: {
           "x-user-data": userStr,
         },
-        body: formData,
+        body: uploadFormData,
       });
+
+      if (!res.ok) throw new Error("Upload failed");
 
       const data = await res.json();
 
-      if (res.ok && data.url) {
+      if (data.url) {
         setFormData((prev) => ({
           ...prev,
           [type === "logo" ? "storeLogo" : "storeCover"]: data.url,
         }));
         setSuccess(`${type === "logo" ? "Logo" : "Cover"} uploaded!`);
         setTimeout(() => setSuccess(""), 3000);
-      } else {
-        throw new Error(data.error || "Upload failed");
       }
     } catch (err: any) {
       setError(err.message || "Failed to upload image");
@@ -137,6 +148,18 @@ export default function SellerSettingsPage() {
   const handleSave = async () => {
     setError("");
     setSuccess("");
+
+    // Validation
+    if (!formData.brandName.trim()) {
+      setError("Store name is required");
+      return;
+    }
+
+    if (!formData.storeSlug.trim()) {
+      setError("Store URL is required");
+      return;
+    }
+
     setIsSaving(true);
 
     try {
@@ -180,7 +203,7 @@ export default function SellerSettingsPage() {
     <>
       <Navbar />
       <div className="min-h-screen bg-gray-50 pt-32 pb-20 px-4">
-        <div className="max-w-5xl mx-auto">
+        <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
             <div>
@@ -191,7 +214,7 @@ export default function SellerSettingsPage() {
                 <ArrowLeft size={18} />
                 Back to Dashboard
               </Link>
-              <h1 className="text-4xl font-black mb-2">Store Settings</h1>
+              <h1 className="text-4xl font-bold mb-2">Store Settings</h1>
               <p className="text-gray-600">Customize your store profile</p>
             </div>
             {formData.storeSlug && (
@@ -208,47 +231,47 @@ export default function SellerSettingsPage() {
 
           {/* Messages */}
           {error && (
-            <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded">
+            <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-lg">
               {error}
             </div>
           )}
           {success && (
-            <div className="mb-6 p-4 bg-green-50 border-l-4 border-green-500 text-green-700 rounded">
+            <div className="mb-6 p-4 bg-green-50 border-l-4 border-green-500 text-green-700 rounded-lg">
               {success}
             </div>
           )}
 
           {/* Main Card */}
-          <div className="bg-white rounded-3xl shadow-lg border border-gray-200 overflow-hidden">
-            {/* Cover Image - ✅ USE NEXT IMAGE */}
-            <div className="relative h-72 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 group">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200">
+            {/* Cover Image */}
+            <div className="relative h-48 bg-gradient-to-r from-gray-900 to-gray-700 rounded-t-2xl overflow-hidden group">
               {formData.storeCover ? (
                 <Image
                   src={formData.storeCover}
                   alt="Cover"
                   fill
                   className="object-cover"
-                  sizes="(max-width: 1280px) 100vw, 1280px"
+                  sizes="896px"
                   priority
                 />
               ) : (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-center text-white/80">
-                    <Camera size={56} className="mx-auto mb-3" />
-                    <p className="text-lg font-semibold">Add Cover Image</p>
+                <div className="absolute inset-0 flex items-center justify-center text-white/60">
+                  <div className="text-center">
+                    <Camera size={40} className="mx-auto mb-2" />
+                    <p className="text-sm">Add Cover Image</p>
                   </div>
                 </div>
               )}
 
               <label className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
                 {isUploadingCover ? (
-                  <div className="bg-white text-black px-8 py-3 rounded-full font-bold shadow-xl flex items-center gap-2">
-                    <Loader2 className="w-5 h-5 animate-spin" />
+                  <div className="bg-white text-black px-6 py-2 rounded-full font-semibold flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
                     Uploading...
                   </div>
                 ) : (
                   <>
-                    <div className="bg-white text-black px-8 py-3 rounded-full font-bold shadow-xl">
+                    <div className="bg-white text-black px-6 py-2 rounded-full font-semibold">
                       Change Cover
                     </div>
                     <input
@@ -263,30 +286,30 @@ export default function SellerSettingsPage() {
               </label>
             </div>
 
-            {/* Logo - ✅ USE NEXT IMAGE */}
-            <div className="px-10 -mt-20 relative z-10 mb-8">
-              <div className="relative w-40 h-40 group">
+            {/* Logo */}
+            <div className="px-8 -mt-16 relative z-10 mb-6">
+              <div className="relative w-32 h-32 group">
                 {formData.storeLogo ? (
                   <Image
                     src={formData.storeLogo}
                     alt="Logo"
-                    width={160}
-                    height={160}
-                    className="w-full h-full object-cover rounded-3xl border-8 border-white shadow-2xl"
+                    width={128}
+                    height={128}
+                    className="w-full h-full object-cover rounded-2xl border-4 border-white shadow-lg"
                     priority
                   />
                 ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-black to-gray-700 rounded-3xl border-8 border-white shadow-2xl flex items-center justify-center">
-                    <Store size={56} className="text-white" />
+                  <div className="w-full h-full bg-gradient-to-br from-black to-gray-700 rounded-2xl border-4 border-white shadow-lg flex items-center justify-center">
+                    <Store size={40} className="text-white" />
                   </div>
                 )}
 
-                <label className="absolute inset-0 flex items-center justify-center bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer rounded-3xl">
+                <label className="absolute inset-0 flex items-center justify-center bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer rounded-2xl">
                   {isUploadingLogo ? (
-                    <Loader2 size={32} className="text-white animate-spin" />
+                    <Loader2 size={24} className="text-white animate-spin" />
                   ) : (
                     <>
-                      <Camera size={32} className="text-white" />
+                      <Camera size={24} className="text-white" />
                       <input
                         type="file"
                         accept="image/*"
@@ -300,13 +323,13 @@ export default function SellerSettingsPage() {
               </div>
             </div>
 
-            {/* Form - SAME AS BEFORE */}
-            <div className="px-10 pb-10 space-y-6">
+            {/* Form */}
+            <div className="px-8 pb-8 space-y-6">
               {/* Store Name */}
               <div>
-                <label className="flex items-center gap-2 text-sm font-bold mb-2">
-                  <Store size={18} />
-                  Store Name
+                <label className="flex items-center gap-2 text-sm font-semibold mb-2">
+                  <Store size={16} />
+                  Store Name *
                 </label>
                 <input
                   type="text"
@@ -314,19 +337,20 @@ export default function SellerSettingsPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, brandName: e.target.value })
                   }
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-black transition-colors"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-black transition-colors"
                   placeholder="Your Store Name"
+                  required
                 />
               </div>
 
               {/* Store URL */}
               <div>
-                <label className="flex items-center gap-2 text-sm font-bold mb-2">
-                  <LinkIcon size={18} />
-                  Store URL
+                <label className="flex items-center gap-2 text-sm font-semibold mb-2">
+                  <LinkIcon size={16} />
+                  Store URL *
                 </label>
                 <div className="flex items-center gap-2">
-                  <span className="text-gray-500 font-medium">
+                  <span className="text-gray-500 font-medium text-sm">
                     yog.com/store/
                   </span>
                   <input
@@ -340,16 +364,17 @@ export default function SellerSettingsPage() {
                           .replace(/[^a-z0-9-]/g, ""),
                       })
                     }
-                    className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-black transition-colors"
+                    className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-black transition-colors"
                     placeholder="your-store"
+                    required
                   />
                 </div>
               </div>
 
               {/* Description */}
               <div>
-                <label className="flex items-center gap-2 text-sm font-bold mb-2">
-                  <FileText size={18} />
+                <label className="flex items-center gap-2 text-sm font-semibold mb-2">
+                  <FileText size={16} />
                   Description
                 </label>
                 <textarea
@@ -361,7 +386,7 @@ export default function SellerSettingsPage() {
                     })
                   }
                   rows={4}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-black transition-colors resize-none"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-black transition-colors resize-none"
                   placeholder="Tell customers about your store..."
                 />
               </div>
@@ -369,8 +394,8 @@ export default function SellerSettingsPage() {
               {/* Location & Instagram */}
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
-                  <label className="flex items-center gap-2 text-sm font-bold mb-2">
-                    <MapPin size={18} />
+                  <label className="flex items-center gap-2 text-sm font-semibold mb-2">
+                    <MapPin size={16} />
                     Location
                   </label>
                   <input
@@ -379,14 +404,14 @@ export default function SellerSettingsPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, location: e.target.value })
                     }
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-black transition-colors"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-black transition-colors"
                     placeholder="Addis Ababa"
                   />
                 </div>
 
                 <div>
-                  <label className="flex items-center gap-2 text-sm font-bold mb-2">
-                    <Instagram size={18} />
+                  <label className="flex items-center gap-2 text-sm font-semibold mb-2">
+                    <Instagram size={16} />
                     Instagram
                   </label>
                   <div className="flex items-center gap-2">
@@ -400,7 +425,7 @@ export default function SellerSettingsPage() {
                           instagram: e.target.value.replace("@", ""),
                         })
                       }
-                      className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-black transition-colors"
+                      className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-black transition-colors"
                       placeholder="yourhandle"
                     />
                   </div>
@@ -410,8 +435,8 @@ export default function SellerSettingsPage() {
               {/* Save Button */}
               <button
                 onClick={handleSave}
-                disabled={isSaving}
-                className="w-full bg-black text-white py-4 rounded-full font-bold text-lg hover:bg-gray-800 transition-colors disabled:bg-gray-400 flex items-center justify-center gap-3 shadow-xl"
+                disabled={isSaving || isUploadingLogo || isUploadingCover}
+                className="w-full bg-black text-white py-4 rounded-lg font-bold text-lg hover:bg-gray-800 transition-colors disabled:bg-gray-400 flex items-center justify-center gap-3"
               >
                 {isSaving ? (
                   <>
