@@ -18,16 +18,62 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
-interface SellerSettings {
-  id: string;
-  brandName: string;
-  storeSlug: string | null;
-  storeLogo: string | null;
-  storeCover: string | null;
-  storeDescription: string | null;
-  instagram: string | null;
-  location: string;
-}
+// ✅ COMPRESSION HELPER FUNCTION
+const compressImage = (
+  file: File,
+  maxWidth: number,
+  maxHeight: number,
+  quality: number = 0.8,
+): Promise<Blob> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = document.createElement("img"); // ✅ FIXED
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+
+        // Calculate dimensions
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = (width * maxHeight) / height;
+            height = maxHeight;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        // Draw and compress
+        ctx?.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              resolve(blob);
+            } else {
+              reject(new Error("Compression failed"));
+            }
+          },
+          "image/jpeg",
+          quality,
+        );
+      };
+      img.onerror = reject;
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+};
 
 export default function SellerSettingsPage() {
   const router = useRouter();
@@ -35,6 +81,7 @@ export default function SellerSettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [isUploadingCover, setIsUploadingCover] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState({ logo: 0, cover: 0 }); // ✅ NEW
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -99,8 +146,10 @@ export default function SellerSettingsPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      setError("Image must be less than 5MB");
+    e.target.value = "";
+
+    if (file.size > 10 * 1024 * 1024) {
+      setError("Image must be less than 10MB");
       setTimeout(() => setError(""), 3000);
       return;
     }
@@ -108,12 +157,44 @@ export default function SellerSettingsPage() {
     const userStr = localStorage.getItem("yog_user");
     if (!userStr) return;
 
-    if (type === "logo") setIsUploadingLogo(true);
-    else setIsUploadingCover(true);
+    if (type === "logo") {
+      setIsUploadingLogo(true);
+      setUploadProgress((prev) => ({ ...prev, logo: 0 }));
+    } else {
+      setIsUploadingCover(true);
+      setUploadProgress((prev) => ({ ...prev, cover: 0 }));
+    }
 
     try {
+      // ✅ STEP 1: COMPRESS
+      console.log(`📦 Original size: ${(file.size / 1024).toFixed(0)}KB`);
+
+      if (type === "logo") {
+        setUploadProgress((prev) => ({ ...prev, logo: 30 }));
+      } else {
+        setUploadProgress((prev) => ({ ...prev, cover: 30 }));
+      }
+
+      const compressed = await compressImage(
+        file,
+        type === "logo" ? 800 : 1600,
+        type === "logo" ? 800 : 800,
+        0.85,
+      );
+
+      console.log(
+        `✅ Compressed size: ${(compressed.size / 1024).toFixed(0)}KB`,
+      );
+
+      if (type === "logo") {
+        setUploadProgress((prev) => ({ ...prev, logo: 60 }));
+      } else {
+        setUploadProgress((prev) => ({ ...prev, cover: 60 }));
+      }
+
+      // ✅ STEP 2: UPLOAD
       const uploadFormData = new FormData();
-      uploadFormData.append("file", file);
+      uploadFormData.append("file", compressed, file.name);
       uploadFormData.append("type", type);
 
       const res = await fetch("/api/upload", {
@@ -128,20 +209,32 @@ export default function SellerSettingsPage() {
 
       const data = await res.json();
 
+      if (type === "logo") {
+        setUploadProgress((prev) => ({ ...prev, logo: 100 }));
+      } else {
+        setUploadProgress((prev) => ({ ...prev, cover: 100 }));
+      }
+
       if (data.url) {
         setFormData((prev) => ({
           ...prev,
           [type === "logo" ? "storeLogo" : "storeCover"]: data.url,
         }));
-        setSuccess(`${type === "logo" ? "Logo" : "Cover"} uploaded!`);
+        setSuccess(`✅ ${type === "logo" ? "Logo" : "Cover"} uploaded!`);
         setTimeout(() => setSuccess(""), 3000);
       }
     } catch (err: any) {
+      console.error("Upload error:", err);
       setError(err.message || "Failed to upload image");
       setTimeout(() => setError(""), 3000);
     } finally {
-      if (type === "logo") setIsUploadingLogo(false);
-      else setIsUploadingCover(false);
+      if (type === "logo") {
+        setIsUploadingLogo(false);
+        setUploadProgress((prev) => ({ ...prev, logo: 0 }));
+      } else {
+        setIsUploadingCover(false);
+        setUploadProgress((prev) => ({ ...prev, cover: 0 }));
+      }
     }
   };
 
@@ -149,7 +242,6 @@ export default function SellerSettingsPage() {
     setError("");
     setSuccess("");
 
-    // Validation
     if (!formData.brandName.trim()) {
       setError("Store name is required");
       return;
@@ -263,13 +355,29 @@ export default function SellerSettingsPage() {
                 </div>
               )}
 
-              <label className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-                {isUploadingCover ? (
-                  <div className="bg-white text-black px-6 py-2 rounded-full font-semibold flex items-center gap-2">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Uploading...
+              {/* ✅ PROGRESS OVERLAY FOR COVER */}
+              {isUploadingCover && (
+                <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center">
+                  <Loader2 className="w-8 h-8 text-white animate-spin mb-3" />
+                  <p className="text-white text-sm mb-2">
+                    {uploadProgress.cover < 60
+                      ? "Compressing..."
+                      : "Uploading..."}
+                  </p>
+                  <div className="w-48 h-2 bg-gray-700 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-white transition-all duration-300"
+                      style={{ width: `${uploadProgress.cover}%` }}
+                    />
                   </div>
-                ) : (
+                  <p className="text-white text-xs mt-2">
+                    {uploadProgress.cover}%
+                  </p>
+                </div>
+              )}
+
+              <label className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                {!isUploadingCover && (
                   <>
                     <div className="bg-white text-black px-6 py-2 rounded-full font-semibold">
                       Change Cover
@@ -304,10 +412,21 @@ export default function SellerSettingsPage() {
                   </div>
                 )}
 
+                {/* ✅ PROGRESS OVERLAY FOR LOGO */}
+                {isUploadingLogo && (
+                  <div className="absolute inset-0 bg-black/90 flex flex-col items-center justify-center rounded-2xl">
+                    <Loader2 className="w-6 h-6 text-white animate-spin mb-2" />
+                    <div className="w-20 h-1 bg-gray-700 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-white transition-all duration-300"
+                        style={{ width: `${uploadProgress.logo}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+
                 <label className="absolute inset-0 flex items-center justify-center bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer rounded-2xl">
-                  {isUploadingLogo ? (
-                    <Loader2 size={24} className="text-white animate-spin" />
-                  ) : (
+                  {!isUploadingLogo && (
                     <>
                       <Camera size={24} className="text-white" />
                       <input
