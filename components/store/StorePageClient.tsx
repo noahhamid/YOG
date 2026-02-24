@@ -57,7 +57,6 @@ export default function StorePageClient({
 }: SellerStoreClientProps) {
   const router = useRouter();
   const [isFollowing, setIsFollowing] = useState(false);
-  const [isFollowLoading, setIsFollowLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"products" | "about">("products");
   const [followerCount, setFollowerCount] = useState(seller.followers);
 
@@ -68,14 +67,11 @@ export default function StorePageClient({
       if (!userStr) return;
 
       try {
-        const response = await fetch(
-          `/api/store/follow?sellerId=${seller.id}`,
-          {
-            headers: {
-              "x-user-data": userStr,
-            },
+        const response = await fetch(`/api/follow?sellerId=${seller.id}`, {
+          headers: {
+            "x-user-data": userStr,
           },
-        );
+        });
 
         const data = await response.json();
         setIsFollowing(data.isFollowing);
@@ -87,6 +83,7 @@ export default function StorePageClient({
     checkFollowStatus();
   }, [seller.id]);
 
+  // ✅ INSTANT OPTIMISTIC UPDATE
   const handleFollow = async () => {
     const userStr = localStorage.getItem("yog_user");
 
@@ -96,35 +93,29 @@ export default function StorePageClient({
       return;
     }
 
-    setIsFollowLoading(true);
+    // ✅ UPDATE UI IMMEDIATELY (OPTIMISTIC)
+    const wasFollowing = isFollowing;
+    const newFollowing = !isFollowing;
 
-    try {
-      const response = await fetch("/api/store/follow", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-user-data": userStr,
-        },
-        body: JSON.stringify({
-          sellerId: seller.id,
-          action: isFollowing ? "unfollow" : "follow",
-        }),
-      });
+    setIsFollowing(newFollowing);
+    setFollowerCount((prev) => (wasFollowing ? prev - 1 : prev + 1));
 
-      const data = await response.json();
-
-      if (response.ok) {
-        setIsFollowing(!isFollowing);
-        setFollowerCount((prev) => (isFollowing ? prev - 1 : prev + 1));
-      } else {
-        alert(data.error || "Failed to follow store");
-      }
-    } catch (error) {
-      console.error("Error following store:", error);
-      alert("Failed to follow store");
-    } finally {
-      setIsFollowLoading(false);
-    }
+    // ✅ API CALL IN BACKGROUND (NO AWAIT)
+    fetch("/api/follow", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-user-data": userStr,
+      },
+      body: JSON.stringify({
+        sellerId: seller.id,
+        action: wasFollowing ? "unfollow" : "follow",
+      }),
+    }).catch(() => {
+      // ✅ REVERT ONLY ON ERROR
+      setIsFollowing(wasFollowing);
+      setFollowerCount((prev) => (wasFollowing ? prev + 1 : prev - 1));
+    });
   };
 
   const handleShare = async () => {
@@ -149,7 +140,7 @@ export default function StorePageClient({
   const stats = [
     {
       icon: Eye,
-      label: "Total Views",
+      label: "Monthly Views", // ✅ CHANGED FROM "Total Views"
       value: seller.totalViews.toLocaleString(),
       color: "blue",
     },
@@ -162,7 +153,7 @@ export default function StorePageClient({
     {
       icon: Users,
       label: "Followers",
-      value: followerCount.toLocaleString(),
+      value: followerCount.toLocaleString(), // ✅ USES LIVE STATE
       color: "purple",
     },
     {
@@ -294,27 +285,22 @@ export default function StorePageClient({
                     </div>
                   </div>
 
-                  {/* Action Buttons */}
+                  {/* ✅ INSTANT FOLLOW BUTTON */}
                   <div className="flex gap-3">
                     <button
                       onClick={handleFollow}
-                      disabled={isFollowLoading}
-                      className={`px-6 py-3 rounded-full font-semibold transition-all flex items-center gap-2 ${
+                      className={`px-6 py-3 rounded-full font-semibold transition-all transform active:scale-95 flex items-center gap-2 ${
                         isFollowing
                           ? "bg-gray-100 text-gray-700 hover:bg-gray-200"
                           : "bg-black text-white hover:bg-gray-800"
-                      } disabled:opacity-50`}
+                      }`}
                       style={{ fontFamily: "'Poppins', sans-serif" }}
                     >
                       <Heart
                         size={18}
-                        className={isFollowing ? "fill-current" : ""}
+                        className={`transition-all ${isFollowing ? "fill-current scale-110" : "scale-100"}`}
                       />
-                      {isFollowLoading
-                        ? "..."
-                        : isFollowing
-                          ? "Following"
-                          : "Follow"}
+                      {isFollowing ? "Following" : "Follow"}
                     </button>
                     <button
                       onClick={handleShare}
@@ -365,7 +351,7 @@ export default function StorePageClient({
                         {stat.label}
                       </p>
                       <p
-                        className="text-3xl font-bold text-gray-900"
+                        className="text-3xl font-bold text-gray-900 transition-all"
                         style={{ fontFamily: "'Poppins', sans-serif" }}
                       >
                         {stat.value}
