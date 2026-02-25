@@ -87,6 +87,7 @@ export default function StorePageClient({
   }, [seller.id]);
 
   // ✅ INSTANT OPTIMISTIC UPDATE
+  // ✅ INSTANT OPTIMISTIC UPDATE
   const handleFollow = async () => {
     const userStr = localStorage.getItem("yog_user");
 
@@ -103,8 +104,9 @@ export default function StorePageClient({
     setIsFollowing(newFollowing);
     setFollowerCount((prev) => (wasFollowing ? prev - 1 : prev + 1));
 
-    // ✅ API CALL IN BACKGROUND (NO AWAIT)
-    fetch("/api/follow", {
+    // ✅ FIX: CHANGE /api/follow TO /api/store/follow
+    fetch("/api/store/follow", {
+      // ← CHANGED THIS LINE
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -114,11 +116,20 @@ export default function StorePageClient({
         sellerId: seller.id,
         action: wasFollowing ? "unfollow" : "follow",
       }),
-    }).catch(() => {
-      // ✅ REVERT ONLY ON ERROR
-      setIsFollowing(wasFollowing);
-      setFollowerCount((prev) => (wasFollowing ? prev + 1 : prev - 1));
-    });
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed");
+        }
+        console.log("✅ Follow saved to database");
+      })
+      .catch((error) => {
+        console.error("❌ Follow failed:", error);
+        // ✅ REVERT ONLY ON ERROR
+        setIsFollowing(wasFollowing);
+        setFollowerCount((prev) => (wasFollowing ? prev + 1 : prev - 1));
+        alert("Failed to update follow status");
+      });
   };
 
   const handleShare = async () => {
