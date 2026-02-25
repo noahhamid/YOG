@@ -30,14 +30,14 @@ export async function GET(req: NextRequest) {
             storeCover: true,
             storeDescription: true,
             location: true,
-            followers: true,
-            totalSales: true, // ✅ This exists
+            totalSales: true,
             approved: true,
             _count: {
               select: {
                 products: {
                   where: { status: "PUBLISHED" },
                 },
+                followersList: true, // ✅ COUNT ACTUAL FOLLOWERS
               },
             },
           },
@@ -55,7 +55,8 @@ export async function GET(req: NextRequest) {
         followedAt: f.createdAt,
         seller: {
           ...f.seller,
-          totalProducts: f.seller._count.products, // ✅ Calculate from _count
+          totalProducts: f.seller._count.products,
+          followers: f.seller._count.followersList, // ✅ USE REAL COUNT FROM FOLLOW TABLE
         },
       })),
     });
