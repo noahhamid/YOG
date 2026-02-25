@@ -67,11 +67,14 @@ export default function StorePageClient({
       if (!userStr) return;
 
       try {
-        const response = await fetch(`/api/follow?sellerId=${seller.id}`, {
-          headers: {
-            "x-user-data": userStr,
+        const response = await fetch(
+          `/api/store/follow?sellerId=${seller.id}`,
+          {
+            headers: {
+              "x-user-data": userStr,
+            },
           },
-        });
+        );
 
         const data = await response.json();
         setIsFollowing(data.isFollowing);
