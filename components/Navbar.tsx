@@ -183,6 +183,25 @@ const Navbar = () => {
             transition: "all 0.8s cubic-bezier(0.4, 0, 0.2, 1)",
           }}
         >
+          {/* ✅ ADD FOLLOWING LINK (only for logged in users) */}
+          {user && (
+            <Link
+              href="/following"
+              className="text-[11px] font-semibold uppercase tracking-[0.15em] whitespace-nowrap hover:opacity-60 relative group"
+              style={{
+                color: isScrolled ? "white" : "black",
+                transition: "all 0.3s ease-out",
+              }}
+            >
+              Following
+              <span
+                className="absolute bottom-0 left-0 w-0 h-[1px] transition-all duration-300 group-hover:w-full"
+                style={{
+                  backgroundColor: isScrolled ? "white" : "black",
+                }}
+              />
+            </Link>
+          )}
           {/* Sell Link */}
           <div className="hidden xl:flex items-center gap-8 border-r border-black/10 pr-8">
             <Link
