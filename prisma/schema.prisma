@@ -111,7 +111,7 @@ model Seller {
   @@index([storeSlug])
   @@index([approved])
   @@index([userId])
-  @@index([approved, storeSlug])  // ✅ ADD THIS
+  @@index([approved, storeSlug])
 }
 
 model Follow {
@@ -152,8 +152,8 @@ model Product {
   @@index([isTrending])
   @@index([sellerId])
   @@index([status])
-  @@index([sellerId, status])              // ✅ ADD THIS
-  @@index([sellerId, status, createdAt])   // ✅ ADD THIS
+  @@index([sellerId, status])
+  @@index([sellerId, status, createdAt])
 }
 
 model ProductVariant {
@@ -176,7 +176,23 @@ model ProductImage {
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([productId])
-  @@index([productId, position])  // ✅ ADD THIS
+  @@index([productId, position])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  productId String?
+  sellerId  String?
+  imageUrl  String?
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  @@index([userId, read])
+  @@index([userId, createdAt])
 }
 
 enum UserRole {
@@ -209,4 +225,11 @@ enum OrderStatus {
 enum DeliveryMethod {
   DELIVERY
   MEETUP
+}
+
+enum NotificationType {
+  NEW_PRODUCT
+  ORDER_UPDATE
+  FOLLOW
+  SYSTEM
 }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   try {
@@ -88,7 +88,10 @@ export async function POST(req: NextRequest) {
             size: v.size,
             color: v.color,
             quantity: v.quantity,
-            sku: `${title.substring(0, 3).toUpperCase()}-${v.size}-${v.color}`.replace(/\s/g, ""),
+            sku: `${title.substring(0, 3).toUpperCase()}-${v.size}-${v.color}`.replace(
+              /\s/g,
+              ""
+            ),
           })),
         },
         images: {
@@ -105,6 +108,35 @@ export async function POST(req: NextRequest) {
     });
 
     console.log(`✅ Product created: ${product.id}`);
+
+    // ✅ CREATE NOTIFICATIONS FOR FOLLOWERS (only if published)
+    if (product.status === "PUBLISHED") {
+      try {
+        const followers = await prisma.follow.findMany({
+          where: { sellerId: seller.id },
+          select: { userId: true },
+        });
+
+        if (followers.length > 0) {
+          await prisma.notification.createMany({
+            data: followers.map((follow) => ({
+              userId: follow.userId,
+              type: "NEW_PRODUCT",
+              title: `New product from ${seller.brandName}`,
+              message: `Check out: ${product.title}`,
+              productId: product.id,
+              sellerId: seller.id,
+              imageUrl: images[0] || null,
+            })),
+          });
+
+          console.log(`🔔 Sent notifications to ${followers.length} followers`);
+        }
+      } catch (notifError) {
+        console.error("❌ Error creating notifications:", notifError);
+        // Don't fail product creation if notifications fail
+      }
+    }
 
     return NextResponse.json({
       success: true,
@@ -160,4 +192,4 @@ export async function GET(req: NextRequest) {
       { status: 500 }
     );
   }
-}   
+}
