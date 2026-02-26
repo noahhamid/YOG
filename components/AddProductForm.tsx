@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
-  Upload,
   Plus,
   Minus,
   Image as ImageIcon,
@@ -33,7 +32,9 @@ export default function AddProductForm({
     price: "",
     compareAtPrice: "",
     category: "",
-    brand: "",
+    clothingType: "",
+    occasion: "",
+    material: "",
     status: "PUBLISHED",
   });
 
@@ -47,10 +48,28 @@ export default function AddProductForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
 
-  const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
+  const sizes = ["XS", "S", "M", "L", "XL", "XXL", "2XL", "3XL"];
   const categories = ["MEN", "WOMEN", "UNISEX"];
+  const clothingTypes = [
+    { value: "TOP", label: "Top (T-shirts, Shirts, Blouses)" },
+    { value: "BOTTOM", label: "Bottom (Jeans, Pants, Skirts)" },
+    { value: "DRESS", label: "Dress" },
+    { value: "OUTERWEAR", label: "Outerwear (Jackets, Coats)" },
+    { value: "UNDERWEAR", label: "Underwear & Loungewear" },
+    { value: "SHOES", label: "Shoes & Footwear" },
+    { value: "ACCESSORIES", label: "Accessories (Bags, Hats)" },
+    { value: "ACTIVEWEAR", label: "Activewear & Sportswear" },
+  ];
+  const occasions = [
+    "CASUAL",
+    "FORMAL",
+    "SPORTSWEAR",
+    "STREETWEAR",
+    "PARTY",
+    "WORKWEAR",
+    "LOUNGEWEAR",
+  ];
 
-  // Load user on mount
   useEffect(() => {
     const userStr = localStorage.getItem("yog_user");
     if (userStr) {
@@ -112,8 +131,9 @@ export default function AddProductForm({
     if (!formData.price || parseFloat(formData.price) <= 0)
       newErrors.price = "Valid price is required";
     if (!formData.category) newErrors.category = "Category is required";
-    if (images.length === 0)
-      newErrors.images = "At least one image is required";
+    if (!formData.clothingType)
+      newErrors.clothingType = "Clothing type is required";
+    if (images.length < 2) newErrors.images = "At least 2 images are required";
     if (variants.length === 0)
       newErrors.variants = "At least one variant is required";
 
@@ -128,14 +148,12 @@ export default function AddProductForm({
       return;
     }
 
-    // Check if user is logged in
     if (!currentUser) {
       alert("Please sign in first");
       window.location.href = "/login?redirect=/seller/dashboard";
       return;
     }
 
-    // Check if user is a seller
     if (currentUser.role !== "SELLER" && currentUser.role !== "ADMIN") {
       alert("You need to be a seller to add products");
       return;
@@ -150,6 +168,9 @@ export default function AddProductForm({
         compareAtPrice: formData.compareAtPrice
           ? parseFloat(formData.compareAtPrice)
           : null,
+        clothingType: formData.clothingType || null,
+        occasion: formData.occasion || null,
+        material: formData.material || null,
         variants,
         images,
       };
@@ -181,34 +202,34 @@ export default function AddProductForm({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-2 sm:p-4 z-50 overflow-y-auto">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
-          className="bg-white rounded-3xl max-w-4xl w-full my-8 p-8"
+          className="bg-white rounded-2xl sm:rounded-3xl max-w-6xl w-full my-4 sm:my-8 p-4 sm:p-8 max-h-[95vh] overflow-y-auto"
         >
           {/* Header */}
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-3xl font-bold text-gray-900">
+          <div className="flex items-center justify-between mb-4 sm:mb-6 sticky top-0 bg-white z-10 pb-4 border-b">
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">
               Add New Product
             </h2>
             <button
               onClick={onClose}
-              className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition-colors"
+              className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition-colors flex-shrink-0"
             >
               <X size={20} />
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-8">
+          <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
             {/* Basic Info */}
             <div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4">
                 Basic Information
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="md:col-span-2">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="lg:col-span-2">
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Product Title *
                   </label>
@@ -230,7 +251,7 @@ export default function AddProductForm({
                   )}
                 </div>
 
-                <div className="md:col-span-2">
+                <div className="lg:col-span-2">
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Description *
                   </label>
@@ -303,7 +324,7 @@ export default function AddProductForm({
                       errors.category ? "border-red-500" : "border-gray-200"
                     }`}
                   >
-                    <option value="">Select category</option>
+                    <option value="">Select gender category</option>
                     {categories.map((cat) => (
                       <option key={cat} value={cat}>
                         {cat}
@@ -320,15 +341,61 @@ export default function AddProductForm({
 
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Brand
+                    Clothing Type *
+                  </label>
+                  <select
+                    name="clothingType"
+                    value={formData.clothingType}
+                    onChange={handleInputChange}
+                    className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:border-black ${
+                      errors.clothingType ? "border-red-500" : "border-gray-200"
+                    }`}
+                  >
+                    <option value="">Select type</option>
+                    {clothingTypes.map((type) => (
+                      <option key={type.value} value={type.value}>
+                        {type.label}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.clothingType && (
+                    <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
+                      <AlertCircle size={14} />
+                      {errors.clothingType}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Occasion
+                  </label>
+                  <select
+                    name="occasion"
+                    value={formData.occasion}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-black"
+                  >
+                    <option value="">Select occasion</option>
+                    {occasions.map((occ) => (
+                      <option key={occ} value={occ}>
+                        {occ}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Material/Fabric
                   </label>
                   <input
                     type="text"
-                    name="brand"
-                    value={formData.brand}
+                    name="material"
+                    value={formData.material}
                     onChange={handleInputChange}
                     className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-black"
-                    placeholder="Your brand name"
+                    placeholder="e.g., Cotton, Polyester, Denim"
                   />
                 </div>
               </div>
@@ -337,16 +404,16 @@ export default function AddProductForm({
             {/* Variants */}
             <div>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-semibold text-gray-900">
+                <h3 className="text-lg sm:text-xl font-semibold text-gray-900">
                   Variants (Size & Color)
                 </h3>
                 <button
                   type="button"
                   onClick={addVariant}
-                  className="px-4 py-2 bg-black text-white rounded-xl font-semibold hover:bg-gray-800 transition-colors flex items-center gap-2"
+                  className="px-3 sm:px-4 py-2 bg-black text-white rounded-xl font-semibold hover:bg-gray-800 transition-colors flex items-center gap-2 text-sm"
                 >
                   <Plus size={18} />
-                  Add Variant
+                  <span className="hidden sm:inline">Add Variant</span>
                 </button>
               </div>
 
@@ -354,7 +421,7 @@ export default function AddProductForm({
                 {variants.map((variant, index) => (
                   <div
                     key={index}
-                    className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl"
+                    className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 p-4 bg-gray-50 rounded-xl"
                   >
                     <select
                       value={variant.size}
@@ -392,14 +459,14 @@ export default function AddProductForm({
                       }
                       placeholder="Qty"
                       min="0"
-                      className="w-24 px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-black"
+                      className="w-full sm:w-24 px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-black"
                     />
 
                     {variants.length > 1 && (
                       <button
                         type="button"
                         onClick={() => removeVariant(index)}
-                        className="w-10 h-10 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 flex items-center justify-center"
+                        className="w-full sm:w-10 h-10 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 flex items-center justify-center"
                       >
                         <Minus size={18} />
                       </button>
@@ -417,11 +484,11 @@ export default function AddProductForm({
 
             {/* Images */}
             <div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">
-                Product Images
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4">
+                Product Images (Minimum 2)
               </h3>
 
-              <div className="flex gap-3 mb-4">
+              <div className="flex flex-col sm:flex-row gap-3 mb-4">
                 <input
                   type="url"
                   value={imageUrl}
@@ -432,14 +499,14 @@ export default function AddProductForm({
                 <button
                   type="button"
                   onClick={addImage}
-                  className="px-6 py-3 bg-black text-white rounded-xl font-semibold hover:bg-gray-800 flex items-center gap-2"
+                  className="px-6 py-3 bg-black text-white rounded-xl font-semibold hover:bg-gray-800 flex items-center justify-center gap-2"
                 >
                   <Plus size={18} />
                   Add
                 </button>
               </div>
 
-              <div className="grid grid-cols-3 md:grid-cols-5 gap-4">
+              <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-4">
                 {images.map((img, index) => (
                   <div key={index} className="relative group">
                     <img
@@ -458,7 +525,7 @@ export default function AddProductForm({
                 ))}
 
                 {images.length === 0 && (
-                  <div className="col-span-3 md:col-span-5 flex flex-col items-center justify-center py-12 border-2 border-dashed border-gray-300 rounded-xl">
+                  <div className="col-span-3 sm:col-span-4 lg:col-span-5 flex flex-col items-center justify-center py-12 border-2 border-dashed border-gray-300 rounded-xl">
                     <ImageIcon className="text-gray-400 mb-2" size={48} />
                     <p className="text-gray-500 text-sm">No images added yet</p>
                   </div>
@@ -473,7 +540,7 @@ export default function AddProductForm({
             </div>
 
             {/* Submit */}
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row gap-4 sticky bottom-0 bg-white pt-4 border-t">
               <button
                 type="button"
                 onClick={onClose}

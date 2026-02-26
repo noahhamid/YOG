@@ -134,6 +134,10 @@ model Product {
   price          Float
   compareAtPrice Float?
   category       ProductCategory
+  clothingType   ClothingType?    // ✅ NEW: Top, Bottom, Dress, etc.
+  occasion       Occasion?        // ✅ NEW: Casual, Formal, etc.
+  season         Season?          // ✅ NEW: Summer, Winter, etc.
+  material       String?          // ✅ NEW: Cotton, Polyester, etc.
   brand          String?
   status         ProductStatus    @default(DRAFT)
   isFeatured     Boolean          @default(false)
@@ -148,6 +152,8 @@ model Product {
   reviews        Review[]
 
   @@index([category])
+  @@index([clothingType])          // ✅ NEW INDEX
+  @@index([occasion])               // ✅ NEW INDEX
   @@index([isFeatured])
   @@index([isTrending])
   @@index([sellerId])
@@ -155,7 +161,6 @@ model Product {
   @@index([sellerId, status])
   @@index([sellerId, status, createdAt])
 }
-
 model ProductVariant {
   id        String  @id @default(cuid())
   productId String
@@ -232,4 +237,32 @@ enum NotificationType {
   ORDER_UPDATE
   FOLLOW
   SYSTEM
+}
+enum ClothingType {
+  TOP
+  BOTTOM
+  DRESS
+  OUTERWEAR
+  UNDERWEAR
+  SHOES
+  ACCESSORIES
+  ACTIVEWEAR
+}
+
+enum Occasion {
+  CASUAL
+  FORMAL
+  SPORTSWEAR
+  STREETWEAR
+  PARTY
+  WORKWEAR
+  LOUNGEWEAR
+}
+
+enum Season {
+  SPRING
+  SUMMER
+  FALL
+  WINTER
+  ALL_SEASON
 }

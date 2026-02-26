@@ -2,13 +2,13 @@
 
 import { Search, X, ChevronDown, ChevronUp } from "lucide-react";
 
-// ✅ DEFINE INTERFACE FOR EXPANDED SECTIONS
 interface ExpandedSections {
   category: boolean;
   price: boolean;
   size: boolean;
   color: boolean;
-  brand: boolean;
+  clothingType: boolean;
+  occasion: boolean;
   other: boolean;
 }
 
@@ -19,12 +19,10 @@ interface FilterSidebarProps {
   selectedSizes: string[];
   priceRange: [number, number];
   selectedColors: string[];
-  selectedBrands: string[];
+  selectedClothingTypes: string[];
+  selectedOccasions: string[];
   showNewArrivals: boolean;
   showOnSale: boolean;
-
-  // Available options
-  availableBrands: string[];
 
   // Handlers
   onSearchChange: (value: string) => void;
@@ -32,15 +30,16 @@ interface FilterSidebarProps {
   onSizeToggle: (size: string) => void;
   onPriceChange: (range: [number, number]) => void;
   onColorToggle: (color: string) => void;
-  onBrandToggle: (brand: string) => void;
+  onClothingTypeToggle: (type: string) => void;
+  onOccasionToggle: (occasion: string) => void;
   onNewArrivalsChange: (value: boolean) => void;
   onSaleChange: (value: boolean) => void;
   onClearFilters: () => void;
 
   // UI state
   activeFiltersCount: number;
-  expandedSections: ExpandedSections; // ✅ USE DEFINED INTERFACE
-  onToggleSection: (section: keyof ExpandedSections) => void; // ✅ FIX HERE
+  expandedSections: ExpandedSections;
+  onToggleSection: (section: keyof ExpandedSections) => void;
 }
 
 export default function FilterSidebar({
@@ -49,16 +48,17 @@ export default function FilterSidebar({
   selectedSizes,
   priceRange,
   selectedColors,
-  selectedBrands,
+  selectedClothingTypes,
+  selectedOccasions,
   showNewArrivals,
   showOnSale,
-  availableBrands,
   onSearchChange,
   onCategoryChange,
   onSizeToggle,
   onPriceChange,
   onColorToggle,
-  onBrandToggle,
+  onClothingTypeToggle,
+  onOccasionToggle,
   onNewArrivalsChange,
   onSaleChange,
   onClearFilters,
@@ -73,7 +73,7 @@ export default function FilterSidebar({
     { value: "unisex", label: "Unisex" },
   ];
 
-  const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
+  const sizes = ["XS", "S", "M", "L", "XL", "XXL", "2XL", "3XL"];
 
   const colors = [
     { value: "black", label: "Black", hex: "#000000" },
@@ -83,6 +83,27 @@ export default function FilterSidebar({
     { value: "red", label: "Red", hex: "#EF4444" },
     { value: "green", label: "Green", hex: "#10B981" },
     { value: "khaki", label: "Khaki", hex: "#C4B5A0" },
+  ];
+
+  const clothingTypes = [
+    { value: "TOP", label: "Tops" },
+    { value: "BOTTOM", label: "Bottoms" },
+    { value: "DRESS", label: "Dresses" },
+    { value: "OUTERWEAR", label: "Outerwear" },
+    { value: "UNDERWEAR", label: "Underwear" },
+    { value: "SHOES", label: "Shoes" },
+    { value: "ACCESSORIES", label: "Accessories" },
+    { value: "ACTIVEWEAR", label: "Activewear" },
+  ];
+
+  const occasions = [
+    { value: "CASUAL", label: "Casual" },
+    { value: "FORMAL", label: "Formal" },
+    { value: "SPORTSWEAR", label: "Sportswear" },
+    { value: "STREETWEAR", label: "Streetwear" },
+    { value: "PARTY", label: "Party" },
+    { value: "WORKWEAR", label: "Workwear" },
+    { value: "LOUNGEWEAR", label: "Loungewear" },
   ];
 
   return (
@@ -128,7 +149,7 @@ export default function FilterSidebar({
               className="font-semibold text-sm"
               style={{ fontFamily: "'Poppins', sans-serif" }}
             >
-              Category
+              Gender
             </h4>
             {expandedSections.category ? (
               <ChevronUp size={16} />
@@ -156,6 +177,92 @@ export default function FilterSidebar({
                     style={{ fontFamily: "'Poppins', sans-serif" }}
                   >
                     {category.label}
+                  </span>
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Clothing Type Filter */}
+        <div className="mb-6 pb-6 border-b border-gray-300">
+          <button
+            onClick={() => onToggleSection("clothingType")}
+            className="w-full flex items-center justify-between mb-3"
+          >
+            <h4
+              className="font-semibold text-sm"
+              style={{ fontFamily: "'Poppins', sans-serif" }}
+            >
+              Type
+            </h4>
+            {expandedSections.clothingType ? (
+              <ChevronUp size={16} />
+            ) : (
+              <ChevronDown size={16} />
+            )}
+          </button>
+          {expandedSections.clothingType && (
+            <div className="space-y-2">
+              {clothingTypes.map((type) => (
+                <label
+                  key={type.value}
+                  className="flex items-center gap-2 cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedClothingTypes.includes(type.value)}
+                    onChange={() => onClothingTypeToggle(type.value)}
+                    className="w-4 h-4 rounded border-gray-300 text-black focus:ring-black cursor-pointer"
+                  />
+                  <span
+                    className="text-sm"
+                    style={{ fontFamily: "'Poppins', sans-serif" }}
+                  >
+                    {type.label}
+                  </span>
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Occasion Filter */}
+        <div className="mb-6 pb-6 border-b border-gray-300">
+          <button
+            onClick={() => onToggleSection("occasion")}
+            className="w-full flex items-center justify-between mb-3"
+          >
+            <h4
+              className="font-semibold text-sm"
+              style={{ fontFamily: "'Poppins', sans-serif" }}
+            >
+              Occasion
+            </h4>
+            {expandedSections.occasion ? (
+              <ChevronUp size={16} />
+            ) : (
+              <ChevronDown size={16} />
+            )}
+          </button>
+          {expandedSections.occasion && (
+            <div className="space-y-2">
+              {occasions.map((occasion) => (
+                <label
+                  key={occasion.value}
+                  className="flex items-center gap-2 cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedOccasions.includes(occasion.value)}
+                    onChange={() => onOccasionToggle(occasion.value)}
+                    className="w-4 h-4 rounded border-gray-300 text-black focus:ring-black cursor-pointer"
+                  />
+                  <span
+                    className="text-sm"
+                    style={{ fontFamily: "'Poppins', sans-serif" }}
+                  >
+                    {occasion.label}
                   </span>
                 </label>
               ))}
@@ -284,53 +391,6 @@ export default function FilterSidebar({
                   title={color.label}
                 />
               ))}
-            </div>
-          )}
-        </div>
-
-        {/* Brand Filter */}
-        <div className="mb-6 pb-6 border-b border-gray-300">
-          <button
-            onClick={() => onToggleSection("brand")}
-            className="w-full flex items-center justify-between mb-3"
-          >
-            <h4
-              className="font-semibold text-sm"
-              style={{ fontFamily: "'Poppins', sans-serif" }}
-            >
-              Brand
-            </h4>
-            {expandedSections.brand ? (
-              <ChevronUp size={16} />
-            ) : (
-              <ChevronDown size={16} />
-            )}
-          </button>
-          {expandedSections.brand && (
-            <div className="space-y-2">
-              {availableBrands.length > 0 ? (
-                availableBrands.map((brand) => (
-                  <label
-                    key={brand}
-                    className="flex items-center gap-2 cursor-pointer"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedBrands.includes(brand)}
-                      onChange={() => onBrandToggle(brand)}
-                      className="w-4 h-4 rounded border-gray-300 text-black focus:ring-black cursor-pointer"
-                    />
-                    <span
-                      className="text-sm"
-                      style={{ fontFamily: "'Poppins', sans-serif" }}
-                    >
-                      {brand}
-                    </span>
-                  </label>
-                ))
-              ) : (
-                <p className="text-sm text-gray-500">No brands available</p>
-              )}
             </div>
           )}
         </div>
