@@ -456,6 +456,7 @@ export default function ProductGrid() {
 
 function ProductCard({ product, index, isVisible }: any) {
   const { addToCart } = useCart();
+  const [isHovered, setIsHovered] = useState(false); // ✅ ADD HOVER STATE
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -480,10 +481,25 @@ function ProductCard({ product, index, isVisible }: any) {
     alert(`✅ Added "${product.title}" to cart!`);
   };
 
+  // ✅ GET IMAGES - Handle both formats
+  const allImages = product.allImages || []; // Array of all image URLs
+  const primaryImage = allImages[0] || product.image || "";
+  const secondaryImage = allImages[1] || primaryImage;
+  const hasMultipleImages = secondaryImage && secondaryImage !== primaryImage;
+
+  console.log("Product images:", {
+    allImages,
+    primaryImage,
+    secondaryImage,
+    hasMultipleImages,
+  }); // DEBUG
+
   return (
     <a href={`/product/${product.id}`} className="block">
       <div
         className="group relative cursor-pointer will-change-transform"
+        onMouseEnter={() => setIsHovered(true)} // ✅ SET HOVER
+        onMouseLeave={() => setIsHovered(false)} // ✅ UNSET HOVER
         style={{
           opacity: isVisible ? 1 : 0,
           transform: isVisible ? "translateY(0)" : "translateY(50px)",
@@ -491,15 +507,31 @@ function ProductCard({ product, index, isVisible }: any) {
         }}
       >
         <div className="relative bg-gray-100 rounded-2xl overflow-hidden mb-4 aspect-[3/4]">
+          {/* ✅ PRIMARY IMAGE (ALWAYS VISIBLE) */}
           <img
-            src={product.image}
+            src={primaryImage}
             alt={product.title}
-            className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+            className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 ease-out group-hover:scale-105 ${
+              isHovered && hasMultipleImages ? "opacity-0" : "opacity-100"
+            }`}
             loading="lazy"
           />
 
+          {/* ✅ SECONDARY IMAGE (SHOWS ON HOVER) */}
+          {hasMultipleImages && (
+            <img
+              src={secondaryImage}
+              alt={`${product.title} - alternate view`}
+              className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 ease-out group-hover:scale-105 ${
+                isHovered ? "opacity-100" : "opacity-0"
+              }`}
+              loading="lazy"
+            />
+          )}
+
+          {/* Discount Badge */}
           {product.compareAtPrice && product.compareAtPrice > product.price && (
-            <div className="absolute top-3 left-3 bg-red-500 text-white px-2 py-1 rounded-lg text-xs font-bold">
+            <div className="absolute top-3 left-3 bg-red-500 text-white px-2 py-1 rounded-lg text-xs font-bold z-10">
               -
               {Math.round(
                 ((product.compareAtPrice - product.price) /
@@ -510,7 +542,7 @@ function ProductCard({ product, index, isVisible }: any) {
             </div>
           )}
 
-          <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-[1]" />
 
           <button
             onClick={(e) => {
@@ -518,14 +550,14 @@ function ProductCard({ product, index, isVisible }: any) {
               e.stopPropagation();
               alert("Wishlist feature coming soon!");
             }}
-            className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm p-2.5 rounded-full shadow-lg hover:bg-white transition-all duration-300 opacity-0 translate-x-5 scale-90 group-hover:opacity-100 group-hover:translate-x-0 group-hover:scale-100"
+            className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm p-2.5 rounded-full shadow-lg hover:bg-white transition-all duration-300 opacity-0 translate-x-5 scale-90 group-hover:opacity-100 group-hover:translate-x-0 group-hover:scale-100 z-10"
           >
             <Heart size={18} className="text-gray-800" />
           </button>
 
           <button
             onClick={handleAddToCart}
-            className="absolute bottom-4 left-4 right-4 bg-black text-white py-3 rounded-full font-semibold text-sm uppercase flex items-center justify-center gap-2 hover:bg-gray-900 transition-all duration-300 opacity-0 translate-y-5 group-hover:opacity-100 group-hover:translate-y-0"
+            className="absolute bottom-4 left-4 right-4 bg-black text-white py-3 rounded-full font-semibold text-sm uppercase flex items-center justify-center gap-2 hover:bg-gray-900 transition-all duration-300 opacity-0 translate-y-5 group-hover:opacity-100 group-hover:translate-y-0 z-10"
             style={{
               fontFamily: "'Poppins', sans-serif",
               letterSpacing: "0.08em",
