@@ -42,6 +42,10 @@ export async function POST(req: NextRequest) {
       include: {
         variants: true,
         seller: true,
+        images: {
+          orderBy: { position: 'asc' },
+          take: 1,
+        },
       },
     });
 
@@ -108,7 +112,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Reduce stock (optional - you might want to do this only when order is confirmed)
+    // Reduce stock
     await prisma.productVariant.update({
       where: { id: variant.id },
       data: {
@@ -117,6 +121,26 @@ export async function POST(req: NextRequest) {
         },
       },
     });
+
+    // ✅ CREATE NOTIFICATION FOR SELLER
+    try {
+      await prisma.notification.create({
+        data: {
+          userId: product.seller.userId, // Seller's user ID
+          type: "ORDER_UPDATE",
+          title: "New Order Received! 🎉",
+          message: `${customerName} ordered ${quantity}x ${product.title} (${selectedSize}, ${selectedColor}) - ${finalTotal.toLocaleString()} ETB`,
+          productId: product.id,
+          sellerId: product.sellerId,
+          imageUrl: product.images[0]?.url || null,
+        },
+      });
+
+      console.log(`🔔 Order notification sent to seller: ${product.seller.brandName}`);
+    } catch (notifError) {
+      console.error("❌ Error creating order notification:", notifError);
+      // Don't fail order creation if notification fails
+    }
 
     console.log(`✅ Order created: ${orderNumber}`);
     console.log(`📦 Product: ${product.title}`);
