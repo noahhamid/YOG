@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ShoppingCart, Heart, RefreshCw } from "lucide-react";
+import { ShoppingCart, Heart } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import FilterSidebar from "./FilterSidebar";
 
@@ -12,16 +12,17 @@ interface ProductsCache {
   unisex: any[];
   onSale: any[];
   newArrivals: any[];
-  trending: any[]; // ✅ ADD TRENDING
+  trending: any[];
   timestamp: number;
   productCount: number;
 }
 
 const CACHE_KEY = "yog_products_cache";
-const CACHE_DURATION = 5 * 60 * 1000;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const AUTO_REFRESH_INTERVAL = 3 * 60 * 1000; // ✅ 3 MINUTES AUTO-REFRESH
 
 interface ProductGridProps {
-  initialCategory?: string; // ✅ ADD PROPS
+  initialCategory?: string;
   showTrendingOnly?: boolean;
 }
 
@@ -32,9 +33,8 @@ export default function ProductGrid({
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
 
-  // Filter states
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState(initialCategory); // ✅ USE INITIAL
+  const [selectedCategory, setSelectedCategory] = useState(initialCategory);
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
@@ -53,7 +53,7 @@ export default function ProductGrid({
     unisex: [],
     onSale: [],
     newArrivals: [],
-    trending: [], // ✅ ADD TRENDING
+    trending: [],
     timestamp: 0,
     productCount: 0,
   });
@@ -62,6 +62,7 @@ export default function ProductGrid({
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
 
   const hasFetchedRef = useRef(false);
+  const autoRefreshIntervalRef = useRef<NodeJS.Timeout | null>(null); // ✅ TRACK INTERVAL
 
   const [expandedSections, setExpandedSections] = useState({
     category: true,
@@ -91,6 +92,7 @@ export default function ProductGrid({
     return () => observer.disconnect();
   }, [isVisible]);
 
+  // ✅ INITIAL LOAD + SETUP AUTO-REFRESH
   useEffect(() => {
     if (hasFetchedRef.current) return;
     hasFetchedRef.current = true;
@@ -108,7 +110,6 @@ export default function ProductGrid({
             );
             setProductsCache(parsed);
 
-            // ✅ SET INITIAL PRODUCTS BASED ON CATEGORY
             if (showTrendingOnly) {
               setDisplayedProducts(parsed.trending);
             } else if (initialCategory === "all") {
@@ -121,7 +122,15 @@ export default function ProductGrid({
 
             setIsLoadingProducts(false);
 
+            // ✅ CHECK FOR NEW PRODUCTS IMMEDIATELY
             checkForNewProducts(parsed.productCount);
+
+            // ✅ SETUP AUTO-REFRESH EVERY 3 MINUTES
+            autoRefreshIntervalRef.current = setInterval(() => {
+              console.log("🔄 Auto-refresh: Checking for new products...");
+              checkForNewProducts(parsed.productCount);
+            }, AUTO_REFRESH_INTERVAL);
+
             return;
           } else {
             console.log("🕐 Cache expired, fetching fresh data...");
@@ -133,6 +142,13 @@ export default function ProductGrid({
     }
 
     preloadAllCategories(false);
+
+    // ✅ CLEANUP INTERVAL ON UNMOUNT
+    return () => {
+      if (autoRefreshIntervalRef.current) {
+        clearInterval(autoRefreshIntervalRef.current);
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -151,26 +167,22 @@ export default function ProductGrid({
     productsCache,
   ]);
 
+  // ✅ CHECK FOR NEW PRODUCTS (SILENT)
   const checkForNewProducts = async (cachedCount: number) => {
     try {
-      console.log(`🔍 Checking for new products... (cached: ${cachedCount})`);
-
       const res = await fetch("/api/products/public");
       const data = await res.json();
       const currentCount = data.products?.length || 0;
-
-      console.log(`📊 Current count: ${currentCount}`);
 
       if (currentCount !== cachedCount) {
         console.log(
           `🔔 New products detected! (${cachedCount} → ${currentCount})`,
         );
-        console.log("🗑️ Invalidating cache...");
+        console.log("🗑️ Invalidating cache and refreshing...");
         localStorage.removeItem(CACHE_KEY);
 
+        // ✅ REFRESH SILENTLY WITHOUT LOADING SPINNER
         await preloadAllCategories(true);
-      } else {
-        console.log("✅ No new products");
       }
     } catch (error) {
       console.error("Error checking for new products:", error);
@@ -190,7 +202,7 @@ export default function ProductGrid({
         unisexProducts,
         onSaleProducts,
         newProducts,
-        trendingProducts, // ✅ FETCH TRENDING
+        trendingProducts,
       ] = await Promise.all([
         fetch("/api/products/public").then((res) => res.json()),
         fetch("/api/products/public?category=men").then((res) => res.json()),
@@ -198,7 +210,7 @@ export default function ProductGrid({
         fetch("/api/products/public?category=unisex").then((res) => res.json()),
         fetch("/api/products/public?isFeatured=true").then((res) => res.json()),
         fetch("/api/products/public?isTrending=true").then((res) => res.json()),
-        fetch("/api/products/trending").then((res) => res.json()), // ✅ TRENDING API
+        fetch("/api/products/trending").then((res) => res.json()),
       ]);
 
       const endTime = performance.now();
@@ -211,14 +223,13 @@ export default function ProductGrid({
         unisex: unisexProducts.products || [],
         onSale: onSaleProducts.products || [],
         newArrivals: newProducts.products || [],
-        trending: trendingProducts.products || [], // ✅ STORE TRENDING
+        trending: trendingProducts.products || [],
         timestamp: Date.now(),
         productCount: allProducts.products?.length || 0,
       };
 
       setProductsCache(cacheData);
 
-      // ✅ SET DISPLAYED PRODUCTS BASED ON INITIAL CATEGORY
       if (showTrendingOnly) {
         setDisplayedProducts(cacheData.trending);
       } else if (initialCategory === "all") {
@@ -240,6 +251,15 @@ export default function ProductGrid({
           `🔄 Cache refreshed silently (${cacheData.productCount} products)`,
         );
       }
+
+      // ✅ UPDATE INTERVAL AFTER REFRESH
+      if (silent && autoRefreshIntervalRef.current) {
+        clearInterval(autoRefreshIntervalRef.current);
+        autoRefreshIntervalRef.current = setInterval(() => {
+          console.log("🔄 Auto-refresh: Checking for new products...");
+          checkForNewProducts(cacheData.productCount);
+        }, AUTO_REFRESH_INTERVAL);
+      }
     } catch (error) {
       console.error("Error fetching products:", error);
     } finally {
@@ -249,19 +269,10 @@ export default function ProductGrid({
     }
   };
 
-  const handleManualRefresh = () => {
-    console.log("🔄 Manual refresh triggered");
-    localStorage.removeItem(CACHE_KEY);
-    setIsLoadingProducts(true);
-    preloadAllCategories(false);
-  };
-
   const filterFromCache = () => {
-    // ✅ IF SHOWING TRENDING ONLY, USE TRENDING CACHE
     if (showTrendingOnly) {
       let filtered = [...productsCache.trending];
 
-      // Apply filters
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
         filtered = filtered.filter(
@@ -301,7 +312,6 @@ export default function ProductGrid({
         );
       }
 
-      // Sort trending by score by default
       switch (sortBy) {
         case "price-low":
           filtered.sort((a, b) => a.price - b.price);
@@ -313,7 +323,6 @@ export default function ProductGrid({
           filtered.sort((a, b) => a.title.localeCompare(b.title));
           break;
         default:
-          // Keep trending score order
           filtered.sort(
             (a, b) => (b.trendingScore || 0) - (a.trendingScore || 0),
           );
@@ -323,7 +332,6 @@ export default function ProductGrid({
       return;
     }
 
-    // ✅ NORMAL FILTERING FOR OTHER PAGES
     let filtered = [...productsCache.all];
 
     if (
@@ -403,7 +411,7 @@ export default function ProductGrid({
   const clearFilters = () => {
     setSearchQuery("");
     if (!showTrendingOnly) {
-      setSelectedCategory(initialCategory); // ✅ RESET TO INITIAL
+      setSelectedCategory(initialCategory);
     }
     setSelectedSizes([]);
     setPriceRange([0, 10000]);
@@ -458,9 +466,7 @@ export default function ProductGrid({
   return (
     <section ref={sectionRef} className="w-full py-20 px-10 bg-white">
       <div className="mx-auto">
-        {/* Main Layout */}
         <div className="flex gap-6">
-          {/* Filter Sidebar - Hide category filter on trending page */}
           <FilterSidebar
             searchQuery={searchQuery}
             selectedCategory={showTrendingOnly ? "all" : selectedCategory}
@@ -484,12 +490,11 @@ export default function ProductGrid({
             activeFiltersCount={activeFiltersCount}
             expandedSections={expandedSections}
             onToggleSection={toggleSection}
-            hideCategoryFilter={showTrendingOnly} // ✅ HIDE ON TRENDING
+            hideCategoryFilter={showTrendingOnly}
           />
 
-          {/* Products */}
           <div className="flex-1">
-            {/* Top Bar */}
+            {/* ✅ REMOVED REFRESH BUTTON */}
             <div className="flex items-center justify-between mb-6">
               <p
                 className="text-gray-600"
@@ -499,35 +504,19 @@ export default function ProductGrid({
                 {displayedProducts.length === 1 ? "product" : "products"}
               </p>
 
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={handleManualRefresh}
-                  disabled={isLoadingProducts}
-                  className="px-4 py-2 text-sm border border-gray-300 rounded-full hover:bg-gray-50 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{ fontFamily: "'Poppins', sans-serif" }}
-                >
-                  <RefreshCw
-                    size={16}
-                    className={isLoadingProducts ? "animate-spin" : ""}
-                  />
-                  Refresh
-                </button>
-
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="px-6 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
-                  style={{ fontFamily: "'Poppins', sans-serif" }}
-                >
-                  <option value="featured">Featured</option>
-                  <option value="price-low">Price: Low to High</option>
-                  <option value="price-high">Price: High to Low</option>
-                  <option value="name">Name: A-Z</option>
-                </select>
-              </div>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="px-6 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
+                style={{ fontFamily: "'Poppins', sans-serif" }}
+              >
+                <option value="featured">Featured</option>
+                <option value="price-low">Price: Low to High</option>
+                <option value="price-high">Price: High to Low</option>
+                <option value="name">Name: A-Z</option>
+              </select>
             </div>
 
-            {/* Product Grid */}
             {isLoadingProducts ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => (
