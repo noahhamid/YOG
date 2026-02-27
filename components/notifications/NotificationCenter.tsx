@@ -118,11 +118,35 @@ export default function NotificationCenter({
     }
   };
 
+  // ... (keep all existing imports and state)
+
+  // ✅ UPDATED: getLink function
   const getLink = (notification: Notification) => {
-    if (notification.productId) return `/product/${notification.productId}`;
-    if (notification.sellerId) return `/store/${notification.sellerId}`;
+    // Order notifications → Seller dashboard orders
+    if (notification.type === "ORDER_UPDATE") {
+      return "/seller/dashboard?tab=orders";
+    }
+
+    // Product notifications → Product page
+    if (notification.type === "NEW_PRODUCT" && notification.productId) {
+      return `/product/${notification.productId}`;
+    }
+
+    // Follow notifications → Store page
+    if (notification.type === "FOLLOW" && notification.sellerId) {
+      return `/store/${notification.sellerId}`;
+    }
+
+    // System notifications → Stay on current page
+    if (notification.type === "SYSTEM") {
+      return "#";
+    }
+
+    // Fallback
     return "#";
   };
+
+  // ... (rest of the component stays the same)
 
   const getTimeAgo = (date: string) => {
     const seconds = Math.floor(
