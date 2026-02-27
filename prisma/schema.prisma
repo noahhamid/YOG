@@ -134,14 +134,14 @@ model Product {
   price          Float
   compareAtPrice Float?
   category       ProductCategory
-  clothingType   ClothingType?    // ✅ NEW: Top, Bottom, Dress, etc.
-  occasion       Occasion?        // ✅ NEW: Casual, Formal, etc.
-  season         Season?          // ✅ NEW: Summer, Winter, etc.
-  material       String?          // ✅ NEW: Cotton, Polyester, etc.
+  clothingType   ClothingType?
+  occasion       Occasion?
+  material       String?
   brand          String?
   status         ProductStatus    @default(DRAFT)
   isFeatured     Boolean          @default(false)
   isTrending     Boolean          @default(false)
+  views          Int              @default(0)  // ✅ ADD THIS
   tags           String[]
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
@@ -152,10 +152,11 @@ model Product {
   reviews        Review[]
 
   @@index([category])
-  @@index([clothingType])          // ✅ NEW INDEX
-  @@index([occasion])               // ✅ NEW INDEX
+  @@index([clothingType])
+  @@index([occasion])
   @@index([isFeatured])
   @@index([isTrending])
+  @@index([views])  // ✅ ADD INDEX
   @@index([sellerId])
   @@index([status])
   @@index([sellerId, status])

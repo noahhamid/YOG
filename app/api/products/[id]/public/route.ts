@@ -10,6 +10,16 @@ export async function GET(
   try {
     const { id: productId } = await params;
 
+    // ✅ INCREMENT VIEW COUNT
+    await prisma.product.update({
+      where: { id: productId },
+      data: {
+        views: {
+          increment: 1,
+        },
+      },
+    });
+
     const product = await prisma.product.findUnique({
       where: {
         id: productId,
@@ -37,14 +47,10 @@ export async function GET(
       );
     }
 
-    // Get unique sizes and colors
     const sizes = [...new Set(product.variants.map((v) => v.size))];
     const colors = [...new Set(product.variants.map((v) => v.color))];
-
-    // Calculate total stock
     const totalStock = product.variants.reduce((sum, v) => sum + v.quantity, 0);
 
-    // Transform for frontend
     const transformedProduct = {
       id: product.id,
       title: product.title,
@@ -57,6 +63,9 @@ export async function GET(
           )
         : 0,
       category: product.category,
+      clothingType: product.clothingType,
+      occasion: product.occasion,
+      material: product.material,
       brand: product.brand || product.seller.brandName,
       images: product.images.map((img) => img.url),
       variants: product.variants.map((v) => ({
@@ -78,6 +87,7 @@ export async function GET(
         location: product.seller.location,
         instagram: product.seller.instagram,
       },
+      views: product.views, // ✅ RETURN VIEWS
       createdAt: product.createdAt,
     };
 

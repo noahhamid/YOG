@@ -31,6 +31,9 @@ const Navbar = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [toastNotification, setToastNotification] = useState<any>(null);
+  const [shownNotificationIds, setShownNotificationIds] = useState<Set<string>>(
+    new Set(),
+  ); // ✅ TRACK SHOWN TOASTS
   const { getCartCount } = useCart();
   const cartCount = getCartCount();
 
@@ -40,11 +43,8 @@ const Navbar = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Load user from localStorage on mount
   useEffect(() => {
     loadUser();
-
-    // Listen for login events
     window.addEventListener("userLoggedIn", loadUser);
     return () => window.removeEventListener("userLoggedIn", loadUser);
   }, []);
@@ -56,7 +56,22 @@ const Navbar = () => {
     }
   };
 
-  // ✅ POLL FOR NOTIFICATIONS
+  // ✅ LOAD SHOWN NOTIFICATIONS ONCE ON MOUNT
+  useEffect(() => {
+    if (!user) return;
+
+    try {
+      const stored = localStorage.getItem("yog_shown_notifications");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        setShownNotificationIds(new Set(parsed));
+      }
+    } catch (error) {
+      console.error("Error loading shown notifications:", error);
+    }
+  }, [user]); // ✅ ONLY RUN WHEN USER CHANGES
+
+  // ✅ POLL FOR NOTIFICATIONS (SEPARATE EFFECT)
   useEffect(() => {
     if (!user) return;
 
@@ -72,13 +87,30 @@ const Navbar = () => {
         });
 
         const data = await res.json();
+
         if (data.unreadCount !== undefined) {
-          const prevCount = unreadCount;
           setUnreadCount(data.unreadCount);
 
-          // Show toast for new notifications
-          if (data.unreadCount > prevCount && data.notifications?.[0]) {
-            setToastNotification(data.notifications[0]);
+          // ✅ SHOW TOAST ONLY FOR NEW UNREAD NOTIFICATIONS THAT HAVEN'T BEEN SHOWN
+          if (data.notifications && data.notifications.length > 0) {
+            const newestUnread = data.notifications.find(
+              (n: any) => !n.read && !shownNotificationIds.has(n.id),
+            );
+
+            if (newestUnread) {
+              setToastNotification(newestUnread);
+
+              // ✅ MARK AS SHOWN (but not as read)
+              const newSet = new Set(shownNotificationIds);
+              newSet.add(newestUnread.id);
+              setShownNotificationIds(newSet);
+
+              // ✅ PERSIST TO LOCALSTORAGE
+              localStorage.setItem(
+                "yog_shown_notifications",
+                JSON.stringify(Array.from(newSet)),
+              );
+            }
           }
         }
       } catch (error) {
@@ -87,12 +119,11 @@ const Navbar = () => {
     };
 
     checkNotifications();
-    const interval = setInterval(checkNotifications, 10000); // Check every 10 seconds
+    const interval = setInterval(checkNotifications, 10000);
 
     return () => clearInterval(interval);
-  }, [user, unreadCount]);
+  }, [user]); // ✅ REMOVED shownNotificationIds FROM DEPENDENCIES
 
-  // Refresh user data from database
   const handleRefreshSession = async () => {
     if (!user) return;
 
@@ -119,7 +150,6 @@ const Navbar = () => {
     }
   };
 
-  // Close menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (!(e.target as Element).closest(".profile-menu")) {
@@ -226,7 +256,6 @@ const Navbar = () => {
               transition: "all 0.8s cubic-bezier(0.4, 0, 0.2, 1)",
             }}
           >
-            {/* Following Link & Notification Bell (only for logged in users) */}
             {user && (
               <>
                 <Link
@@ -246,7 +275,6 @@ const Navbar = () => {
                   />
                 </Link>
 
-                {/* ✅ NOTIFICATION BELL */}
                 <button
                   onClick={() => setShowNotifications(true)}
                   className="relative hover:opacity-60 transition-all"
@@ -264,7 +292,6 @@ const Navbar = () => {
               </>
             )}
 
-            {/* Sell Link */}
             <div className="hidden xl:flex items-center gap-8 border-r border-black/10 pr-8">
               <Link
                 href={
@@ -288,9 +315,7 @@ const Navbar = () => {
               </Link>
             </div>
 
-            {/* Account Actions */}
             <div className="flex items-center gap-6">
-              {/* If NOT logged in */}
               {!user && (
                 <>
                   <Link
@@ -328,7 +353,6 @@ const Navbar = () => {
                 </>
               )}
 
-              {/* If logged in */}
               {user && (
                 <div className="relative profile-menu">
                   <button
@@ -355,7 +379,6 @@ const Navbar = () => {
                     </span>
                   </button>
 
-                  {/* Dropdown Menu */}
                   <AnimatePresence>
                     {showProfileMenu && (
                       <motion.div
@@ -365,7 +388,6 @@ const Navbar = () => {
                         transition={{ duration: 0.2 }}
                         className="absolute right-0 mt-4 w-64 bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden"
                       >
-                        {/* User Info */}
                         <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
                           <p className="font-bold text-gray-900 text-sm">
                             {user.name}
@@ -386,7 +408,6 @@ const Navbar = () => {
                           </div>
                         </div>
 
-                        {/* Menu Items */}
                         <div className="py-2">
                           <Link
                             href="/profile"
@@ -425,7 +446,6 @@ const Navbar = () => {
                             </Link>
                           )}
 
-                          {/* Refresh Session Button */}
                           <button
                             onClick={() => {
                               setShowProfileMenu(false);
@@ -457,7 +477,6 @@ const Navbar = () => {
                 </div>
               )}
 
-              {/* Shopping Bag */}
               <Link
                 href="/cart"
                 className="hover:opacity-60 transition-all hover:scale-110 relative"
@@ -476,7 +495,6 @@ const Navbar = () => {
                 )}
               </Link>
 
-              {/* Mobile Menu */}
               <button
                 className="lg:hidden ml-2 hover:opacity-60 transition-all"
                 style={{
@@ -490,13 +508,11 @@ const Navbar = () => {
         </motion.nav>
       </header>
 
-      {/* ✅ NOTIFICATION CENTER */}
       <NotificationCenter
         isOpen={showNotifications}
         onClose={() => setShowNotifications(false)}
       />
 
-      {/* ✅ TOAST NOTIFICATION */}
       {toastNotification && (
         <NotificationToast
           notification={toastNotification}

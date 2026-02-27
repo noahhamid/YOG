@@ -23,6 +23,7 @@ interface FilterSidebarProps {
   selectedOccasions: string[];
   showNewArrivals: boolean;
   showOnSale: boolean;
+  hideCategoryFilter?: boolean; // ✅ ADD THIS
 
   // Handlers
   onSearchChange: (value: string) => void;
@@ -65,6 +66,7 @@ export default function FilterSidebar({
   activeFiltersCount,
   expandedSections,
   onToggleSection,
+  hideCategoryFilter = false, // ✅ ADD THIS
 }: FilterSidebarProps) {
   const categories = [
     { value: "all", label: "All Items" },
@@ -140,49 +142,52 @@ export default function FilterSidebar({
         )}
 
         {/* Category Filter */}
-        <div className="mb-6 pb-6 border-b border-gray-300">
-          <button
-            onClick={() => onToggleSection("category")}
-            className="w-full flex items-center justify-between mb-3"
-          >
-            <h4
-              className="font-semibold text-sm"
-              style={{ fontFamily: "'Poppins', sans-serif" }}
+
+        {!hideCategoryFilter && (
+          <div className="mb-6 pb-6 border-b border-gray-300">
+            <button
+              onClick={() => onToggleSection("category")}
+              className="w-full flex items-center justify-between mb-3"
             >
-              Gender
-            </h4>
-            {expandedSections.category ? (
-              <ChevronUp size={16} />
-            ) : (
-              <ChevronDown size={16} />
-            )}
-          </button>
-          {expandedSections.category && (
-            <div className="space-y-2">
-              {categories.map((category) => (
-                <label
-                  key={category.value}
-                  className="flex items-center gap-2 cursor-pointer"
-                >
-                  <input
-                    type="radio"
-                    name="category"
-                    value={category.value}
-                    checked={selectedCategory === category.value}
-                    onChange={(e) => onCategoryChange(e.target.value)}
-                    className="w-4 h-4 accent-black cursor-pointer"
-                  />
-                  <span
-                    className="text-sm"
-                    style={{ fontFamily: "'Poppins', sans-serif" }}
+              <h4
+                className="font-semibold text-sm"
+                style={{ fontFamily: "'Poppins', sans-serif" }}
+              >
+                Gender
+              </h4>
+              {expandedSections.category ? (
+                <ChevronUp size={16} />
+              ) : (
+                <ChevronDown size={16} />
+              )}
+            </button>
+            {expandedSections.category && (
+              <div className="space-y-2">
+                {categories.map((category) => (
+                  <label
+                    key={category.value}
+                    className="flex items-center gap-2 cursor-pointer"
                   >
-                    {category.label}
-                  </span>
-                </label>
-              ))}
-            </div>
-          )}
-        </div>
+                    <input
+                      type="radio"
+                      name="category"
+                      value={category.value}
+                      checked={selectedCategory === category.value}
+                      onChange={(e) => onCategoryChange(e.target.value)}
+                      className="w-4 h-4 accent-black cursor-pointer"
+                    />
+                    <span
+                      className="text-sm"
+                      style={{ fontFamily: "'Poppins', sans-serif" }}
+                    >
+                      {category.label}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Clothing Type Filter */}
         <div className="mb-6 pb-6 border-b border-gray-300">

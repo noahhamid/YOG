@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ShoppingCart, Heart } from "lucide-react";
+import { ShoppingCart, Heart, RefreshCw } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import FilterSidebar from "./FilterSidebar";
 
@@ -12,26 +12,36 @@ interface ProductsCache {
   unisex: any[];
   onSale: any[];
   newArrivals: any[];
+  trending: any[]; // ✅ ADD TRENDING
   timestamp: number;
+  productCount: number;
 }
 
 const CACHE_KEY = "yog_products_cache";
 const CACHE_DURATION = 5 * 60 * 1000;
 
-export default function ProductGrid() {
+interface ProductGridProps {
+  initialCategory?: string; // ✅ ADD PROPS
+  showTrendingOnly?: boolean;
+}
+
+export default function ProductGrid({
+  initialCategory = "all",
+  showTrendingOnly = false,
+}: ProductGridProps) {
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
 
   // Filter states
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedCategory, setSelectedCategory] = useState(initialCategory); // ✅ USE INITIAL
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [selectedClothingTypes, setSelectedClothingTypes] = useState<string[]>(
     [],
-  ); // ✅ NEW
-  const [selectedOccasions, setSelectedOccasions] = useState<string[]>([]); // ✅ NEW
+  );
+  const [selectedOccasions, setSelectedOccasions] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState("featured");
   const [showNewArrivals, setShowNewArrivals] = useState(false);
   const [showOnSale, setShowOnSale] = useState(false);
@@ -43,7 +53,9 @@ export default function ProductGrid() {
     unisex: [],
     onSale: [],
     newArrivals: [],
+    trending: [], // ✅ ADD TRENDING
     timestamp: 0,
+    productCount: 0,
   });
 
   const [displayedProducts, setDisplayedProducts] = useState<any[]>([]);
@@ -51,7 +63,6 @@ export default function ProductGrid() {
 
   const hasFetchedRef = useRef(false);
 
-  // ✅ UPDATED EXPANDED SECTIONS
   const [expandedSections, setExpandedSections] = useState({
     category: true,
     clothingType: true,
@@ -96,14 +107,24 @@ export default function ProductGrid() {
               `⚡ Using cached products (${Math.round(cacheAge / 1000)}s old)`,
             );
             setProductsCache(parsed);
-            setDisplayedProducts(parsed.all);
+
+            // ✅ SET INITIAL PRODUCTS BASED ON CATEGORY
+            if (showTrendingOnly) {
+              setDisplayedProducts(parsed.trending);
+            } else if (initialCategory === "all") {
+              setDisplayedProducts(parsed.all);
+            } else {
+              setDisplayedProducts(
+                (parsed[initialCategory as keyof ProductsCache] as any[]) || [],
+              );
+            }
+
             setIsLoadingProducts(false);
 
-            if (cacheAge > 2 * 60 * 1000) {
-              console.log("🔄 Refreshing cache in background...");
-              preloadAllCategories(true);
-            }
+            checkForNewProducts(parsed.productCount);
             return;
+          } else {
+            console.log("🕐 Cache expired, fetching fresh data...");
           }
         } catch (error) {
           console.error("Error parsing cache:", error);
@@ -122,13 +143,39 @@ export default function ProductGrid() {
     selectedSizes,
     priceRange,
     selectedColors,
-    selectedClothingTypes, // ✅ NEW
-    selectedOccasions, // ✅ NEW
+    selectedClothingTypes,
+    selectedOccasions,
     sortBy,
     showNewArrivals,
     showOnSale,
     productsCache,
   ]);
+
+  const checkForNewProducts = async (cachedCount: number) => {
+    try {
+      console.log(`🔍 Checking for new products... (cached: ${cachedCount})`);
+
+      const res = await fetch("/api/products/public");
+      const data = await res.json();
+      const currentCount = data.products?.length || 0;
+
+      console.log(`📊 Current count: ${currentCount}`);
+
+      if (currentCount !== cachedCount) {
+        console.log(
+          `🔔 New products detected! (${cachedCount} → ${currentCount})`,
+        );
+        console.log("🗑️ Invalidating cache...");
+        localStorage.removeItem(CACHE_KEY);
+
+        await preloadAllCategories(true);
+      } else {
+        console.log("✅ No new products");
+      }
+    } catch (error) {
+      console.error("Error checking for new products:", error);
+    }
+  };
 
   const preloadAllCategories = async (silent = false) => {
     if (!silent) setIsLoadingProducts(true);
@@ -143,6 +190,7 @@ export default function ProductGrid() {
         unisexProducts,
         onSaleProducts,
         newProducts,
+        trendingProducts, // ✅ FETCH TRENDING
       ] = await Promise.all([
         fetch("/api/products/public").then((res) => res.json()),
         fetch("/api/products/public?category=men").then((res) => res.json()),
@@ -150,6 +198,7 @@ export default function ProductGrid() {
         fetch("/api/products/public?category=unisex").then((res) => res.json()),
         fetch("/api/products/public?isFeatured=true").then((res) => res.json()),
         fetch("/api/products/public?isTrending=true").then((res) => res.json()),
+        fetch("/api/products/trending").then((res) => res.json()), // ✅ TRENDING API
       ]);
 
       const endTime = performance.now();
@@ -162,18 +211,34 @@ export default function ProductGrid() {
         unisex: unisexProducts.products || [],
         onSale: onSaleProducts.products || [],
         newArrivals: newProducts.products || [],
+        trending: trendingProducts.products || [], // ✅ STORE TRENDING
         timestamp: Date.now(),
+        productCount: allProducts.products?.length || 0,
       };
 
       setProductsCache(cacheData);
-      setDisplayedProducts(cacheData.all);
+
+      // ✅ SET DISPLAYED PRODUCTS BASED ON INITIAL CATEGORY
+      if (showTrendingOnly) {
+        setDisplayedProducts(cacheData.trending);
+      } else if (initialCategory === "all") {
+        setDisplayedProducts(cacheData.all);
+      } else {
+        setDisplayedProducts(
+          (cacheData[initialCategory as keyof ProductsCache] as any[]) || [],
+        );
+      }
 
       if (typeof window !== "undefined") {
         localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
       }
 
       if (!silent) {
-        console.log("💾 Products cached");
+        console.log(`💾 Products cached (${cacheData.productCount} products)`);
+      } else {
+        console.log(
+          `🔄 Cache refreshed silently (${cacheData.productCount} products)`,
+        );
       }
     } catch (error) {
       console.error("Error fetching products:", error);
@@ -184,7 +249,81 @@ export default function ProductGrid() {
     }
   };
 
+  const handleManualRefresh = () => {
+    console.log("🔄 Manual refresh triggered");
+    localStorage.removeItem(CACHE_KEY);
+    setIsLoadingProducts(true);
+    preloadAllCategories(false);
+  };
+
   const filterFromCache = () => {
+    // ✅ IF SHOWING TRENDING ONLY, USE TRENDING CACHE
+    if (showTrendingOnly) {
+      let filtered = [...productsCache.trending];
+
+      // Apply filters
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        filtered = filtered.filter(
+          (p) =>
+            p.title.toLowerCase().includes(query) ||
+            p.description.toLowerCase().includes(query),
+        );
+      }
+
+      filtered = filtered.filter(
+        (p) => p.price >= priceRange[0] && p.price <= priceRange[1],
+      );
+
+      if (selectedSizes.length > 0) {
+        filtered = filtered.filter((p) =>
+          p.sizes?.some((size: string) => selectedSizes.includes(size)),
+        );
+      }
+
+      if (selectedColors.length > 0) {
+        filtered = filtered.filter((p) =>
+          p.colors?.some((color: string) =>
+            selectedColors.includes(color.toLowerCase()),
+          ),
+        );
+      }
+
+      if (selectedClothingTypes.length > 0) {
+        filtered = filtered.filter((p) =>
+          selectedClothingTypes.includes(p.clothingType),
+        );
+      }
+
+      if (selectedOccasions.length > 0) {
+        filtered = filtered.filter((p) =>
+          selectedOccasions.includes(p.occasion),
+        );
+      }
+
+      // Sort trending by score by default
+      switch (sortBy) {
+        case "price-low":
+          filtered.sort((a, b) => a.price - b.price);
+          break;
+        case "price-high":
+          filtered.sort((a, b) => b.price - a.price);
+          break;
+        case "name":
+          filtered.sort((a, b) => a.title.localeCompare(b.title));
+          break;
+        default:
+          // Keep trending score order
+          filtered.sort(
+            (a, b) => (b.trendingScore || 0) - (a.trendingScore || 0),
+          );
+      }
+
+      setDisplayedProducts(filtered);
+      return;
+    }
+
+    // ✅ NORMAL FILTERING FOR OTHER PAGES
     let filtered = [...productsCache.all];
 
     if (
@@ -236,14 +375,12 @@ export default function ProductGrid() {
       );
     }
 
-    // ✅ NEW: FILTER BY CLOTHING TYPE
     if (selectedClothingTypes.length > 0) {
       filtered = filtered.filter((p) =>
         selectedClothingTypes.includes(p.clothingType),
       );
     }
 
-    // ✅ NEW: FILTER BY OCCASION
     if (selectedOccasions.length > 0) {
       filtered = filtered.filter((p) => selectedOccasions.includes(p.occasion));
     }
@@ -265,12 +402,14 @@ export default function ProductGrid() {
 
   const clearFilters = () => {
     setSearchQuery("");
-    setSelectedCategory("all");
+    if (!showTrendingOnly) {
+      setSelectedCategory(initialCategory); // ✅ RESET TO INITIAL
+    }
     setSelectedSizes([]);
     setPriceRange([0, 10000]);
     setSelectedColors([]);
-    setSelectedClothingTypes([]); // ✅ NEW
-    setSelectedOccasions([]); // ✅ NEW
+    setSelectedClothingTypes([]);
+    setSelectedOccasions([]);
     setSortBy("featured");
     setShowNewArrivals(false);
     setShowOnSale(false);
@@ -288,14 +427,12 @@ export default function ProductGrid() {
     );
   };
 
-  // ✅ NEW: TOGGLE CLOTHING TYPE
   const toggleClothingType = (type: string) => {
     setSelectedClothingTypes((prev) =>
       prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type],
     );
   };
 
-  // ✅ NEW: TOGGLE OCCASION
   const toggleOccasion = (occasion: string) => {
     setSelectedOccasions((prev) =>
       prev.includes(occasion)
@@ -308,9 +445,8 @@ export default function ProductGrid() {
     setExpandedSections((prev) => ({ ...prev, [section]: !prev[section] }));
   };
 
-  // ✅ UPDATED: ACTIVE FILTERS COUNT
   const activeFiltersCount =
-    (selectedCategory !== "all" ? 1 : 0) +
+    (selectedCategory !== initialCategory && !showTrendingOnly ? 1 : 0) +
     selectedSizes.length +
     selectedColors.length +
     selectedClothingTypes.length +
@@ -322,61 +458,33 @@ export default function ProductGrid() {
   return (
     <section ref={sectionRef} className="w-full py-20 px-10 bg-white">
       <div className="mx-auto">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h2
-            className="text-black font-light uppercase text-[56px] mb-3"
-            style={{
-              fontFamily: "'Montserrat', sans-serif",
-              letterSpacing: "0.08em",
-              fontWeight: 300,
-              opacity: isVisible ? 1 : 0,
-              transform: isVisible ? "translateY(0)" : "translateY(40px)",
-              transition: "all 0.8s cubic-bezier(0.4, 0, 0.2, 1)",
-            }}
-          >
-            Featured Products
-          </h2>
-          <p
-            className="text-gray-600 text-lg"
-            style={{
-              fontFamily: "'Montserrat', sans-serif",
-              fontWeight: 400,
-              opacity: isVisible ? 1 : 0,
-              transform: isVisible ? "translateY(0)" : "translateY(30px)",
-              transition: "all 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.1s",
-            }}
-          >
-            Curated pieces for your unique style
-          </p>
-        </div>
-
         {/* Main Layout */}
         <div className="flex gap-6">
-          {/* Filter Sidebar */}
+          {/* Filter Sidebar - Hide category filter on trending page */}
           <FilterSidebar
             searchQuery={searchQuery}
-            selectedCategory={selectedCategory}
+            selectedCategory={showTrendingOnly ? "all" : selectedCategory}
             selectedSizes={selectedSizes}
             priceRange={priceRange}
             selectedColors={selectedColors}
-            selectedClothingTypes={selectedClothingTypes} // ✅ NEW
-            selectedOccasions={selectedOccasions} // ✅ NEW
+            selectedClothingTypes={selectedClothingTypes}
+            selectedOccasions={selectedOccasions}
             showNewArrivals={showNewArrivals}
             showOnSale={showOnSale}
             onSearchChange={setSearchQuery}
-            onCategoryChange={setSelectedCategory}
+            onCategoryChange={showTrendingOnly ? () => {} : setSelectedCategory}
             onSizeToggle={toggleSize}
             onPriceChange={setPriceRange}
             onColorToggle={toggleColor}
-            onClothingTypeToggle={toggleClothingType} // ✅ NEW
-            onOccasionToggle={toggleOccasion} // ✅ NEW
+            onClothingTypeToggle={toggleClothingType}
+            onOccasionToggle={toggleOccasion}
             onNewArrivalsChange={setShowNewArrivals}
             onSaleChange={setShowOnSale}
             onClearFilters={clearFilters}
             activeFiltersCount={activeFiltersCount}
             expandedSections={expandedSections}
             onToggleSection={toggleSection}
+            hideCategoryFilter={showTrendingOnly} // ✅ HIDE ON TRENDING
           />
 
           {/* Products */}
@@ -390,17 +498,33 @@ export default function ProductGrid() {
                 Showing {displayedProducts.length}{" "}
                 {displayedProducts.length === 1 ? "product" : "products"}
               </p>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="px-6 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
-                style={{ fontFamily: "'Poppins', sans-serif" }}
-              >
-                <option value="featured">Featured</option>
-                <option value="price-low">Price: Low to High</option>
-                <option value="price-high">Price: High to Low</option>
-                <option value="name">Name: A-Z</option>
-              </select>
+
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={handleManualRefresh}
+                  disabled={isLoadingProducts}
+                  className="px-4 py-2 text-sm border border-gray-300 rounded-full hover:bg-gray-50 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ fontFamily: "'Poppins', sans-serif" }}
+                >
+                  <RefreshCw
+                    size={16}
+                    className={isLoadingProducts ? "animate-spin" : ""}
+                  />
+                  Refresh
+                </button>
+
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="px-6 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
+                  style={{ fontFamily: "'Poppins', sans-serif" }}
+                >
+                  <option value="featured">Featured</option>
+                  <option value="price-low">Price: Low to High</option>
+                  <option value="price-high">Price: High to Low</option>
+                  <option value="name">Name: A-Z</option>
+                </select>
+              </div>
             </div>
 
             {/* Product Grid */}
@@ -456,7 +580,7 @@ export default function ProductGrid() {
 
 function ProductCard({ product, index, isVisible }: any) {
   const { addToCart } = useCart();
-  const [isHovered, setIsHovered] = useState(false); // ✅ ADD HOVER STATE
+  const [isHovered, setIsHovered] = useState(false);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -481,25 +605,17 @@ function ProductCard({ product, index, isVisible }: any) {
     alert(`✅ Added "${product.title}" to cart!`);
   };
 
-  // ✅ GET IMAGES - Handle both formats
-  const allImages = product.allImages || []; // Array of all image URLs
+  const allImages = product.allImages || [];
   const primaryImage = allImages[0] || product.image || "";
   const secondaryImage = allImages[1] || primaryImage;
   const hasMultipleImages = secondaryImage && secondaryImage !== primaryImage;
-
-  console.log("Product images:", {
-    allImages,
-    primaryImage,
-    secondaryImage,
-    hasMultipleImages,
-  }); // DEBUG
 
   return (
     <a href={`/product/${product.id}`} className="block">
       <div
         className="group relative cursor-pointer will-change-transform"
-        onMouseEnter={() => setIsHovered(true)} // ✅ SET HOVER
-        onMouseLeave={() => setIsHovered(false)} // ✅ UNSET HOVER
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
         style={{
           opacity: isVisible ? 1 : 0,
           transform: isVisible ? "translateY(0)" : "translateY(50px)",
@@ -507,7 +623,6 @@ function ProductCard({ product, index, isVisible }: any) {
         }}
       >
         <div className="relative bg-gray-100 rounded-2xl overflow-hidden mb-4 aspect-[3/4]">
-          {/* ✅ PRIMARY IMAGE (ALWAYS VISIBLE) */}
           <img
             src={primaryImage}
             alt={product.title}
@@ -517,7 +632,6 @@ function ProductCard({ product, index, isVisible }: any) {
             loading="lazy"
           />
 
-          {/* ✅ SECONDARY IMAGE (SHOWS ON HOVER) */}
           {hasMultipleImages && (
             <img
               src={secondaryImage}
@@ -529,7 +643,6 @@ function ProductCard({ product, index, isVisible }: any) {
             />
           )}
 
-          {/* Discount Badge */}
           {product.compareAtPrice && product.compareAtPrice > product.price && (
             <div className="absolute top-3 left-3 bg-red-500 text-white px-2 py-1 rounded-lg text-xs font-bold z-10">
               -
