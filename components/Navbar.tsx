@@ -33,7 +33,7 @@ const Navbar = () => {
   const [toastNotification, setToastNotification] = useState<any>(null);
   const [shownNotificationIds, setShownNotificationIds] = useState<Set<string>>(
     new Set(),
-  ); // ✅ TRACK SHOWN TOASTS
+  ); // Still keep for badge logic
   const { getCartCount } = useCart();
   const cartCount = getCartCount();
 
@@ -56,22 +56,7 @@ const Navbar = () => {
     }
   };
 
-  // ✅ LOAD SHOWN NOTIFICATIONS ONCE ON MOUNT
-  useEffect(() => {
-    if (!user) return;
-
-    try {
-      const stored = localStorage.getItem("yog_shown_notifications");
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        setShownNotificationIds(new Set(parsed));
-      }
-    } catch (error) {
-      console.error("Error loading shown notifications:", error);
-    }
-  }, [user]); // ✅ ONLY RUN WHEN USER CHANGES
-
-  // ✅ POLL FOR NOTIFICATIONS (SEPARATE EFFECT)
+  // ✅ SINGLE EFFECT FOR NOTIFICATION POLLING (FIXED)
   useEffect(() => {
     if (!user) return;
 
@@ -91,25 +76,36 @@ const Navbar = () => {
         if (data.unreadCount !== undefined) {
           setUnreadCount(data.unreadCount);
 
-          // ✅ SHOW TOAST ONLY FOR NEW UNREAD NOTIFICATIONS THAT HAVEN'T BEEN SHOWN
+          // ✅ LOAD SHOWN IDS FROM LOCALSTORAGE (AVOID STALE STATE)
+          let shownIds: string[] = [];
+          try {
+            const stored = localStorage.getItem("yog_shown_notifications");
+            if (stored) {
+              shownIds = JSON.parse(stored);
+            }
+          } catch (error) {
+            console.error("Error loading shown notifications:", error);
+          }
+
+          // ✅ FIND NEWEST UNREAD NOTIFICATION THAT HASN'T BEEN SHOWN
           if (data.notifications && data.notifications.length > 0) {
             const newestUnread = data.notifications.find(
-              (n: any) => !n.read && !shownNotificationIds.has(n.id),
+              (n: any) => !n.read && !shownIds.includes(n.id),
             );
 
             if (newestUnread) {
+              console.log("🔔 Showing notification:", newestUnread.title);
               setToastNotification(newestUnread);
 
-              // ✅ MARK AS SHOWN (but not as read)
-              const newSet = new Set(shownNotificationIds);
-              newSet.add(newestUnread.id);
-              setShownNotificationIds(newSet);
-
-              // ✅ PERSIST TO LOCALSTORAGE
+              // ✅ MARK AS SHOWN IN LOCALSTORAGE
+              const updatedShownIds = [...shownIds, newestUnread.id];
               localStorage.setItem(
                 "yog_shown_notifications",
-                JSON.stringify(Array.from(newSet)),
+                JSON.stringify(updatedShownIds),
               );
+
+              // Update state for UI consistency
+              setShownNotificationIds(new Set(updatedShownIds));
             }
           }
         }
@@ -118,11 +114,14 @@ const Navbar = () => {
       }
     };
 
+    // Run immediately on mount
     checkNotifications();
+
+    // Then poll every 10 seconds
     const interval = setInterval(checkNotifications, 10000);
 
     return () => clearInterval(interval);
-  }, [user]); // ✅ REMOVED shownNotificationIds FROM DEPENDENCIES
+  }, [user]);
 
   const handleRefreshSession = async () => {
     if (!user) return;
