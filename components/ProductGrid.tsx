@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ShoppingCart, Heart } from "lucide-react";
-import Link from "next/link";
 import { useCart } from "@/context/CartContext";
 import FilterSidebar from "./FilterSidebar";
 
@@ -29,12 +28,14 @@ export default function ProductGrid() {
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
-  const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
+  const [selectedClothingTypes, setSelectedClothingTypes] = useState<string[]>(
+    [],
+  ); // ✅ NEW
+  const [selectedOccasions, setSelectedOccasions] = useState<string[]>([]); // ✅ NEW
   const [sortBy, setSortBy] = useState("featured");
   const [showNewArrivals, setShowNewArrivals] = useState(false);
   const [showOnSale, setShowOnSale] = useState(false);
 
-  // Products cache - ALWAYS START EMPTY
   const [productsCache, setProductsCache] = useState<ProductsCache>({
     all: [],
     men: [],
@@ -46,17 +47,18 @@ export default function ProductGrid() {
   });
 
   const [displayedProducts, setDisplayedProducts] = useState<any[]>([]);
-  const [availableBrands, setAvailableBrands] = useState<string[]>([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
 
   const hasFetchedRef = useRef(false);
 
+  // ✅ UPDATED EXPANDED SECTIONS
   const [expandedSections, setExpandedSections] = useState({
     category: true,
+    clothingType: true,
+    occasion: true,
     price: true,
     size: true,
     color: true,
-    brand: true,
     other: true,
   });
 
@@ -78,12 +80,10 @@ export default function ProductGrid() {
     return () => observer.disconnect();
   }, [isVisible]);
 
-  // ✅ LOAD CACHE IMMEDIATELY ON MOUNT
   useEffect(() => {
     if (hasFetchedRef.current) return;
     hasFetchedRef.current = true;
 
-    // Check localStorage (client-side only)
     if (typeof window !== "undefined") {
       const cachedData = localStorage.getItem(CACHE_KEY);
       if (cachedData) {
@@ -97,14 +97,8 @@ export default function ProductGrid() {
             );
             setProductsCache(parsed);
             setDisplayedProducts(parsed.all);
-
-            const brands = [
-              ...new Set(parsed.all.map((p: any) => p.brand).filter(Boolean)),
-            ];
-            setAvailableBrands(brands as string[]);
             setIsLoadingProducts(false);
 
-            // Background refresh if old
             if (cacheAge > 2 * 60 * 1000) {
               console.log("🔄 Refreshing cache in background...");
               preloadAllCategories(true);
@@ -117,7 +111,6 @@ export default function ProductGrid() {
       }
     }
 
-    // Fetch fresh data
     preloadAllCategories(false);
   }, []);
 
@@ -129,7 +122,8 @@ export default function ProductGrid() {
     selectedSizes,
     priceRange,
     selectedColors,
-    selectedBrands,
+    selectedClothingTypes, // ✅ NEW
+    selectedOccasions, // ✅ NEW
     sortBy,
     showNewArrivals,
     showOnSale,
@@ -178,13 +172,6 @@ export default function ProductGrid() {
         localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
       }
 
-      const brands = [
-        ...new Set(
-          allProducts.products.map((p: any) => p.brand).filter(Boolean),
-        ),
-      ];
-      setAvailableBrands(brands as string[]);
-
       if (!silent) {
         console.log("💾 Products cached");
       }
@@ -205,7 +192,8 @@ export default function ProductGrid() {
       !searchQuery &&
       selectedSizes.length === 0 &&
       selectedColors.length === 0 &&
-      selectedBrands.length === 0 &&
+      selectedClothingTypes.length === 0 &&
+      selectedOccasions.length === 0 &&
       !showNewArrivals &&
       !showOnSale
     ) {
@@ -226,8 +214,7 @@ export default function ProductGrid() {
       filtered = filtered.filter(
         (p) =>
           p.title.toLowerCase().includes(query) ||
-          p.description.toLowerCase().includes(query) ||
-          p.brand?.toLowerCase().includes(query),
+          p.description.toLowerCase().includes(query),
       );
     }
 
@@ -249,8 +236,16 @@ export default function ProductGrid() {
       );
     }
 
-    if (selectedBrands.length > 0) {
-      filtered = filtered.filter((p) => selectedBrands.includes(p.brand));
+    // ✅ NEW: FILTER BY CLOTHING TYPE
+    if (selectedClothingTypes.length > 0) {
+      filtered = filtered.filter((p) =>
+        selectedClothingTypes.includes(p.clothingType),
+      );
+    }
+
+    // ✅ NEW: FILTER BY OCCASION
+    if (selectedOccasions.length > 0) {
+      filtered = filtered.filter((p) => selectedOccasions.includes(p.occasion));
     }
 
     switch (sortBy) {
@@ -274,7 +269,8 @@ export default function ProductGrid() {
     setSelectedSizes([]);
     setPriceRange([0, 10000]);
     setSelectedColors([]);
-    setSelectedBrands([]);
+    setSelectedClothingTypes([]); // ✅ NEW
+    setSelectedOccasions([]); // ✅ NEW
     setSortBy("featured");
     setShowNewArrivals(false);
     setShowOnSale(false);
@@ -292,9 +288,19 @@ export default function ProductGrid() {
     );
   };
 
-  const toggleBrand = (brand: string) => {
-    setSelectedBrands((prev) =>
-      prev.includes(brand) ? prev.filter((b) => b !== brand) : [...prev, brand],
+  // ✅ NEW: TOGGLE CLOTHING TYPE
+  const toggleClothingType = (type: string) => {
+    setSelectedClothingTypes((prev) =>
+      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type],
+    );
+  };
+
+  // ✅ NEW: TOGGLE OCCASION
+  const toggleOccasion = (occasion: string) => {
+    setSelectedOccasions((prev) =>
+      prev.includes(occasion)
+        ? prev.filter((o) => o !== occasion)
+        : [...prev, occasion],
     );
   };
 
@@ -302,11 +308,13 @@ export default function ProductGrid() {
     setExpandedSections((prev) => ({ ...prev, [section]: !prev[section] }));
   };
 
+  // ✅ UPDATED: ACTIVE FILTERS COUNT
   const activeFiltersCount =
     (selectedCategory !== "all" ? 1 : 0) +
     selectedSizes.length +
     selectedColors.length +
-    selectedBrands.length +
+    selectedClothingTypes.length +
+    selectedOccasions.length +
     (priceRange[0] !== 0 || priceRange[1] !== 10000 ? 1 : 0) +
     (showNewArrivals ? 1 : 0) +
     (showOnSale ? 1 : 0);
@@ -352,16 +360,17 @@ export default function ProductGrid() {
             selectedSizes={selectedSizes}
             priceRange={priceRange}
             selectedColors={selectedColors}
-            selectedBrands={selectedBrands}
+            selectedClothingTypes={selectedClothingTypes} // ✅ NEW
+            selectedOccasions={selectedOccasions} // ✅ NEW
             showNewArrivals={showNewArrivals}
             showOnSale={showOnSale}
-            availableBrands={availableBrands}
             onSearchChange={setSearchQuery}
             onCategoryChange={setSelectedCategory}
             onSizeToggle={toggleSize}
             onPriceChange={setPriceRange}
             onColorToggle={toggleColor}
-            onBrandToggle={toggleBrand}
+            onClothingTypeToggle={toggleClothingType} // ✅ NEW
+            onOccasionToggle={toggleOccasion} // ✅ NEW
             onNewArrivalsChange={setShowNewArrivals}
             onSaleChange={setShowOnSale}
             onClearFilters={clearFilters}
@@ -396,22 +405,14 @@ export default function ProductGrid() {
 
             {/* Product Grid */}
             {isLoadingProducts ? (
-              // ✅ SKELETON WITH SHIMMER EFFECT
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => (
                   <div key={i} className="relative overflow-hidden">
-                    {/* Shimmer overlay */}
                     <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-
-                    {/* Image Skeleton */}
                     <div className="relative bg-gray-200 rounded-2xl overflow-hidden mb-4 aspect-[3/4]" />
-
-                    {/* Content Skeleton */}
                     <div className="px-1 space-y-2">
                       <div className="h-4 bg-gray-200 rounded w-3/4" />
                       <div className="h-3 bg-gray-200 rounded w-1/2" />
-
-                      {/* Price & Sizes */}
                       <div className="flex items-center justify-between pt-2">
                         <div className="h-5 bg-gray-200 rounded w-24" />
                         <div className="flex gap-1">
@@ -470,6 +471,7 @@ function ProductCard({ product, index, isVisible }: any) {
       image: product.image,
       size: firstSize,
       color: firstColor,
+      quantity: 1,
       maxStock: product.stock || 10,
       sellerId: product.seller?.id || "unknown",
       sellerName: product.seller?.name || "Unknown Seller",
@@ -479,7 +481,6 @@ function ProductCard({ product, index, isVisible }: any) {
   };
 
   return (
-    // ✅ CHANGE FROM <Link> TO <a> - EXACTLY LIKE RELATED PRODUCTS
     <a href={`/product/${product.id}`} className="block">
       <div
         className="group relative cursor-pointer will-change-transform"
