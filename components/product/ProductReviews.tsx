@@ -77,10 +77,42 @@ export default function ProductReviews({ productId }: Props) {
 
       const data = await res.json();
       if (res.ok) {
+        // ✅ INSTANT UPDATE - Add new review immediately
+        const newReview = {
+          id: data.review.id,
+          userName: user.name,
+          rating: reviewForm.rating,
+          comment: reviewForm.comment,
+          verified: false,
+          createdAt: new Date().toISOString(),
+        };
+
+        setReviews([newReview, ...reviews]);
+
+        // ✅ UPDATE STATS IMMEDIATELY
+        const newTotalReviews = (stats?.totalReviews || 0) + 1;
+        const newAverageRating = stats
+          ? (stats.averageRating * stats.totalReviews + reviewForm.rating) /
+            newTotalReviews
+          : reviewForm.rating;
+
+        const newRatingDistribution = stats
+          ? { ...stats.ratingDistribution }
+          : { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+
+        newRatingDistribution[
+          reviewForm.rating as keyof typeof newRatingDistribution
+        ]++;
+
+        setStats({
+          totalReviews: newTotalReviews,
+          averageRating: newAverageRating,
+          ratingDistribution: newRatingDistribution,
+        });
+
         alert("✅ Review submitted successfully!");
         setShowForm(false);
         setReviewForm({ rating: 5, comment: "" });
-        fetchReviews();
       } else {
         alert(`❌ ${data.error || "Failed to submit review"}`);
       }
@@ -130,7 +162,7 @@ export default function ProductReviews({ productId }: Props) {
         </button>
       </div>
 
-      {/* Stats */}
+      {/* ✅ STATS (ONLY SHOW IF REVIEWS EXIST) */}
       {stats && stats.totalReviews > 0 && (
         <div className="bg-gray-50 rounded-xl p-6 mb-6">
           <div className="grid grid-cols-2 gap-6">
@@ -152,7 +184,8 @@ export default function ProductReviews({ productId }: Props) {
                 ))}
               </div>
               <p className="text-sm text-gray-600">
-                Based on {stats.totalReviews} reviews
+                Based on {stats.totalReviews} review
+                {stats.totalReviews !== 1 ? "s" : ""}
               </p>
             </div>
             <div className="space-y-2">
@@ -234,7 +267,7 @@ export default function ProductReviews({ productId }: Props) {
         ) : (
           <div className="text-center py-12 bg-gray-50 rounded-xl">
             <Star size={48} className="mx-auto text-gray-300 mb-3" />
-            <p className="text-gray-600 mb-4">No reviews yet</p>
+            <p className="text-gray-600 mb-2 font-semibold">No reviews yet</p>
             <p className="text-sm text-gray-500">
               Be the first to review this product
             </p>

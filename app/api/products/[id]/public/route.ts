@@ -10,7 +10,7 @@ export async function GET(
   try {
     const { id: productId } = await params;
 
-    // ✅ INCREMENT VIEW COUNT
+   
     await prisma.product.update({
       where: { id: productId },
       data: {
