@@ -60,6 +60,7 @@ const getCachedProduct = cache(async (id: string) => {
           brandName: true,
           storeSlug: true,
           location: true,
+          storeLogo: true,
           instagram: true,
           approved: true,
           createdAt: true,
@@ -136,6 +137,9 @@ export default async function ProductPage({ params }: PageProps) {
       name: product.seller.brandName,
       slug: product.seller.storeSlug,
       verified: product.seller.approved,
+      logo:
+        product.seller.storeLogo || // ✅ ADD THIS
+        `https://ui-avatars.com/api/?name=${encodeURIComponent(product.seller.brandName)}&size=200&background=000&color=fff&bold=true`,
       followers: product.seller._count.followersList,
       location: product.seller.location,
       instagram: product.seller.instagram,

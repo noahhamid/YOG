@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Star, User, X } from "lucide-react";
+import { Star, User, X, Pencil } from "lucide-react";
 
 interface Review {
   id: string;
@@ -30,6 +30,11 @@ export default function ProductReviews({ productId }: Props) {
   const [user, setUser] = useState<any>(null);
   const [reviewForm, setReviewForm] = useState({ rating: 5, comment: "" });
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Edit state
+  const [editingReview, setEditingReview] = useState<Review | null>(null);
+  const [editForm, setEditForm] = useState({ rating: 5, comment: "" });
+  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     const userStr = localStorage.getItem("yog_user");
@@ -77,7 +82,6 @@ export default function ProductReviews({ productId }: Props) {
 
       const data = await res.json();
       if (res.ok) {
-        // ✅ INSTANT UPDATE - Add new review immediately
         const newReview = {
           id: data.review.id,
           userName: user.name,
@@ -89,7 +93,6 @@ export default function ProductReviews({ productId }: Props) {
 
         setReviews([newReview, ...reviews]);
 
-        // ✅ UPDATE STATS IMMEDIATELY
         const newTotalReviews = (stats?.totalReviews || 0) + 1;
         const newAverageRating = stats
           ? (stats.averageRating * stats.totalReviews + reviewForm.rating) /
@@ -120,6 +123,73 @@ export default function ProductReviews({ productId }: Props) {
       alert("❌ Failed to submit review");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleEditOpen = (review: Review) => {
+    setEditingReview(review);
+    setEditForm({ rating: review.rating, comment: review.comment });
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingReview) return;
+    setIsEditing(true);
+
+    try {
+      const userStr = localStorage.getItem("yog_user");
+      const res = await fetch("/api/reviews", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "x-user-data": userStr || "",
+        },
+        body: JSON.stringify({
+          reviewId: editingReview.id,
+          rating: editForm.rating,
+          comment: editForm.comment,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        // Update review instantly in the list
+        setReviews(
+          reviews.map((r) =>
+            r.id === editingReview.id
+              ? { ...r, rating: editForm.rating, comment: editForm.comment }
+              : r,
+          ),
+        );
+
+        // Recalculate stats
+        if (stats) {
+          const oldRating = editingReview.rating;
+          const newRating = editForm.rating;
+          const newDistribution = { ...stats.ratingDistribution };
+          newDistribution[oldRating as keyof typeof newDistribution]--;
+          newDistribution[newRating as keyof typeof newDistribution]++;
+
+          const newAverage =
+            (stats.averageRating * stats.totalReviews - oldRating + newRating) /
+            stats.totalReviews;
+
+          setStats({
+            ...stats,
+            averageRating: newAverage,
+            ratingDistribution: newDistribution,
+          });
+        }
+
+        setEditingReview(null);
+        alert("✅ Review updated!");
+      } else {
+        alert(`❌ ${data.error || "Failed to update review"}`);
+      }
+    } catch (error) {
+      alert("❌ Failed to update review");
+    } finally {
+      setIsEditing(false);
     }
   };
 
@@ -162,7 +232,7 @@ export default function ProductReviews({ productId }: Props) {
         </button>
       </div>
 
-      {/* ✅ STATS (ONLY SHOW IF REVIEWS EXIST) */}
+      {/* Stats */}
       {stats && stats.totalReviews > 0 && (
         <div className="bg-gray-50 rounded-xl p-6 mb-6">
           <div className="grid grid-cols-2 gap-6">
@@ -202,7 +272,13 @@ export default function ProductReviews({ productId }: Props) {
                     <div
                       className="bg-yellow-400 h-2 rounded-full"
                       style={{
-                        width: `${(stats.ratingDistribution[rating as keyof typeof stats.ratingDistribution] / stats.totalReviews) * 100}%`,
+                        width: `${
+                          (stats.ratingDistribution[
+                            rating as keyof typeof stats.ratingDistribution
+                          ] /
+                            stats.totalReviews) *
+                          100
+                        }%`,
                       }}
                     />
                   </div>
@@ -247,18 +323,32 @@ export default function ProductReviews({ productId }: Props) {
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Star
-                      key={star}
-                      size={16}
-                      className={
-                        star <= review.rating
-                          ? "fill-yellow-400 text-yellow-400"
-                          : "text-gray-300"
-                      }
-                    />
-                  ))}
+
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star
+                        key={star}
+                        size={16}
+                        className={
+                          star <= review.rating
+                            ? "fill-yellow-400 text-yellow-400"
+                            : "text-gray-300"
+                        }
+                      />
+                    ))}
+                  </div>
+
+                  {/* Edit button — only visible on user's own reviews */}
+                  {user && review.userName === user.name && (
+                    <button
+                      onClick={() => handleEditOpen(review)}
+                      className="p-1.5 hover:bg-gray-100 rounded-full text-gray-400 hover:text-black transition-colors"
+                      title="Edit review"
+                    >
+                      <Pencil size={14} />
+                    </button>
+                  )}
                 </div>
               </div>
               <p className="text-gray-700">{review.comment}</p>
@@ -275,7 +365,7 @@ export default function ProductReviews({ productId }: Props) {
         )}
       </div>
 
-      {/* Review Form Modal */}
+      {/* Write Review Modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4">
@@ -339,6 +429,73 @@ export default function ProductReviews({ productId }: Props) {
                 className="w-full bg-black text-white py-3 rounded-full font-semibold hover:bg-gray-800 disabled:bg-gray-400"
               >
                 {isSubmitting ? "Submitting..." : "Submit Review"}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Review Modal */}
+      {editingReview && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold">Edit Review</h2>
+              <button
+                onClick={() => setEditingReview(null)}
+                className="p-2 hover:bg-gray-100 rounded-full"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleEditSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold mb-2">
+                  Rating
+                </label>
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setEditForm({ ...editForm, rating: star })}
+                      className="transition-transform hover:scale-110"
+                    >
+                      <Star
+                        size={32}
+                        className={
+                          star <= editForm.rating
+                            ? "fill-yellow-400 text-yellow-400"
+                            : "text-gray-300"
+                        }
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold mb-2">
+                  Your Review
+                </label>
+                <textarea
+                  required
+                  value={editForm.comment}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, comment: e.target.value })
+                  }
+                  rows={5}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black resize-none"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={isEditing}
+                className="w-full bg-black text-white py-3 rounded-full font-semibold hover:bg-gray-800 disabled:bg-gray-400"
+              >
+                {isEditing ? "Saving..." : "Save Changes"}
               </button>
             </form>
           </div>

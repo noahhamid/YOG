@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Star, ShoppingCart, Package } from "lucide-react";
 import { useCart } from "@/context/CartContext";
-import OrderModal from "./OrderModal"; // ✅ IMPORT
+import OrderModal from "./OrderModal";
 
 interface Props {
   product: any;
@@ -16,7 +16,7 @@ export default function ProductInfo({ product }: Props) {
     product.colors[0]?.value || "",
   );
   const [quantity, setQuantity] = useState(1);
-  const [isOrderModalOpen, setIsOrderModalOpen] = useState(false); // ✅ ADD MODAL STATE
+  const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
 
   const handleAddToCart = () => {
     if (!selectedSize) {
@@ -40,14 +40,13 @@ export default function ProductInfo({ product }: Props) {
     alert(`✅ Added to cart!`);
   };
 
-  // ✅ UPDATED - OPEN MODAL INSTEAD OF REDIRECT
   const handleOrderNow = () => {
     if (!selectedSize) {
       alert("Please select a size");
       return;
     }
 
-    setIsOrderModalOpen(true); // Open modal
+    setIsOrderModalOpen(true);
   };
 
   return (
@@ -62,16 +61,35 @@ export default function ProductInfo({ product }: Props) {
           >
             {product.title}
           </h1>
+
+          {/* ✅ CONDITIONALLY SHOW RATING OR "NO REVIEWS YET" WITH EMPTY STARS */}
           <div className="flex items-center gap-3 text-sm">
-            <div className="flex items-center gap-1">
-              <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-              <span className="font-semibold">{product.rating}</span>
-              <span className="text-gray-600">
-                ({product.reviewCount} reviews)
-              </span>
-            </div>
-            {product.sold > 0 && (
-              <span className="text-gray-600">{product.sold} sold</span>
+            {product.reviewCount > 0 ? (
+              <>
+                <div className="flex items-center gap-1">
+                  <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                  <span className="font-semibold">{product.rating}</span>
+                  <span className="text-gray-600">
+                    ({product.reviewCount} review
+                    {product.reviewCount !== 1 ? "s" : ""})
+                  </span>
+                </div>
+                {product.sold > 0 && (
+                  <span className="text-gray-600">{product.sold} sold</span>
+                )}
+              </>
+            ) : (
+              <div className="flex items-center gap-2">
+                {/* ✅ SHOW EMPTY STARS */}
+                <div className="flex items-center gap-0.5">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Star key={star} className="w-4 h-4 text-gray-300" />
+                  ))}
+                </div>
+                <span className="text-gray-500 font-medium">
+                  No reviews yet
+                </span>
+              </div>
             )}
           </div>
         </div>
@@ -213,7 +231,7 @@ export default function ProductInfo({ product }: Props) {
         </div>
       </div>
 
-      {/* ✅ ORDER MODAL */}
+      {/* ORDER MODAL */}
       <OrderModal
         isOpen={isOrderModalOpen}
         onClose={() => setIsOrderModalOpen(false)}
