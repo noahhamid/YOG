@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Star, User, X, Pencil } from "lucide-react";
+import { Star, User, X, Pencil, Trash2 } from "lucide-react";
 
 interface Review {
   id: string;
@@ -20,9 +20,10 @@ interface ReviewStats {
 
 interface Props {
   productId: string;
+  onReviewChange?: (newRating: number, newCount: number) => void;
 }
 
-export default function ProductReviews({ productId }: Props) {
+export default function ProductReviews({ productId, onReviewChange }: Props) {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [stats, setStats] = useState<ReviewStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -35,6 +36,9 @@ export default function ProductReviews({ productId }: Props) {
   const [editingReview, setEditingReview] = useState<Review | null>(null);
   const [editForm, setEditForm] = useState({ rating: 5, comment: "" });
   const [isEditing, setIsEditing] = useState(false);
+
+  // Delete state
+  const [deletingReviewId, setDeletingReviewId] = useState<string | null>(null);
 
   useEffect(() => {
     const userStr = localStorage.getItem("yog_user");
@@ -54,6 +58,18 @@ export default function ProductReviews({ productId }: Props) {
       console.error("Error fetching reviews:", error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Helper: notify parent of rating change
+  const notifyParent = (updatedStats: ReviewStats) => {
+    if (onReviewChange) {
+      onReviewChange(
+        updatedStats.totalReviews > 0
+          ? Number(updatedStats.averageRating.toFixed(1))
+          : 0,
+        updatedStats.totalReviews,
+      );
     }
   };
 
@@ -82,7 +98,7 @@ export default function ProductReviews({ productId }: Props) {
 
       const data = await res.json();
       if (res.ok) {
-        const newReview = {
+        const newReview: Review = {
           id: data.review.id,
           userName: user.name,
           rating: reviewForm.rating,
@@ -90,8 +106,6 @@ export default function ProductReviews({ productId }: Props) {
           verified: false,
           createdAt: new Date().toISOString(),
         };
-
-        setReviews([newReview, ...reviews]);
 
         const newTotalReviews = (stats?.totalReviews || 0) + 1;
         const newAverageRating = stats
@@ -102,18 +116,20 @@ export default function ProductReviews({ productId }: Props) {
         const newRatingDistribution = stats
           ? { ...stats.ratingDistribution }
           : { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
-
         newRatingDistribution[
           reviewForm.rating as keyof typeof newRatingDistribution
         ]++;
 
-        setStats({
+        const newStats: ReviewStats = {
           totalReviews: newTotalReviews,
           averageRating: newAverageRating,
           ratingDistribution: newRatingDistribution,
-        });
+        };
 
-        alert("✅ Review submitted successfully!");
+        setReviews([newReview, ...reviews]);
+        setStats(newStats);
+        notifyParent(newStats); // ✅ instantly update ProductInfo rating
+
         setShowForm(false);
         setReviewForm({ rating: 5, comment: "" });
       } else {
@@ -153,14 +169,12 @@ export default function ProductReviews({ productId }: Props) {
 
       const data = await res.json();
       if (res.ok) {
-        // Update review instantly in the list
-        setReviews(
-          reviews.map((r) =>
-            r.id === editingReview.id
-              ? { ...r, rating: editForm.rating, comment: editForm.comment }
-              : r,
-          ),
+        const updatedReviews = reviews.map((r) =>
+          r.id === editingReview.id
+            ? { ...r, rating: editForm.rating, comment: editForm.comment }
+            : r,
         );
+        setReviews(updatedReviews);
 
         // Recalculate stats
         if (stats) {
@@ -169,20 +183,20 @@ export default function ProductReviews({ productId }: Props) {
           const newDistribution = { ...stats.ratingDistribution };
           newDistribution[oldRating as keyof typeof newDistribution]--;
           newDistribution[newRating as keyof typeof newDistribution]++;
-
           const newAverage =
             (stats.averageRating * stats.totalReviews - oldRating + newRating) /
             stats.totalReviews;
 
-          setStats({
+          const newStats: ReviewStats = {
             ...stats,
             averageRating: newAverage,
             ratingDistribution: newDistribution,
-          });
+          };
+          setStats(newStats);
+          notifyParent(newStats); // ✅ instantly update ProductInfo rating
         }
 
         setEditingReview(null);
-        alert("✅ Review updated!");
       } else {
         alert(`❌ ${data.error || "Failed to update review"}`);
       }
@@ -190,6 +204,51 @@ export default function ProductReviews({ productId }: Props) {
       alert("❌ Failed to update review");
     } finally {
       setIsEditing(false);
+    }
+  };
+
+  const handleDelete = async (reviewId: string, reviewRating: number) => {
+    if (!confirm("Are you sure you want to delete this review?")) return;
+    setDeletingReviewId(reviewId);
+
+    try {
+      const userStr = localStorage.getItem("yog_user");
+      const res = await fetch(`/api/reviews?reviewId=${reviewId}`, {
+        method: "DELETE",
+        headers: { "x-user-data": userStr || "" },
+      });
+
+      if (res.ok) {
+        const updatedReviews = reviews.filter((r) => r.id !== reviewId);
+        setReviews(updatedReviews);
+
+        // Recalculate stats
+        if (stats) {
+          const newTotal = stats.totalReviews - 1;
+          const newDistribution = { ...stats.ratingDistribution };
+          newDistribution[reviewRating as keyof typeof newDistribution]--;
+          const newAverage =
+            newTotal > 0
+              ? (stats.averageRating * stats.totalReviews - reviewRating) /
+                newTotal
+              : 0;
+
+          const newStats: ReviewStats = {
+            totalReviews: newTotal,
+            averageRating: newAverage,
+            ratingDistribution: newDistribution,
+          };
+          setStats(newStats);
+          notifyParent(newStats); // ✅ instantly update ProductInfo rating
+        }
+      } else {
+        const data = await res.json();
+        alert(`❌ ${data.error || "Failed to delete review"}`);
+      }
+    } catch (error) {
+      alert("❌ Failed to delete review");
+    } finally {
+      setDeletingReviewId(null);
     }
   };
 
@@ -270,7 +329,7 @@ export default function ProductReviews({ productId }: Props) {
                   </div>
                   <div className="flex-1 bg-gray-200 rounded-full h-2">
                     <div
-                      className="bg-yellow-400 h-2 rounded-full"
+                      className="bg-yellow-400 h-2 rounded-full transition-all"
                       style={{
                         width: `${
                           (stats.ratingDistribution[
@@ -302,7 +361,9 @@ export default function ProductReviews({ productId }: Props) {
           reviews.map((review) => (
             <div
               key={review.id}
-              className="border border-gray-200 rounded-xl p-4"
+              className={`border border-gray-200 rounded-xl p-4 transition-opacity ${
+                deletingReviewId === review.id ? "opacity-50" : "opacity-100"
+              }`}
             >
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-3">
@@ -324,7 +385,7 @@ export default function ProductReviews({ productId }: Props) {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                   <div className="flex items-center gap-1">
                     {[1, 2, 3, 4, 5].map((star) => (
                       <Star
@@ -339,15 +400,25 @@ export default function ProductReviews({ productId }: Props) {
                     ))}
                   </div>
 
-                  {/* Edit button — only visible on user's own reviews */}
+                  {/* Edit & Delete — only on user's own reviews */}
                   {user && review.userName === user.name && (
-                    <button
-                      onClick={() => handleEditOpen(review)}
-                      className="p-1.5 hover:bg-gray-100 rounded-full text-gray-400 hover:text-black transition-colors"
-                      title="Edit review"
-                    >
-                      <Pencil size={14} />
-                    </button>
+                    <div className="flex items-center gap-1 ml-1">
+                      <button
+                        onClick={() => handleEditOpen(review)}
+                        className="p-1.5 hover:bg-gray-100 rounded-full text-gray-400 hover:text-black transition-colors"
+                        title="Edit review"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(review.id, review.rating)}
+                        disabled={deletingReviewId === review.id}
+                        className="p-1.5 hover:bg-red-50 rounded-full text-gray-400 hover:text-red-500 transition-colors"
+                        title="Delete review"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>

@@ -135,10 +135,7 @@ export async function PATCH(req: NextRequest) {
     const userStr = req.headers.get("x-user-data");
 
     if (!userStr) {
-      return NextResponse.json(
-        { error: "Please sign in" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Please sign in" }, { status: 401 });
     }
 
     const user = JSON.parse(userStr);
@@ -180,6 +177,49 @@ export async function PATCH(req: NextRequest) {
     console.error("Error updating review:", error);
     return NextResponse.json(
       { error: "Failed to update review" },
+      { status: 500 }
+    );
+  }
+}
+
+// Delete a review
+export async function DELETE(req: NextRequest) {
+  try {
+    const userStr = req.headers.get("x-user-data");
+
+    if (!userStr) {
+      return NextResponse.json({ error: "Please sign in" }, { status: 401 });
+    }
+
+    const user = JSON.parse(userStr);
+    const { searchParams } = new URL(req.url);
+    const reviewId = searchParams.get("reviewId");
+
+    if (!reviewId) {
+      return NextResponse.json(
+        { error: "Review ID is required" },
+        { status: 400 }
+      );
+    }
+
+    const existingReview = await prisma.review.findFirst({
+      where: { id: reviewId, userId: user.id },
+    });
+
+    if (!existingReview) {
+      return NextResponse.json(
+        { error: "Review not found or not yours" },
+        { status: 404 }
+      );
+    }
+
+    await prisma.review.delete({ where: { id: reviewId } });
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    console.error("Error deleting review:", error);
+    return NextResponse.json(
+      { error: "Failed to delete review" },
       { status: 500 }
     );
   }

@@ -17,10 +17,22 @@ export default function ProductDetailClient({ product }: Props) {
   const router = useRouter();
   const [isFavorite, setIsFavorite] = useState(false);
 
-  // ✅ CACHE THE PRODUCT DATA WHEN COMPONENT MOUNTS
+  // ✅ LIFT RATING STATE UP SO BOTH ProductInfo AND ProductReviews CAN SHARE IT
+  const [liveRating, setLiveRating] = useState<number>(product.rating || 0);
+  const [liveReviewCount, setLiveReviewCount] = useState<number>(
+    product.reviewCount || 0,
+  );
+
+  // Cache the product data when component mounts
   useEffect(() => {
     productCache.set(product.id, product);
   }, [product]);
+
+  // Called by ProductReviews whenever a review is added, edited, or deleted
+  const handleReviewChange = (newRating: number, newCount: number) => {
+    setLiveRating(newRating);
+    setLiveReviewCount(newCount);
+  };
 
   return (
     <div className="min-h-screen bg-white">
@@ -60,14 +72,25 @@ export default function ProductDetailClient({ product }: Props) {
               discount={product.discount}
             />
 
-            {/* Reviews Section */}
-            <ProductReviews productId={product.id} />
+            {/* Reviews Section — passes callback up */}
+            <ProductReviews
+              productId={product.id}
+              onReviewChange={handleReviewChange}
+            />
           </div>
 
           {/* Right Column - Info */}
           <div className="space-y-4">
             <SellerCard seller={product.seller} />
-            <ProductInfo product={product} />
+
+            {/* Pass live rating & reviewCount so ProductInfo updates instantly */}
+            <ProductInfo
+              product={{
+                ...product,
+                rating: liveRating,
+                reviewCount: liveReviewCount,
+              }}
+            />
           </div>
         </div>
 
