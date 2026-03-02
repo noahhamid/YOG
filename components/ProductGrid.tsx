@@ -18,8 +18,8 @@ interface ProductsCache {
 }
 
 const CACHE_KEY = "yog_products_cache";
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
-const AUTO_REFRESH_INTERVAL = 3 * 60 * 1000; // ✅ 3 MINUTES AUTO-REFRESH
+const CACHE_DURATION = 1 * 60 * 1000;
+const AUTO_REFRESH_INTERVAL = 3 * 1000;
 
 interface ProductGridProps {
   initialCategory?: string;
@@ -62,7 +62,7 @@ export default function ProductGrid({
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
 
   const hasFetchedRef = useRef(false);
-  const autoRefreshIntervalRef = useRef<NodeJS.Timeout | null>(null); // ✅ TRACK INTERVAL
+  const autoRefreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const [expandedSections, setExpandedSections] = useState({
     category: true,
@@ -92,7 +92,6 @@ export default function ProductGrid({
     return () => observer.disconnect();
   }, [isVisible]);
 
-  // ✅ INITIAL LOAD + SETUP AUTO-REFRESH
   useEffect(() => {
     if (hasFetchedRef.current) return;
     hasFetchedRef.current = true;
@@ -122,10 +121,8 @@ export default function ProductGrid({
 
             setIsLoadingProducts(false);
 
-            // ✅ CHECK FOR NEW PRODUCTS IMMEDIATELY
             checkForNewProducts(parsed.productCount);
 
-            // ✅ SETUP AUTO-REFRESH EVERY 3 MINUTES
             autoRefreshIntervalRef.current = setInterval(() => {
               console.log("🔄 Auto-refresh: Checking for new products...");
               checkForNewProducts(parsed.productCount);
@@ -143,7 +140,6 @@ export default function ProductGrid({
 
     preloadAllCategories(false);
 
-    // ✅ CLEANUP INTERVAL ON UNMOUNT
     return () => {
       if (autoRefreshIntervalRef.current) {
         clearInterval(autoRefreshIntervalRef.current);
@@ -167,7 +163,6 @@ export default function ProductGrid({
     productsCache,
   ]);
 
-  // ✅ CHECK FOR NEW PRODUCTS (SILENT)
   const checkForNewProducts = async (cachedCount: number) => {
     try {
       const res = await fetch("/api/products/public");
@@ -181,7 +176,6 @@ export default function ProductGrid({
         console.log("🗑️ Invalidating cache and refreshing...");
         localStorage.removeItem(CACHE_KEY);
 
-        // ✅ REFRESH SILENTLY WITHOUT LOADING SPINNER
         await preloadAllCategories(true);
       }
     } catch (error) {
@@ -252,7 +246,6 @@ export default function ProductGrid({
         );
       }
 
-      // ✅ UPDATE INTERVAL AFTER REFRESH
       if (silent && autoRefreshIntervalRef.current) {
         clearInterval(autoRefreshIntervalRef.current);
         autoRefreshIntervalRef.current = setInterval(() => {
@@ -494,7 +487,6 @@ export default function ProductGrid({
           />
 
           <div className="flex-1">
-            {/* ✅ REMOVED REFRESH BUTTON */}
             <div className="flex items-center justify-between mb-6">
               <p
                 className="text-gray-600"
@@ -599,6 +591,9 @@ function ProductCard({ product, index, isVisible }: any) {
   const secondaryImage = allImages[1] || primaryImage;
   const hasMultipleImages = secondaryImage && secondaryImage !== primaryImage;
 
+  // ✅ CHECK IF OUT OF STOCK
+  const isOutOfStock = !product.stock || product.stock === 0;
+
   return (
     <a href={`/product/${product.id}`} className="block">
       <div
@@ -612,65 +607,87 @@ function ProductCard({ product, index, isVisible }: any) {
         }}
       >
         <div className="relative bg-gray-100 rounded-2xl overflow-hidden mb-4 aspect-[3/4]">
+          {/* Primary Image */}
           <img
             src={primaryImage}
             alt={product.title}
             className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 ease-out group-hover:scale-105 ${
               isHovered && hasMultipleImages ? "opacity-0" : "opacity-100"
-            }`}
+            } ${isOutOfStock ? "opacity-60" : ""}`}
             loading="lazy"
           />
 
+          {/* Secondary Image */}
           {hasMultipleImages && (
             <img
               src={secondaryImage}
               alt={`${product.title} - alternate view`}
               className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 ease-out group-hover:scale-105 ${
                 isHovered ? "opacity-100" : "opacity-0"
-              }`}
+              } `}
               loading="lazy"
             />
           )}
 
-          {product.compareAtPrice && product.compareAtPrice > product.price && (
-            <div className="absolute top-3 left-3 bg-red-500 text-white px-2 py-1 rounded-lg text-xs font-bold z-10">
-              -
-              {Math.round(
-                ((product.compareAtPrice - product.price) /
-                  product.compareAtPrice) *
-                  100,
-              )}
-              %
+          {/* ✅ OUT OF STOCK BADGE - TOP RIGHT, SMALL LIKE DISCOUNT */}
+          {isOutOfStock && (
+            <div className="absolute top-3 right-3 bg-red-500 text-white px-2 py-1 rounded-lg text-xs font-bold z-20 uppercase">
+              Out of Stock
             </div>
           )}
 
-          <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-[1]" />
+          {/* Discount Badge - Top Left (only show if NOT out of stock) */}
+          {!isOutOfStock &&
+            product.compareAtPrice &&
+            product.compareAtPrice > product.price && (
+              <div className="absolute top-3 left-3 bg-red-500 text-white px-2 py-1 rounded-lg text-xs font-bold z-10">
+                -
+                {Math.round(
+                  ((product.compareAtPrice - product.price) /
+                    product.compareAtPrice) *
+                    100,
+                )}
+                %
+              </div>
+            )}
 
-          <button
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              alert("Wishlist feature coming soon!");
-            }}
-            className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm p-2.5 rounded-full shadow-lg hover:bg-white transition-all duration-300 opacity-0 translate-x-5 scale-90 group-hover:opacity-100 group-hover:translate-x-0 group-hover:scale-100 z-10"
-          >
-            <Heart size={18} className="text-gray-800" />
-          </button>
+          {/* Overlay - Hide if out of stock */}
+          {!isOutOfStock && (
+            <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-[1]" />
+          )}
 
-          <button
-            onClick={handleAddToCart}
-            className="absolute bottom-4 left-4 right-4 bg-black text-white py-3 rounded-full font-semibold text-sm uppercase flex items-center justify-center gap-2 hover:bg-gray-900 transition-all duration-300 opacity-0 translate-y-5 group-hover:opacity-100 group-hover:translate-y-0 z-10"
-            style={{
-              fontFamily: "'Poppins', sans-serif",
-              letterSpacing: "0.08em",
-              fontWeight: 600,
-            }}
-          >
-            <ShoppingCart size={16} />
-            Add to Cart
-          </button>
+          {/* Wishlist Button - Hide if out of stock */}
+          {!isOutOfStock && (
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                alert("Wishlist feature coming soon!");
+              }}
+              className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm p-2.5 rounded-full shadow-lg hover:bg-white transition-all duration-300 opacity-0 translate-x-5 scale-90 group-hover:opacity-100 group-hover:translate-x-0 group-hover:scale-100 z-10"
+            >
+              <Heart size={18} className="text-gray-800" />
+            </button>
+          )}
+
+          {/* Add to Cart Button - Hide if out of stock */}
+          {!isOutOfStock && (
+            <button
+              onClick={handleAddToCart}
+              className="absolute bottom-4 left-4 right-4 bg-black text-white py-3 rounded-full font-semibold text-sm uppercase flex items-center justify-center gap-2 hover:bg-gray-900 transition-all duration-300 opacity-0 translate-y-5 group-hover:opacity-100 group-hover:translate-y-0 z-10"
+              style={{
+                fontFamily: "'Poppins', sans-serif",
+                letterSpacing: "0.08em",
+                fontWeight: 600,
+              }}
+            >
+              <ShoppingCart size={16} />
+              Add to Cart
+            </button>
+          )}
         </div>
 
+        {/* Product Info */}
         <div className="px-1">
           <h3
             className="text-gray-900 font-semibold text-base mb-1 uppercase line-clamp-1"
@@ -711,7 +728,8 @@ function ProductCard({ product, index, isVisible }: any) {
                 )}
             </div>
 
-            {product.sizes && product.sizes.length > 0 && (
+            {/* Size indicators - Hide if out of stock */}
+            {!isOutOfStock && product.sizes && product.sizes.length > 0 && (
               <div className="flex gap-1">
                 {product.sizes.slice(0, 3).map((size: string) => (
                   <span

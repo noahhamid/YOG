@@ -3,7 +3,6 @@ import { prisma } from "@/lib/prisma";
 
 export const dynamic = 'force-dynamic';
 
-// Create new order
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -82,6 +81,9 @@ export async function POST(req: NextRequest) {
     const totalPrice = unitPrice * quantity;
     const finalTotal = totalPrice + (deliveryFee || 0);
 
+    // ✅ LOG BEFORE STOCK REDUCTION
+    console.log(`📊 Before order - Variant stock: ${variant.quantity}`);
+
     // Create order
     const order = await prisma.order.create({
       data: {
@@ -112,7 +114,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Reduce stock
+    // ✅ REDUCE STOCK
     await prisma.productVariant.update({
       where: { id: variant.id },
       data: {
@@ -122,11 +124,55 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // ✅ CREATE NOTIFICATION FOR SELLER
+    console.log(`📊 After order - Reduced by ${quantity}`);
+
+    // ✅ CHECK IF PRODUCT IS NOW OUT OF STOCK
+    const updatedProduct = await prisma.product.findUnique({
+      where: { id: productId },
+      include: {
+        variants: true,
+      },
+    });
+
+    const totalStock = updatedProduct?.variants.reduce((sum, v) => sum + v.quantity, 0) || 0;
+
+    console.log(`📊 Total stock after order: ${totalStock}`);
+
+    // ✅ IF OUT OF STOCK, NOTIFY SELLER
+    if (totalStock === 0) {
+      console.log(`🚨 PRODUCT OUT OF STOCK! Creating notification...`);
+      
+      try {
+        const notification = await prisma.notification.create({
+          data: {
+            userId: product.seller.userId,
+            type: "ORDER_UPDATE",
+            title: "Product Out of Stock! 📦",
+            message: `Your product "${product.title}" is now out of stock! Consider restocking to continue selling.`,
+            productId: product.id,
+            sellerId: product.sellerId,
+            imageUrl: product.images[0]?.url || null,
+          },
+        });
+
+        console.log(`✅ Out of stock notification created:`, notification.id);
+      } catch (notifError) {
+        console.error("❌ Error creating out-of-stock notification:", notifError);
+        // Log the full error for debugging
+        if (notifError instanceof Error) {
+          console.error("Error details:", notifError.message);
+          console.error("Stack trace:", notifError.stack);
+        }
+      }
+    } else {
+      console.log(`ℹ️  Product still has ${totalStock} items in stock, no out-of-stock notification needed`);
+    }
+
+    // ✅ CREATE NEW ORDER NOTIFICATION FOR SELLER
     try {
-      await prisma.notification.create({
+      const orderNotification = await prisma.notification.create({
         data: {
-          userId: product.seller.userId, // Seller's user ID
+          userId: product.seller.userId,
           type: "ORDER_UPDATE",
           title: "New Order Received! 🎉",
           message: `${customerName} ordered ${quantity}x ${product.title} (${selectedSize}, ${selectedColor}) - ${finalTotal.toLocaleString()} ETB`,
@@ -136,16 +182,16 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      console.log(`🔔 Order notification sent to seller: ${product.seller.brandName}`);
+      console.log(`✅ Order notification created:`, orderNotification.id);
     } catch (notifError) {
       console.error("❌ Error creating order notification:", notifError);
-      // Don't fail order creation if notification fails
     }
 
     console.log(`✅ Order created: ${orderNumber}`);
     console.log(`📦 Product: ${product.title}`);
     console.log(`👤 Customer: ${customerName} (${customerPhone})`);
     console.log(`🏪 Seller: ${product.seller.brandName}`);
+    console.log(`📊 Remaining stock: ${totalStock}`);
 
     return NextResponse.json({
       success: true,
