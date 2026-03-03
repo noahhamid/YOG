@@ -520,87 +520,106 @@ export default function SellerDashboard() {
 
               {products.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {products.map((product) => (
-                    <div
-                      key={product.id}
-                      className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-lg transition-shadow"
-                    >
-                      <div className="relative aspect-square bg-gray-100">
-                        <img
-                          src={
-                            product.images[0]?.url ||
-                            "https://via.placeholder.com/400"
-                          }
-                          alt={product.title}
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute top-3 right-3">
-                          <span
-                            className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                              product.status === "PUBLISHED"
-                                ? "bg-green-100 text-green-800"
-                                : "bg-gray-100 text-gray-800"
-                            }`}
-                          >
-                            {product.status}
-                          </span>
+                  {products.map((product) => {
+                    // ✅ CALCULATE TOTAL STOCK
+                    const totalStock = product.variants.reduce(
+                      (sum, v) => sum + v.quantity,
+                      0,
+                    );
+                    const isOutOfStock = totalStock === 0;
+
+                    return (
+                      <div
+                        key={product.id}
+                        className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-lg transition-shadow"
+                      >
+                        <div className="relative aspect-square bg-gray-100">
+                          <img
+                            src={
+                              product.images[0]?.url ||
+                              "https://via.placeholder.com/400"
+                            }
+                            alt={product.title}
+                            className={`w-full h-full object-cover ${isOutOfStock ? "opacity-60" : ""}`}
+                          />
+
+                          {/* ✅ BADGES - TOP RIGHT */}
+                          <div className="absolute top-3 right-3 flex flex-col gap-2">
+                            {/* Out of Stock Badge - Highest Priority */}
+                            {isOutOfStock && (
+                              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-red-500 text-white">
+                                Out of Stock
+                              </span>
+                            )}
+
+                            {/* Status Badge */}
+                            <span
+                              className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                                product.status === "PUBLISHED"
+                                  ? "bg-green-100 text-green-800"
+                                  : "bg-gray-100 text-gray-800"
+                              }`}
+                            >
+                              {product.status}
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                      <div className="p-4">
-                        <h3
-                          className="font-bold text-lg mb-2 line-clamp-1"
-                          style={{ fontFamily: "'Poppins', sans-serif" }}
-                        >
-                          {product.title}
-                        </h3>
-                        <p className="text-gray-600 text-sm mb-3 line-clamp-2">
-                          {product.description}
-                        </p>
-                        <div className="flex items-center justify-between mb-4">
-                          <div>
-                            <p
-                              className="font-bold text-xl"
+
+                        <div className="p-4">
+                          <h3
+                            className="font-bold text-lg mb-2 line-clamp-1"
+                            style={{ fontFamily: "'Poppins', sans-serif" }}
+                          >
+                            {product.title}
+                          </h3>
+                          <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+                            {product.description}
+                          </p>
+                          <div className="flex items-center justify-between mb-4">
+                            <div>
+                              <p
+                                className="font-bold text-xl"
+                                style={{ fontFamily: "'Poppins', sans-serif" }}
+                              >
+                                {product.price.toLocaleString()} ETB
+                              </p>
+                              {product.compareAtPrice && (
+                                <p className="text-xs text-gray-400 line-through">
+                                  {product.compareAtPrice.toLocaleString()} ETB
+                                </p>
+                              )}
+                            </div>
+                            <div className="text-right">
+                              <p className="text-xs text-gray-600">Stock</p>
+                              <p
+                                className={`font-semibold ${isOutOfStock ? "text-red-600" : ""}`}
+                              >
+                                {totalStock}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => setEditingProduct(product)}
+                              className="flex-1 bg-gray-100 text-gray-700 py-2 rounded-lg font-semibold hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
                               style={{ fontFamily: "'Poppins', sans-serif" }}
                             >
-                              {product.price.toLocaleString()} ETB
-                            </p>
-                            {product.compareAtPrice && (
-                              <p className="text-xs text-gray-400 line-through">
-                                {product.compareAtPrice.toLocaleString()} ETB
-                              </p>
-                            )}
+                              <Edit size={16} />
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteProduct(product.id)}
+                              className="flex-1 bg-red-50 text-red-600 py-2 rounded-lg font-semibold hover:bg-red-100 transition-colors flex items-center justify-center gap-2"
+                              style={{ fontFamily: "'Poppins', sans-serif" }}
+                            >
+                              <Trash2 size={16} />
+                              Delete
+                            </button>
                           </div>
-                          <div className="text-right">
-                            <p className="text-xs text-gray-600">Stock</p>
-                            <p className="font-semibold">
-                              {product.variants.reduce(
-                                (sum, v) => sum + v.quantity,
-                                0,
-                              )}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => setEditingProduct(product)}
-                            className="flex-1 bg-gray-100 text-gray-700 py-2 rounded-lg font-semibold hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
-                            style={{ fontFamily: "'Poppins', sans-serif" }}
-                          >
-                            <Edit size={16} />
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleDeleteProduct(product.id)}
-                            className="flex-1 bg-red-50 text-red-600 py-2 rounded-lg font-semibold hover:bg-red-100 transition-colors flex items-center justify-center gap-2"
-                            style={{ fontFamily: "'Poppins', sans-serif" }}
-                          >
-                            <Trash2 size={16} />
-                            Delete
-                          </button>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="text-center py-20 bg-white rounded-2xl border border-gray-100">
