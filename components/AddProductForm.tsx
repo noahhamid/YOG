@@ -9,6 +9,8 @@ import {
   Image as ImageIcon,
   AlertCircle,
   Check,
+  Upload,
+  Loader2,
 } from "lucide-react";
 
 interface Variant {
@@ -21,6 +23,57 @@ interface AddProductFormProps {
   onClose: () => void;
   onSubmit: (data: any) => void;
 }
+
+// ✅ COMPRESSION HELPER - SAME AS SETTINGS PAGE
+const compressImage = (
+  file: File,
+  maxWidth: number,
+  maxHeight: number,
+  quality: number = 0.8,
+): Promise<Blob> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = document.createElement("img");
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = (width * maxHeight) / height;
+            height = maxHeight;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        ctx?.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob(
+          (blob) => {
+            if (blob) resolve(blob);
+            else reject(new Error("Compression failed"));
+          },
+          "image/jpeg",
+          quality,
+        );
+      };
+      img.onerror = reject;
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+};
 
 export default function AddProductForm({
   onClose,
@@ -38,12 +91,15 @@ export default function AddProductForm({
     status: "PUBLISHED",
   });
 
+  // ✅ REVERTED TO OLD VARIANT SYSTEM
   const [variants, setVariants] = useState<Variant[]>([
     { size: "S", color: "Black", quantity: 0 },
   ]);
 
   const [images, setImages] = useState<string[]>([]);
   const [imageUrl, setImageUrl] = useState("");
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -65,9 +121,7 @@ export default function AddProductForm({
     "FORMAL",
     "SPORTSWEAR",
     "STREETWEAR",
-    "PARTY",
     "WORKWEAR",
-    "LOUNGEWEAR",
   ];
 
   useEffect(() => {
@@ -111,10 +165,79 @@ export default function AddProductForm({
     setVariants(updated);
   };
 
-  const addImage = () => {
+  const addImageUrl = () => {
     if (imageUrl.trim()) {
       setImages([...images, imageUrl.trim()]);
       setImageUrl("");
+    }
+  };
+
+  // ✅ FAST FILE UPLOAD WITH COMPRESSION
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Reset input
+    e.target.value = "";
+
+    // Validate file
+    if (!file.type.startsWith("image/")) {
+      alert("Please upload an image file");
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      alert("File too large (max 10MB)");
+      return;
+    }
+
+    setIsUploadingImage(true);
+    setUploadProgress(0);
+
+    try {
+      const userStr = localStorage.getItem("yog_user");
+      if (!userStr) {
+        alert("Please sign in first");
+        return;
+      }
+
+      // ✅ STEP 1: COMPRESS (30%)
+      console.log(`📦 Original: ${(file.size / 1024).toFixed(0)}KB`);
+      setUploadProgress(30);
+
+      const compressed = await compressImage(file, 1200, 1200, 0.85);
+      console.log(`✅ Compressed: ${(compressed.size / 1024).toFixed(0)}KB`);
+
+      setUploadProgress(60);
+
+      // ✅ STEP 2: UPLOAD (60-100%)
+      const formData = new FormData();
+      formData.append("file", compressed, file.name);
+      formData.append("type", "product");
+
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        headers: {
+          "x-user-data": userStr,
+        },
+        body: formData,
+      });
+
+      const data = await response.json();
+      setUploadProgress(100);
+
+      if (response.ok && data.url) {
+        setImages([...images, data.url]);
+        console.log("✅ Uploaded successfully");
+      } else {
+        alert(data.error || "Upload failed");
+      }
+    } catch (error) {
+      console.error("Upload error:", error);
+      alert("Failed to upload image");
+    } finally {
+      setIsUploadingImage(false);
+      setUploadProgress(0);
     }
   };
 
@@ -488,24 +611,87 @@ export default function AddProductForm({
                 Product Images (Minimum 2)
               </h3>
 
-              <div className="flex flex-col sm:flex-row gap-3 mb-4">
-                <input
-                  type="url"
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  placeholder="Paste image URL"
-                  className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-black"
-                />
-                <button
-                  type="button"
-                  onClick={addImage}
-                  className="px-6 py-3 bg-black text-white rounded-xl font-semibold hover:bg-gray-800 flex items-center justify-center gap-2"
-                >
-                  <Plus size={18} />
-                  Add
-                </button>
+              {/* Upload Options */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                {/* ✅ FAST FILE UPLOAD */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Upload from Device
+                  </label>
+                  <label
+                    className={`flex flex-col items-center justify-center gap-2 px-6 py-4 border-2 border-dashed rounded-xl cursor-pointer transition-colors ${
+                      isUploadingImage
+                        ? "bg-gray-50 border-gray-300"
+                        : "border-gray-300 hover:border-black hover:bg-gray-50"
+                    }`}
+                  >
+                    {isUploadingImage ? (
+                      <>
+                        <Loader2
+                          size={24}
+                          className="animate-spin text-black"
+                        />
+                        <span className="text-sm font-medium">
+                          {uploadProgress < 30
+                            ? "Preparing..."
+                            : uploadProgress < 60
+                              ? "Compressing..."
+                              : "Uploading..."}
+                        </span>
+                        <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-black transition-all duration-300"
+                            style={{ width: `${uploadProgress}%` }}
+                          />
+                        </div>
+                        <span className="text-xs text-gray-500">
+                          {uploadProgress}%
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <Upload size={24} />
+                        <span className="text-sm font-medium">
+                          Choose Image
+                        </span>
+                        <span className="text-xs text-gray-500">Max 10MB</span>
+                      </>
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileUpload}
+                      disabled={isUploadingImage}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+
+                {/* URL Input */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Or Paste Image URL
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="url"
+                      value={imageUrl}
+                      onChange={(e) => setImageUrl(e.target.value)}
+                      placeholder="https://..."
+                      className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-black"
+                    />
+                    <button
+                      type="button"
+                      onClick={addImageUrl}
+                      className="px-6 py-3 bg-black text-white rounded-xl font-semibold hover:bg-gray-800"
+                    >
+                      Add
+                    </button>
+                  </div>
+                </div>
               </div>
 
+              {/* Image Grid */}
               <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-4">
                 {images.map((img, index) => (
                   <div key={index} className="relative group">

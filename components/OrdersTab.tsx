@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { ShoppingBag } from "lucide-react";
 import OrderCard from "./OrderCard";
-import OrderStatusModal from "./OrderStatusModal";
 
 interface Order {
   id: string;
@@ -45,14 +44,13 @@ export default function OrdersTab({
   onRefreshCache,
 }: OrdersTabProps) {
   const [orderFilter, setOrderFilter] = useState("all");
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [isUpdating, setIsUpdating] = useState(false);
+  const [localOrders, setLocalOrders] = useState<OrdersCache>(ordersCache);
 
-  const updateOrderStatus = async (orderId: string, newStatus: string) => {
-    setIsUpdating(true);
+  // ✅ UPDATE STATUS HANDLER - RETURNS PROMISE
+  const handleUpdateStatus = async (order: Order, newStatus: string) => {
     try {
       const userStr = localStorage.getItem("yog_user");
-      const response = await fetch(`/api/seller/orders/${orderId}`, {
+      const response = await fetch(`/api/seller/orders/${order.id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -61,22 +59,35 @@ export default function OrdersTab({
         body: JSON.stringify({ status: newStatus }),
       });
 
-      if (response.ok) {
-        alert("Order status updated!");
-
-        // Refresh the cache
-        await onRefreshCache();
-
-        setSelectedOrder(null);
-      } else {
+      if (!response.ok) {
         const data = await response.json();
-        alert(data.error || "Failed to update order");
+        throw new Error(data.error || "Failed to update order");
       }
-    } catch (error) {
-      console.error("Error updating order:", error);
-      alert("Failed to update order");
-    } finally {
-      setIsUpdating(false);
+
+      // ✅ UPDATE LOCAL STATE IMMEDIATELY (OPTIMISTIC UPDATE)
+      setLocalOrders((prev) => {
+        const updateOrder = (orders: Order[]) =>
+          orders.map((o) =>
+            o.id === order.id ? { ...o, status: newStatus } : o,
+          );
+
+        return {
+          all: updateOrder(prev.all),
+          pending: updateOrder(prev.pending),
+          confirmed: updateOrder(prev.confirmed),
+          shipped: updateOrder(prev.shipped),
+          delivered: updateOrder(prev.delivered),
+          timestamp: prev.timestamp,
+        };
+      });
+
+      // ✅ REFRESH CACHE IN BACKGROUND
+      onRefreshCache();
+
+      alert("✅ Order status updated!");
+    } catch (error: any) {
+      alert(`❌ ${error.message || "Failed to update order"}`);
+      throw error; // Re-throw so OrderCard knows it failed
     }
   };
 
@@ -88,21 +99,21 @@ export default function OrdersTab({
     { value: "delivered", label: "Delivered" },
   ];
 
-  // Get orders from cache based on filter - INSTANT!
+  // ✅ GET ORDERS FROM LOCAL STATE (NOT CACHE)
   const getOrdersForFilter = (filter: string): Order[] => {
     switch (filter) {
       case "all":
-        return ordersCache.all;
+        return localOrders.all;
       case "pending":
-        return ordersCache.pending;
+        return localOrders.pending;
       case "confirmed":
-        return ordersCache.confirmed;
+        return localOrders.confirmed;
       case "shipped":
-        return ordersCache.shipped;
+        return localOrders.shipped;
       case "delivered":
-        return ordersCache.delivered;
+        return localOrders.delivered;
       default:
-        return ordersCache.all;
+        return localOrders.all;
     }
   };
 
@@ -111,8 +122,13 @@ export default function OrdersTab({
   // Check if data is loaded
   const isLoaded = ordersCache.timestamp > 0;
 
+  // ✅ SYNC LOCAL STATE WITH CACHE WHEN IT UPDATES
+  useState(() => {
+    setLocalOrders(ordersCache);
+  });
+
   return (
-    <>
+    <div>
       <div className="mb-6 flex gap-3 overflow-x-auto pb-2">
         {filters.map((filter) => (
           <button
@@ -140,7 +156,7 @@ export default function OrdersTab({
             <OrderCard
               key={order.id}
               order={order}
-              onUpdateStatus={setSelectedOrder}
+              onUpdateStatus={handleUpdateStatus}
             />
           ))}
         </div>
@@ -160,14 +176,6 @@ export default function OrdersTab({
           </p>
         </div>
       )}
-
-      {selectedOrder && (
-        <OrderStatusModal
-          order={selectedOrder}
-          onClose={() => setSelectedOrder(null)}
-          onUpdate={updateOrderStatus}
-        />
-      )}
-    </>
+    </div>
   );
 }
