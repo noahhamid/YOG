@@ -11,7 +11,9 @@ import {
   Check,
   Upload,
   Loader2,
+  Sparkles,
 } from "lucide-react";
+import { CustomDropdown } from "./ui/custom-dropdown";
 
 interface Variant {
   size: string;
@@ -24,7 +26,7 @@ interface AddProductFormProps {
   onSubmit: (data: any) => void;
 }
 
-// ✅ COMPRESSION HELPER - SAME AS SETTINGS PAGE
+// Compression helper
 const compressImage = (
   file: File,
   maxWidth: number,
@@ -91,7 +93,6 @@ export default function AddProductForm({
     status: "PUBLISHED",
   });
 
-  // ✅ REVERTED TO OLD VARIANT SYSTEM
   const [variants, setVariants] = useState<Variant[]>([
     { size: "S", color: "Black", quantity: 0 },
   ]);
@@ -105,23 +106,50 @@ export default function AddProductForm({
   const [currentUser, setCurrentUser] = useState<any>(null);
 
   const sizes = ["XS", "S", "M", "L", "XL", "XXL", "2XL", "3XL"];
-  const categories = ["MEN", "WOMEN", "UNISEX"];
-  const clothingTypes = [
-    { value: "TOP", label: "Top (T-shirts, Shirts, Blouses)" },
-    { value: "BOTTOM", label: "Bottom (Jeans, Pants, Skirts)" },
-    { value: "DRESS", label: "Dress" },
-    { value: "OUTERWEAR", label: "Outerwear (Jackets, Coats)" },
-    { value: "UNDERWEAR", label: "Underwear & Loungewear" },
-    { value: "SHOES", label: "Shoes & Footwear" },
-    { value: "ACCESSORIES", label: "Accessories (Bags, Hats)" },
-    { value: "ACTIVEWEAR", label: "Activewear & Sportswear" },
+
+  const categoryOptions = [
+    { value: "MEN", label: "Men's", description: "For men" },
+    { value: "WOMEN", label: "Women's", description: "For women" },
+    { value: "UNISEX", label: "Unisex", description: "For everyone" },
   ];
-  const occasions = [
-    "CASUAL",
-    "FORMAL",
-    "SPORTSWEAR",
-    "STREETWEAR",
-    "WORKWEAR",
+
+  const clothingTypeOptions = [
+    { value: "TOP", label: "Tops", description: "T-shirts, Shirts, Blouses" },
+    { value: "BOTTOM", label: "Bottoms", description: "Jeans, Pants, Skirts" },
+    { value: "DRESS", label: "Dresses", description: "All dress styles" },
+    { value: "OUTERWEAR", label: "Outerwear", description: "Jackets, Coats" },
+    {
+      value: "UNDERWEAR",
+      label: "Underwear",
+      description: "Intimates & Loungewear",
+    },
+    { value: "SHOES", label: "Footwear", description: "Shoes & Accessories" },
+    {
+      value: "ACCESSORIES",
+      label: "Accessories",
+      description: "Bags, Hats, Jewelry",
+    },
+    {
+      value: "ACTIVEWEAR",
+      label: "Activewear",
+      description: "Sports & Fitness",
+    },
+  ];
+
+  const occasionOptions = [
+    { value: "CASUAL", label: "Casual", description: "Everyday wear" },
+    { value: "FORMAL", label: "Formal", description: "Business & Events" },
+    {
+      value: "SPORTSWEAR",
+      label: "Sportswear",
+      description: "Athletic activities",
+    },
+    { value: "STREETWEAR", label: "Streetwear", description: "Urban fashion" },
+    {
+      value: "WORKWEAR",
+      label: "Workwear",
+      description: "Professional attire",
+    },
   ];
 
   useEffect(() => {
@@ -132,9 +160,7 @@ export default function AddProductForm({
   }, []);
 
   const handleInputChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >,
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
@@ -172,15 +198,12 @@ export default function AddProductForm({
     }
   };
 
-  // ✅ FAST FILE UPLOAD WITH COMPRESSION
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Reset input
     e.target.value = "";
 
-    // Validate file
     if (!file.type.startsWith("image/")) {
       alert("Please upload an image file");
       return;
@@ -201,25 +224,17 @@ export default function AddProductForm({
         return;
       }
 
-      // ✅ STEP 1: COMPRESS (30%)
-      console.log(`📦 Original: ${(file.size / 1024).toFixed(0)}KB`);
       setUploadProgress(30);
-
       const compressed = await compressImage(file, 1200, 1200, 0.85);
-      console.log(`✅ Compressed: ${(compressed.size / 1024).toFixed(0)}KB`);
-
       setUploadProgress(60);
 
-      // ✅ STEP 2: UPLOAD (60-100%)
       const formData = new FormData();
       formData.append("file", compressed, file.name);
       formData.append("type", "product");
 
       const response = await fetch("/api/upload", {
         method: "POST",
-        headers: {
-          "x-user-data": userStr,
-        },
+        headers: { "x-user-data": userStr },
         body: formData,
       });
 
@@ -228,7 +243,6 @@ export default function AddProductForm({
 
       if (response.ok && data.url) {
         setImages([...images, data.url]);
-        console.log("✅ Uploaded successfully");
       } else {
         alert(data.error || "Upload failed");
       }
@@ -256,9 +270,9 @@ export default function AddProductForm({
     if (!formData.category) newErrors.category = "Category is required";
     if (!formData.clothingType)
       newErrors.clothingType = "Clothing type is required";
-    if (images.length < 2) newErrors.images = "At least 2 images are required";
+    if (images.length < 2) newErrors.images = "At least 2 images required";
     if (variants.length === 0)
-      newErrors.variants = "At least one variant is required";
+      newErrors.variants = "At least one variant required";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -325,35 +339,39 @@ export default function AddProductForm({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-2 sm:p-4 z-50 overflow-y-auto">
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.95 }}
-          className="bg-white rounded-2xl sm:rounded-3xl max-w-6xl w-full my-4 sm:my-8 p-4 sm:p-8 max-h-[95vh] overflow-y-auto"
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: 20 }}
+          className="bg-white rounded-3xl max-w-5xl w-full my-8 shadow-2xl max-h-[90vh] overflow-y-auto"
         >
           {/* Header */}
-          <div className="flex items-center justify-between mb-4 sm:mb-6 sticky top-0 bg-white z-10 pb-4 border-b">
-            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">
-              Add New Product
-            </h2>
-            <button
-              onClick={onClose}
-              className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition-colors flex-shrink-0"
-            >
-              <X size={20} />
-            </button>
+          <div className="sticky top-0 bg-gradient-to-r from-black to-gray-800 text-white z-20 px-6 py-5 rounded-t-3xl">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Sparkles className="text-yellow-400" size={24} />
+                <h2 className="text-2xl font-bold">Add New Product</h2>
+              </div>
+              <button
+                onClick={onClose}
+                className="w-9 h-9 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
+          <form onSubmit={handleSubmit} className="p-6 space-y-6">
             {/* Basic Info */}
             <div>
-              <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4">
-                Basic Information
+              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">
+                Product Details
               </h3>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div className="lg:col-span-2">
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Title */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-bold text-gray-700 mb-2">
                     Product Title *
                   </label>
                   <input
@@ -361,43 +379,49 @@ export default function AddProductForm({
                     name="title"
                     value={formData.title}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:border-black ${
-                      errors.title ? "border-red-500" : "border-gray-200"
+                    className={`w-full px-4 py-2.5 text-sm border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-black/10 transition-all ${
+                      errors.title
+                        ? "border-red-500 bg-red-50"
+                        : "border-gray-200 focus:border-black"
                     }`}
                     placeholder="e.g., Oversized Vintage Hoodie"
                   />
                   {errors.title && (
-                    <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                      <AlertCircle size={14} />
+                    <p className="text-red-500 text-xs mt-1.5 flex items-center gap-1">
+                      <AlertCircle size={12} />
                       {errors.title}
                     </p>
                   )}
                 </div>
 
-                <div className="lg:col-span-2">
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                {/* Description */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-bold text-gray-700 mb-2">
                     Description *
                   </label>
                   <textarea
                     name="description"
                     value={formData.description}
                     onChange={handleInputChange}
-                    rows={4}
-                    className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:border-black resize-none ${
-                      errors.description ? "border-red-500" : "border-gray-200"
+                    rows={3}
+                    className={`w-full px-4 py-2.5 text-sm border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-black/10 resize-none transition-all ${
+                      errors.description
+                        ? "border-red-500 bg-red-50"
+                        : "border-gray-200 focus:border-black"
                     }`}
                     placeholder="Describe your product..."
                   />
                   {errors.description && (
-                    <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                      <AlertCircle size={14} />
+                    <p className="text-red-500 text-xs mt-1.5 flex items-center gap-1">
+                      <AlertCircle size={12} />
                       {errors.description}
                     </p>
                   )}
                 </div>
 
+                {/* Price */}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="block text-sm font-bold text-gray-700 mb-2">
                     Price (ETB) *
                   </label>
                   <input
@@ -405,120 +429,108 @@ export default function AddProductForm({
                     name="price"
                     value={formData.price}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:border-black ${
-                      errors.price ? "border-red-500" : "border-gray-200"
+                    className={`w-full px-4 py-2.5 text-sm border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-black/10 transition-all ${
+                      errors.price
+                        ? "border-red-500 bg-red-50"
+                        : "border-gray-200 focus:border-black"
                     }`}
                     placeholder="1000"
                   />
                   {errors.price && (
-                    <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                      <AlertCircle size={14} />
+                    <p className="text-red-500 text-xs mt-1.5 flex items-center gap-1">
+                      <AlertCircle size={12} />
                       {errors.price}
                     </p>
                   )}
                 </div>
 
+                {/* Compare Price */}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Compare At Price (ETB)
+                  <label className="block text-sm font-bold text-gray-700 mb-2">
+                    Compare At Price
                   </label>
                   <input
                     type="number"
                     name="compareAtPrice"
                     value={formData.compareAtPrice}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-black"
+                    className="w-full px-4 py-2.5 text-sm border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-black/10 focus:border-black transition-all"
                     placeholder="1500"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Original price for showing discounts
-                  </p>
+                  <p className="text-xs text-gray-500 mt-1">For discounts</p>
                 </div>
 
+                {/* Category Dropdown */}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="block text-sm font-bold text-gray-700 mb-2">
                     Category *
                   </label>
-                  <select
-                    name="category"
+                  <CustomDropdown
+                    options={categoryOptions}
                     value={formData.category}
-                    onChange={handleInputChange}
-                    className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:border-black ${
-                      errors.category ? "border-red-500" : "border-gray-200"
-                    }`}
-                  >
-                    <option value="">Select gender category</option>
-                    {categories.map((cat) => (
-                      <option key={cat} value={cat}>
-                        {cat}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(value) =>
+                      setFormData({ ...formData, category: value })
+                    }
+                    placeholder="Select category"
+                    error={!!errors.category}
+                  />
                   {errors.category && (
-                    <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                      <AlertCircle size={14} />
+                    <p className="text-red-500 text-xs mt-1.5 flex items-center gap-1">
+                      <AlertCircle size={12} />
                       {errors.category}
                     </p>
                   )}
                 </div>
 
+                {/* Clothing Type Dropdown */}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="block text-sm font-bold text-gray-700 mb-2">
                     Clothing Type *
                   </label>
-                  <select
-                    name="clothingType"
+                  <CustomDropdown
+                    options={clothingTypeOptions}
                     value={formData.clothingType}
-                    onChange={handleInputChange}
-                    className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:border-black ${
-                      errors.clothingType ? "border-red-500" : "border-gray-200"
-                    }`}
-                  >
-                    <option value="">Select type</option>
-                    {clothingTypes.map((type) => (
-                      <option key={type.value} value={type.value}>
-                        {type.label}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(value) =>
+                      setFormData({ ...formData, clothingType: value })
+                    }
+                    placeholder="Select type"
+                    error={!!errors.clothingType}
+                  />
                   {errors.clothingType && (
-                    <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                      <AlertCircle size={14} />
+                    <p className="text-red-500 text-xs mt-1.5 flex items-center gap-1">
+                      <AlertCircle size={12} />
                       {errors.clothingType}
                     </p>
                   )}
                 </div>
 
+                {/* Occasion Dropdown */}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="block text-sm font-bold text-gray-700 mb-2">
                     Occasion
                   </label>
-                  <select
-                    name="occasion"
+                  <CustomDropdown
+                    options={occasionOptions}
                     value={formData.occasion}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-black"
-                  >
-                    <option value="">Select occasion</option>
-                    {occasions.map((occ) => (
-                      <option key={occ} value={occ}>
-                        {occ}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(value) =>
+                      setFormData({ ...formData, occasion: value })
+                    }
+                    placeholder="Select occasion"
+                  />
                 </div>
 
+                {/* Material */}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Material/Fabric
+                  <label className="block text-sm font-bold text-gray-700 mb-2">
+                    Material
                   </label>
                   <input
                     type="text"
                     name="material"
                     value={formData.material}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-black"
-                    placeholder="e.g., Cotton, Polyester, Denim"
+                    className="w-full px-4 py-2.5 text-sm border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-black/10 focus:border-black transition-all"
+                    placeholder="e.g., Cotton, Polyester"
                   />
                 </div>
               </div>
@@ -527,31 +539,31 @@ export default function AddProductForm({
             {/* Variants */}
             <div>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg sm:text-xl font-semibold text-gray-900">
-                  Variants (Size & Color)
+                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                  Variants
                 </h3>
                 <button
                   type="button"
                   onClick={addVariant}
-                  className="px-3 sm:px-4 py-2 bg-black text-white rounded-xl font-semibold hover:bg-gray-800 transition-colors flex items-center gap-2 text-sm"
+                  className="px-3 py-1.5 bg-black text-white rounded-lg font-semibold hover:bg-gray-800 transition-colors flex items-center gap-2 text-xs"
                 >
-                  <Plus size={18} />
-                  <span className="hidden sm:inline">Add Variant</span>
+                  <Plus size={14} />
+                  Add
                 </button>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {variants.map((variant, index) => (
                   <div
                     key={index}
-                    className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 p-4 bg-gray-50 rounded-xl"
+                    className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl"
                   >
                     <select
                       value={variant.size}
                       onChange={(e) =>
                         updateVariant(index, "size", e.target.value)
                       }
-                      className="px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-black"
+                      className="px-3 py-2 text-sm border-2 border-gray-200 rounded-lg focus:outline-none focus:border-black"
                     >
                       {sizes.map((size) => (
                         <option key={size} value={size}>
@@ -567,7 +579,7 @@ export default function AddProductForm({
                         updateVariant(index, "color", e.target.value)
                       }
                       placeholder="Color"
-                      className="flex-1 px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-black"
+                      className="flex-1 px-3 py-2 text-sm border-2 border-gray-200 rounded-lg focus:outline-none focus:border-black"
                     />
 
                     <input
@@ -582,24 +594,24 @@ export default function AddProductForm({
                       }
                       placeholder="Qty"
                       min="0"
-                      className="w-full sm:w-24 px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-black"
+                      className="w-20 px-3 py-2 text-sm border-2 border-gray-200 rounded-lg focus:outline-none focus:border-black"
                     />
 
                     {variants.length > 1 && (
                       <button
                         type="button"
                         onClick={() => removeVariant(index)}
-                        className="w-full sm:w-10 h-10 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 flex items-center justify-center"
+                        className="w-8 h-8 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 flex items-center justify-center"
                       >
-                        <Minus size={18} />
+                        <Minus size={14} />
                       </button>
                     )}
                   </div>
                 ))}
               </div>
               {errors.variants && (
-                <p className="text-red-500 text-sm mt-2 flex items-center gap-1">
-                  <AlertCircle size={14} />
+                <p className="text-red-500 text-xs mt-2 flex items-center gap-1">
+                  <AlertCircle size={12} />
                   {errors.variants}
                 </p>
               )}
@@ -607,146 +619,127 @@ export default function AddProductForm({
 
             {/* Images */}
             <div>
-              <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4">
-                Product Images (Minimum 2)
+              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">
+                Images (Min. 2)
               </h3>
 
-              {/* Upload Options */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                {/* ✅ FAST FILE UPLOAD */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Upload from Device
-                  </label>
-                  <label
-                    className={`flex flex-col items-center justify-center gap-2 px-6 py-4 border-2 border-dashed rounded-xl cursor-pointer transition-colors ${
-                      isUploadingImage
-                        ? "bg-gray-50 border-gray-300"
-                        : "border-gray-300 hover:border-black hover:bg-gray-50"
-                    }`}
-                  >
-                    {isUploadingImage ? (
-                      <>
-                        <Loader2
-                          size={24}
-                          className="animate-spin text-black"
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                {/* File Upload */}
+                <label
+                  className={`flex flex-col items-center justify-center gap-2 px-4 py-6 border-2 border-dashed rounded-xl cursor-pointer transition-all ${
+                    isUploadingImage
+                      ? "bg-gray-50 border-gray-300"
+                      : "border-gray-300 hover:border-black hover:bg-gray-50"
+                  }`}
+                >
+                  {isUploadingImage ? (
+                    <>
+                      <Loader2 size={20} className="animate-spin text-black" />
+                      <span className="text-xs font-medium">
+                        {uploadProgress < 30
+                          ? "Preparing..."
+                          : uploadProgress < 60
+                            ? "Compressing..."
+                            : "Uploading..."}
+                      </span>
+                      <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-black transition-all duration-300"
+                          style={{ width: `${uploadProgress}%` }}
                         />
-                        <span className="text-sm font-medium">
-                          {uploadProgress < 30
-                            ? "Preparing..."
-                            : uploadProgress < 60
-                              ? "Compressing..."
-                              : "Uploading..."}
-                        </span>
-                        <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-black transition-all duration-300"
-                            style={{ width: `${uploadProgress}%` }}
-                          />
-                        </div>
-                        <span className="text-xs text-gray-500">
-                          {uploadProgress}%
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <Upload size={24} />
-                        <span className="text-sm font-medium">
-                          Choose Image
-                        </span>
-                        <span className="text-xs text-gray-500">Max 10MB</span>
-                      </>
-                    )}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileUpload}
-                      disabled={isUploadingImage}
-                      className="hidden"
-                    />
-                  </label>
-                </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <Upload size={20} />
+                      <span className="text-xs font-medium">Upload Image</span>
+                      <span className="text-xs text-gray-500">Max 10MB</span>
+                    </>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileUpload}
+                    disabled={isUploadingImage}
+                    className="hidden"
+                  />
+                </label>
 
                 {/* URL Input */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Or Paste Image URL
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="url"
-                      value={imageUrl}
-                      onChange={(e) => setImageUrl(e.target.value)}
-                      placeholder="https://..."
-                      className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-black"
-                    />
-                    <button
-                      type="button"
-                      onClick={addImageUrl}
-                      className="px-6 py-3 bg-black text-white rounded-xl font-semibold hover:bg-gray-800"
-                    >
-                      Add
-                    </button>
-                  </div>
+                <div className="flex gap-2">
+                  <input
+                    type="url"
+                    value={imageUrl}
+                    onChange={(e) => setImageUrl(e.target.value)}
+                    placeholder="Or paste URL"
+                    className="flex-1 px-3 py-2 text-sm border-2 border-gray-200 rounded-xl focus:outline-none focus:border-black"
+                  />
+                  <button
+                    type="button"
+                    onClick={addImageUrl}
+                    className="px-4 py-2 bg-black text-white rounded-xl font-semibold hover:bg-gray-800 text-xs"
+                  >
+                    Add
+                  </button>
                 </div>
               </div>
 
               {/* Image Grid */}
-              <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-4">
+              <div className="grid grid-cols-4 sm:grid-cols-6 gap-3">
                 {images.map((img, index) => (
                   <div key={index} className="relative group">
                     <img
                       src={img}
                       alt={`Product ${index + 1}`}
-                      className="w-full aspect-square object-cover rounded-xl"
+                      className="w-full aspect-square object-cover rounded-lg"
                     />
                     <button
                       type="button"
                       onClick={() => removeImage(index)}
-                      className="absolute top-2 right-2 w-8 h-8 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                      className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
                     >
-                      <X size={16} />
+                      <X size={12} />
                     </button>
                   </div>
                 ))}
 
                 {images.length === 0 && (
-                  <div className="col-span-3 sm:col-span-4 lg:col-span-5 flex flex-col items-center justify-center py-12 border-2 border-dashed border-gray-300 rounded-xl">
-                    <ImageIcon className="text-gray-400 mb-2" size={48} />
-                    <p className="text-gray-500 text-sm">No images added yet</p>
+                  <div className="col-span-4 sm:col-span-6 flex flex-col items-center justify-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
+                    <ImageIcon className="text-gray-400 mb-2" size={32} />
+                    <p className="text-gray-500 text-xs">No images yet</p>
                   </div>
                 )}
               </div>
               {errors.images && (
-                <p className="text-red-500 text-sm mt-2 flex items-center gap-1">
-                  <AlertCircle size={14} />
+                <p className="text-red-500 text-xs mt-2 flex items-center gap-1">
+                  <AlertCircle size={12} />
                   {errors.images}
                 </p>
               )}
             </div>
 
             {/* Submit */}
-            <div className="flex flex-col sm:flex-row gap-4 sticky bottom-0 bg-white pt-4 border-t">
+            <div className="flex gap-3 sticky bottom-0 bg-white pt-4 border-t">
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 px-6 py-4 border-2 border-gray-200 rounded-xl font-semibold hover:bg-gray-50 transition-colors"
+                className="flex-1 px-6 py-3 border-2 border-gray-200 rounded-xl font-semibold hover:bg-gray-50 transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="flex-1 px-6 py-4 bg-black text-white rounded-xl font-semibold hover:bg-gray-800 transition-colors disabled:bg-gray-400 flex items-center justify-center gap-2"
+                className="flex-1 px-6 py-3 bg-gradient-to-r from-black to-gray-800 text-white rounded-xl font-semibold hover:shadow-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {isSubmitting ? (
                   <>
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <Loader2 className="w-4 h-4 animate-spin" />
                     Adding...
                   </>
                 ) : (
                   <>
-                    <Check size={20} />
+                    <Check size={18} />
                     Add Product
                   </>
                 )}
