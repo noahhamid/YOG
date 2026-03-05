@@ -1,58 +1,276 @@
-"use client";
-
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  X,
-  Plus,
-  Minus,
-  Image as ImageIcon,
-  AlertCircle,
-  Check,
-} from "lucide-react";
 
-interface Variant {
-  id?: string;
-  size: string;
-  color: string;
-  quantity: number;
+// ─── Icons ────────────────────────────────────────────────────────────────────
+const Icon = ({
+  d,
+  size = 16,
+  stroke = "currentColor",
+  fill = "none",
+  strokeWidth = 1.75,
+}) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill={fill}
+    stroke={stroke}
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d={d} />
+  </svg>
+);
+const XIcon = (p) => <Icon {...p} d="M18 6 6 18M6 6l12 12" />;
+const PlusIcon = (p) => <Icon {...p} d="M12 5v14M5 12h14" />;
+const MinusIcon = (p) => <Icon {...p} d="M5 12h14" />;
+const CheckIcon = (p) => <Icon {...p} d="M20 6 9 17l-5-5" strokeWidth={2.5} />;
+const ArrowLeftIcon = (p) => <Icon {...p} d="m15 18-6-6 6-6" />;
+const AlertIcon = (p) => (
+  <Icon
+    {...p}
+    d="M12 9v4m0 4h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
+  />
+);
+const ImageIcon = (p) => (
+  <Icon
+    {...p}
+    d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7m4-2h6v6m-11 5 9.5-9.5"
+  />
+);
+const EditIcon = (p) => (
+  <Icon
+    {...p}
+    d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7m-1.414-9.414a2 2 0 1 1 2.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+  />
+);
+const ChevronDown = (p) => <Icon {...p} d="m6 9 6 6 6-6" />;
+const LoaderIcon = ({ size = 16 }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    style={{ animation: "spin 0.8s linear infinite" }}
+  >
+    <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+  </svg>
+);
+
+// ─── Dropdown ─────────────────────────────────────────────────────────────────
+function Dropdown({ options, value, onChange, placeholder, error }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef();
+  useEffect(() => {
+    const h = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, []);
+  const selected = options.find((o) => (o.value || o) === value);
+  const label = selected ? selected.label || selected : null;
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        style={{
+          width: "100%",
+          padding: "10px 14px",
+          background: "var(--input-bg)",
+          border: `1.5px solid ${error ? "var(--error)" : open ? "var(--accent)" : "var(--border)"}`,
+          borderRadius: 10,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          cursor: "pointer",
+          color: label ? "var(--text)" : "var(--muted)",
+          fontSize: 14,
+          transition: "border-color 0.15s, box-shadow 0.15s",
+          fontFamily: "inherit",
+          boxShadow: open ? "0 0 0 3px var(--accent-soft)" : "none",
+        }}
+      >
+        <span>{label || placeholder}</span>
+        <span
+          style={{
+            transition: "transform 0.2s",
+            transform: open ? "rotate(180deg)" : "none",
+            color: "var(--muted)",
+          }}
+        >
+          <ChevronDown size={14} />
+        </span>
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -8, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.97 }}
+            transition={{ duration: 0.15 }}
+            style={{
+              position: "absolute",
+              top: "calc(100% + 6px)",
+              left: 0,
+              right: 0,
+              zIndex: 100,
+              background: "var(--card)",
+              border: "1.5px solid var(--border)",
+              borderRadius: 12,
+              boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+              overflow: "hidden",
+            }}
+          >
+            {options.map((opt) => {
+              const val = opt.value || opt;
+              const lbl = opt.label || opt;
+              const desc = opt.description;
+              const isActive = val === value;
+              return (
+                <button
+                  key={val}
+                  type="button"
+                  onClick={() => {
+                    onChange(val);
+                    setOpen(false);
+                  }}
+                  style={{
+                    width: "100%",
+                    padding: desc ? "10px 14px" : "9px 14px",
+                    background: isActive ? "var(--accent-soft)" : "transparent",
+                    border: "none",
+                    cursor: "pointer",
+                    textAlign: "left",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 1,
+                    transition: "background 0.1s",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isActive)
+                      e.currentTarget.style.background = "var(--hover)";
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive)
+                      e.currentTarget.style.background = "transparent";
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: 13,
+                      fontWeight: isActive ? 600 : 500,
+                      color: isActive ? "var(--accent)" : "var(--text)",
+                    }}
+                  >
+                    {lbl}
+                  </span>
+                  {desc && (
+                    <span style={{ fontSize: 11, color: "var(--muted)" }}>
+                      {desc}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
 }
 
-interface Product {
-  id: string;
-  title: string;
-  description: string;
-  price: number;
-  compareAtPrice: number | null;
-  category: string;
-  clothingType?: string | null;
-  occasion?: string | null;
-  material?: string | null;
-  status: string;
-  variants: Array<{
-    id: string;
-    size: string;
-    color: string;
-    quantity: number;
-  }>;
-  images: Array<{
-    id: string;
-    url: string;
-    position: number;
-  }>;
+function SectionHead({ title, sub }) {
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <h3
+        style={{
+          fontSize: 15,
+          fontWeight: 700,
+          color: "var(--text)",
+          margin: 0,
+          letterSpacing: -0.3,
+        }}
+      >
+        {title}
+      </h3>
+      {sub && (
+        <p style={{ fontSize: 12, color: "var(--muted)", margin: "3px 0 0" }}>
+          {sub}
+        </p>
+      )}
+    </div>
+  );
 }
 
-interface EditProductFormProps {
-  product: Product;
-  onClose: () => void;
-  onSubmit: () => void;
+function Field({ label, required, error, children }) {
+  return (
+    <div>
+      {label && (
+        <label
+          style={{
+            display: "block",
+            fontSize: 13,
+            fontWeight: 600,
+            color: "var(--text)",
+            marginBottom: 7,
+          }}
+        >
+          {label}
+          {required && (
+            <span style={{ color: "var(--error)", marginLeft: 3 }}>*</span>
+          )}
+        </label>
+      )}
+      {children}
+      {error && (
+        <p
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 4,
+            color: "var(--error)",
+            fontSize: 11,
+            marginTop: 5,
+          }}
+        >
+          <AlertIcon size={11} /> {error}
+        </p>
+      )}
+    </div>
+  );
 }
 
-export default function EditProductForm({
-  product,
-  onClose,
-  onSubmit,
-}: EditProductFormProps) {
+const inputStyle = (hasError) => ({
+  width: "100%",
+  padding: "10px 14px",
+  fontSize: 14,
+  background: "var(--input-bg)",
+  border: `1.5px solid ${hasError ? "var(--error)" : "var(--border)"}`,
+  borderRadius: 10,
+  color: "var(--text)",
+  outline: "none",
+  boxSizing: "border-box",
+  transition: "border-color 0.15s, box-shadow 0.15s",
+  fontFamily: "inherit",
+});
+
+const focusStyle = (e) => {
+  e.target.style.borderColor = "var(--accent)";
+  e.target.style.boxShadow = "0 0 0 3px var(--accent-soft)";
+};
+const blurStyle = (e) => {
+  e.target.style.borderColor = "var(--border)";
+  e.target.style.boxShadow = "none";
+};
+
+// ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
+export default function EditProductForm({ product, onClose, onSubmit }) {
   const [formData, setFormData] = useState({
     title: product.title,
     description: product.description,
@@ -65,7 +283,7 @@ export default function EditProductForm({
     status: product.status,
   });
 
-  const [variants, setVariants] = useState<Variant[]>(
+  const [variants, setVariants] = useState(
     product.variants.map((v) => ({
       id: v.id,
       size: v.size,
@@ -74,124 +292,128 @@ export default function EditProductForm({
     })),
   );
 
-  const [images, setImages] = useState<string[]>(
+  const [images, setImages] = useState(
     product.images
       .sort((a, b) => a.position - b.position)
       .map((img) => img.url),
   );
 
   const [imageUrl, setImageUrl] = useState("");
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [dragOver, setDragOver] = useState(false);
+  const fileRef = useRef();
 
-  const sizes = ["XS", "S", "M", "L", "XL", "XXL", "2XL", "3XL"];
-  const categories = ["MEN", "WOMEN", "UNISEX"];
-  const clothingTypes = [
-    { value: "TOP", label: "Top (T-shirts, Shirts, Blouses)" },
-    { value: "BOTTOM", label: "Bottom (Jeans, Pants, Skirts)" },
-    { value: "DRESS", label: "Dress" },
-    { value: "OUTERWEAR", label: "Outerwear (Jackets, Coats)" },
-    { value: "UNDERWEAR", label: "Underwear & Loungewear" },
-    { value: "SHOES", label: "Shoes & Footwear" },
-    { value: "ACCESSORIES", label: "Accessories (Bags, Hats)" },
-    { value: "ACTIVEWEAR", label: "Activewear & Sportswear" },
+  const categoryOptions = [
+    { value: "MEN", label: "Men's", description: "For men" },
+    { value: "WOMEN", label: "Women's", description: "For women" },
+    { value: "UNISEX", label: "Unisex", description: "For everyone" },
   ];
-  const occasions = [
-    "CASUAL",
-    "FORMAL",
-    "SPORTSWEAR",
-    "STREETWEAR",
-    "PARTY",
-    "WORKWEAR",
-    "LOUNGEWEAR",
+  const clothingTypeOptions = [
+    { value: "TOP", label: "Tops", description: "T-shirts, Shirts, Blouses" },
+    { value: "BOTTOM", label: "Bottoms", description: "Jeans, Pants, Skirts" },
+    { value: "DRESS", label: "Dresses", description: "All dress styles" },
+    { value: "OUTERWEAR", label: "Outerwear", description: "Jackets, Coats" },
+    {
+      value: "UNDERWEAR",
+      label: "Underwear",
+      description: "Intimates & Loungewear",
+    },
+    { value: "SHOES", label: "Footwear", description: "Shoes & Accessories" },
+    {
+      value: "ACCESSORIES",
+      label: "Accessories",
+      description: "Bags, Hats, Jewelry",
+    },
+    {
+      value: "ACTIVEWEAR",
+      label: "Activewear",
+      description: "Sports & Fitness",
+    },
   ];
+  const occasionOptions = [
+    { value: "CASUAL", label: "Casual", description: "Everyday wear" },
+    { value: "FORMAL", label: "Formal", description: "Business & Events" },
+    {
+      value: "SPORTSWEAR",
+      label: "Sportswear",
+      description: "Athletic activities",
+    },
+    { value: "STREETWEAR", label: "Streetwear", description: "Urban fashion" },
+    { value: "PARTY", label: "Party", description: "Nights out" },
+    {
+      value: "WORKWEAR",
+      label: "Workwear",
+      description: "Professional attire",
+    },
+    { value: "LOUNGEWEAR", label: "Loungewear", description: "Relaxed & cozy" },
+  ];
+  const statusOptions = [
+    {
+      value: "PUBLISHED",
+      label: "Published",
+      description: "Visible to buyers",
+    },
+    { value: "DRAFT", label: "Draft", description: "Hidden from store" },
+  ];
+  const sizes = ["XS", "S", "M", "L", "XL", "XXL", "2XL", "3XL"].map((s) => ({
+    value: s,
+    label: s,
+  }));
 
   useEffect(() => {
     const userStr = localStorage.getItem("yog_user");
-    if (userStr) {
-      setCurrentUser(JSON.parse(userStr));
-    }
+    if (userStr) setCurrentUser(JSON.parse(userStr));
   }, []);
 
-  const handleInputChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >,
-  ) => {
+  const handleInput = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-    if (errors[name]) {
-      setErrors({ ...errors, [name]: "" });
-    }
+    setFormData((p) => ({ ...p, [name]: value }));
+    if (errors[name]) setErrors((p) => ({ ...p, [name]: "" }));
   };
 
-  const addVariant = () => {
-    setVariants([...variants, { size: "S", color: "Black", quantity: 0 }]);
-  };
-
-  const removeVariant = (index: number) => {
-    setVariants(variants.filter((_, i) => i !== index));
-  };
-
-  const updateVariant = (
-    index: number,
-    field: keyof Variant,
-    value: string | number,
-  ) => {
-    setVariants((prev) => {
-      const updated = [...prev];
-      updated[index] = { ...updated[index], [field]: value };
-      return updated;
+  const handleFiles = (files) => {
+    Array.from(files).forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (e.target?.result) setImages((p) => [...p, e.target.result]);
+      };
+      reader.readAsDataURL(file);
     });
   };
 
-  const addImage = () => {
+  const addImageUrl = () => {
     if (imageUrl.trim()) {
-      setImages([...images, imageUrl.trim()]);
+      setImages((p) => [...p, imageUrl.trim()]);
       setImageUrl("");
     }
   };
 
-  const removeImage = (index: number) => {
-    setImages(images.filter((_, i) => i !== index));
-  };
-
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {};
-
-    if (!formData.title.trim()) newErrors.title = "Title is required";
-    if (!formData.description.trim())
-      newErrors.description = "Description is required";
+  const validate = () => {
+    const e = {};
+    if (!formData.title.trim()) e.title = "Title is required";
+    if (!formData.description.trim()) e.description = "Description is required";
     if (!formData.price || parseFloat(formData.price) <= 0)
-      newErrors.price = "Valid price is required";
-    if (!formData.category) newErrors.category = "Category is required";
-    if (!formData.clothingType)
-      newErrors.clothingType = "Clothing type is required";
-    if (images.length < 2) newErrors.images = "At least 2 images are required";
-    if (variants.length === 0)
-      newErrors.variants = "At least one variant is required";
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+      e.price = "Valid price is required";
+    if (!formData.category) e.category = "Category is required";
+    if (!formData.clothingType) e.clothingType = "Clothing type is required";
+    if (images.length < 2) e.images = "At least 2 images required";
+    if (variants.length === 0) e.variants = "At least one variant required";
+    setErrors(e);
+    return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!validateForm()) {
-      return;
-    }
-
+    if (!validate()) return;
     if (!currentUser) {
       alert("Please sign in first");
       return;
     }
-
     setIsSubmitting(true);
-
     try {
-      const productData = {
+      const payload = {
         ...formData,
         price: parseFloat(formData.price),
         compareAtPrice: formData.compareAtPrice
@@ -207,416 +429,805 @@ export default function EditProductForm({
         })),
         images,
       };
-
-      const response = await fetch(`/api/products/${product.id}`, {
+      const res = await fetch(`/api/products/${product.id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           "x-user-data": JSON.stringify(currentUser),
         },
-        body: JSON.stringify(productData),
+        body: JSON.stringify(payload),
       });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        alert("Product updated successfully!");
+      const data = await res.json();
+      if (res.ok) {
+        alert("Product updated!");
         onSubmit();
       } else {
-        alert(data.error || "Failed to update product");
+        alert(data.error || "Failed to update");
         setIsSubmitting(false);
       }
-    } catch (error) {
-      console.error("Error updating product:", error);
+    } catch {
       alert("Failed to update product");
       setIsSubmitting(false);
     }
   };
 
+  const css = `
+    @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&display=swap');
+    :root {
+      --bg: #f6f5f3; --card: #ffffff; --sidebar: #fafaf9;
+      --text: #1a1714; --muted: #9e9890; --border: #e8e4de;
+      --input-bg: #fdfcfb; --accent: #2563eb; --accent-soft: rgba(37,99,235,0.08);
+      --error: #dc2626; --hover: #f5f3f0; --divider: rgba(0,0,0,0.06);
+      --warn: #f59e0b; --warn-soft: rgba(245,158,11,0.1);
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes fadeSlideIn { from { opacity:0; transform:translateY(16px) scale(0.98); } to { opacity:1; transform:none; } }
+    .epf-overlay {
+      position:fixed;inset:0;background:rgba(15,12,9,0.55);backdrop-filter:blur(6px);
+      display:flex;align-items:center;justify-content:center;padding:16px;z-index:9999;
+    }
+    .epf-modal {
+      background:var(--card);border-radius:20px;width:100%;max-width:1100px;
+      max-height:92vh;overflow:hidden;display:flex;flex-direction:column;
+      box-shadow:0 32px 80px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.06);
+      animation: fadeSlideIn 0.28s cubic-bezier(0.16,1,0.3,1);
+      font-family:'Sora',sans-serif;
+    }
+    .epf-header {
+      display:flex;align-items:center;justify-content:space-between;
+      padding:18px 28px;border-bottom:1px solid var(--divider);
+      background:var(--card);position:sticky;top:0;z-index:10;flex-shrink:0;
+    }
+    .epf-header-left { display:flex;align-items:center;gap:12px; }
+    .epf-header-right { display:flex;align-items:center;gap:10px; }
+    .epf-icon-btn {
+      width:36px;height:36px;border-radius:10px;border:1px solid var(--border);
+      background:transparent;cursor:pointer;display:flex;align-items:center;
+      justify-content:center;color:var(--muted);transition:all 0.15s;
+    }
+    .epf-icon-btn:hover { background:var(--hover);color:var(--text); }
+    .epf-save-btn {
+      display:flex;align-items:center;gap:7px;padding:9px 20px;
+      background:var(--accent);color:#fff;border:none;border-radius:10px;
+      font-family:'Sora',sans-serif;font-size:13px;font-weight:600;
+      cursor:pointer;transition:all 0.15s;letter-spacing:-0.1px;
+    }
+    .epf-save-btn:hover { background:#1d4ed8;transform:translateY(-1px);box-shadow:0 4px 14px rgba(37,99,235,0.28); }
+    .epf-save-btn:disabled { opacity:0.5;cursor:not-allowed;transform:none;box-shadow:none; }
+    .epf-body { display:flex;flex:1;overflow:hidden; }
+    .epf-main { flex:1;overflow-y:auto;padding:28px 32px;display:flex;flex-direction:column;gap:32px; }
+    .epf-sidebar {
+      width:268px;flex-shrink:0;background:var(--sidebar);overflow-y:auto;
+      padding:24px 20px;display:flex;flex-direction:column;gap:24px;
+      border-left:1px solid var(--divider);
+    }
+    .epf-divider { border:none;border-top:1px solid var(--divider);margin:0 0 20px; }
+    .epf-grid-2 { display:grid;grid-template-columns:1fr 1fr;gap:16px; }
+    .epf-variant-row {
+      display:grid;grid-template-columns:110px 1fr 90px 36px;gap:10px;align-items:center;
+    }
+    .epf-images-grid { display:grid;grid-template-columns:repeat(5,1fr);gap:10px; }
+    .epf-img-thumb {
+      aspect-ratio:1;border-radius:10px;overflow:hidden;position:relative;
+      border:1.5px solid var(--border);background:var(--hover);
+    }
+    .epf-img-thumb img { width:100%;height:100%;object-fit:cover; }
+    .epf-img-remove {
+      position:absolute;top:5px;right:5px;width:22px;height:22px;
+      background:rgba(0,0,0,0.6);color:#fff;border:none;border-radius:6px;
+      cursor:pointer;display:none;align-items:center;justify-content:center;
+    }
+    .epf-img-thumb:hover .epf-img-remove { display:flex; }
+    .epf-img-cover {
+      position:absolute;bottom:5px;left:5px;padding:2px 6px;
+      background:var(--text);color:#fff;font-size:9px;font-weight:700;
+      border-radius:4px;letter-spacing:0.4px;text-transform:uppercase;
+    }
+    .epf-upload-zone {
+      aspect-ratio:1;border-radius:10px;border:2px dashed var(--border);
+      display:flex;flex-direction:column;align-items:center;justify-content:center;
+      gap:5px;cursor:pointer;transition:all 0.15s;background:transparent;color:var(--muted);
+    }
+    .epf-upload-zone:hover, .epf-upload-zone.drag { border-color:var(--accent);background:var(--accent-soft);color:var(--accent); }
+    .epf-url-row { display:flex;gap:8px;margin-top:10px; }
+    .epf-url-input {
+      flex:1;padding:9px 12px;font-size:13px;background:var(--input-bg);
+      border:1.5px solid var(--border);border-radius:9px;color:var(--text);
+      outline:none;font-family:'Sora',sans-serif;transition:all 0.15s;
+    }
+    .epf-url-input:focus { border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft); }
+    .epf-url-add {
+      padding:9px 14px;background:var(--text);color:#fff;border:none;
+      border-radius:9px;font-size:12px;font-weight:600;cursor:pointer;
+      font-family:'Sora',sans-serif;transition:all 0.15s;white-space:nowrap;
+    }
+    .epf-url-add:hover { background:#333; }
+    .epf-sidebar-label {
+      font-size:11px;font-weight:700;color:var(--muted);letter-spacing:0.8px;
+      text-transform:uppercase;margin:0 0 10px;
+    }
+    .epf-status-badge {
+      display:inline-flex;align-items:center;gap:5px;padding:5px 10px;
+      border-radius:20px;font-size:11px;font-weight:600;
+    }
+    .epf-dot { width:6px;height:6px;border-radius:50%; }
+    .epf-edit-banner {
+      display:flex;align-items:center;gap:8px;padding:10px 14px;
+      background:var(--warn-soft);border:1px solid rgba(245,158,11,0.2);
+      border-radius:10px;margin-bottom:4px;
+    }
+  `;
+
+  // Checklist derived from current state
+  const checklist = [
+    ["Title", !!formData.title],
+    ["Description", !!formData.description],
+    ["Price", !!formData.price && parseFloat(formData.price) > 0],
+    ["Category", !!formData.category],
+    ["Type", !!formData.clothingType],
+    ["2+ Images", images.length >= 2],
+    ["Variant", variants.length > 0],
+  ];
+
   return (
-    <AnimatePresence>
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-2 sm:p-4 z-50 overflow-y-auto">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.95 }}
-          className="bg-white rounded-2xl sm:rounded-3xl max-w-6xl w-full my-4 sm:my-8 p-4 sm:p-8 max-h-[95vh] overflow-y-auto"
-        >
+    <>
+      <style>{css}</style>
+      <div className="epf-overlay">
+        <div className="epf-modal">
           {/* Header */}
-          <div className="flex items-center justify-between mb-4 sm:mb-6 sticky top-0 bg-white z-10 pb-4 border-b">
-            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">
-              Edit Product
-            </h2>
-            <button
-              onClick={onClose}
-              className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition-colors flex-shrink-0"
-            >
-              <X size={20} />
-            </button>
+          <div className="epf-header">
+            <div className="epf-header-left">
+              <button className="epf-icon-btn" onClick={onClose} type="button">
+                <ArrowLeftIcon size={16} />
+              </button>
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <EditIcon size={16} />
+                  <span
+                    style={{
+                      fontSize: 18,
+                      fontWeight: 800,
+                      color: "var(--text)",
+                      letterSpacing: -0.6,
+                    }}
+                  >
+                    Edit Product
+                  </span>
+                </div>
+                <p
+                  style={{
+                    fontSize: 11,
+                    color: "var(--muted)",
+                    margin: 0,
+                    marginTop: 1,
+                  }}
+                >
+                  Editing:{" "}
+                  <strong style={{ color: "var(--text)" }}>
+                    {product.title}
+                  </strong>
+                </p>
+              </div>
+            </div>
+            <div className="epf-header-right">
+              <button
+                className="epf-save-btn"
+                type="submit"
+                form="epf-form"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <LoaderIcon size={14} />
+                ) : (
+                  <CheckIcon size={14} />
+                )}
+                {isSubmitting ? "Saving…" : "Save Changes"}
+              </button>
+              <button className="epf-icon-btn" onClick={onClose} type="button">
+                <XIcon size={15} />
+              </button>
+            </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
-            {/* Basic Info */}
-            <div>
-              <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4">
-                Basic Information
-              </h3>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div className="lg:col-span-2">
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Product Title *
-                  </label>
-                  <input
-                    type="text"
-                    name="title"
-                    value={formData.title}
-                    onChange={handleInputChange}
-                    className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:border-black ${
-                      errors.title ? "border-red-500" : "border-gray-200"
-                    }`}
-                    placeholder="e.g., Oversized Vintage Hoodie"
+          {/* Body */}
+          <div className="epf-body">
+            {/* Main */}
+            <div className="epf-main">
+              <form id="epf-form" onSubmit={handleSubmit}>
+                {/* Basic Info */}
+                <div>
+                  <SectionHead
+                    title="Product Details"
+                    sub="Update the name and description of your item"
                   />
-                  {errors.title && (
-                    <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                      <AlertCircle size={14} />
-                      {errors.title}
-                    </p>
-                  )}
-                </div>
-
-                <div className="lg:col-span-2">
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Description *
-                  </label>
-                  <textarea
-                    name="description"
-                    value={formData.description}
-                    onChange={handleInputChange}
-                    rows={4}
-                    className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:border-black resize-none ${
-                      errors.description ? "border-red-500" : "border-gray-200"
-                    }`}
-                    placeholder="Describe your product..."
-                  />
-                  {errors.description && (
-                    <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                      <AlertCircle size={14} />
-                      {errors.description}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Price (ETB) *
-                  </label>
-                  <input
-                    type="number"
-                    name="price"
-                    value={formData.price}
-                    onChange={handleInputChange}
-                    className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:border-black ${
-                      errors.price ? "border-red-500" : "border-gray-200"
-                    }`}
-                    placeholder="1000"
-                  />
-                  {errors.price && (
-                    <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                      <AlertCircle size={14} />
-                      {errors.price}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Compare At Price (ETB)
-                  </label>
-                  <input
-                    type="number"
-                    name="compareAtPrice"
-                    value={formData.compareAtPrice}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-black"
-                    placeholder="1500"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Original price for showing discounts
-                  </p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Category *
-                  </label>
-                  <select
-                    name="category"
-                    value={formData.category}
-                    onChange={handleInputChange}
-                    className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:border-black ${
-                      errors.category ? "border-red-500" : "border-gray-200"
-                    }`}
-                  >
-                    <option value="">Select gender category</option>
-                    {categories.map((cat) => (
-                      <option key={cat} value={cat}>
-                        {cat}
-                      </option>
-                    ))}
-                  </select>
-                  {errors.category && (
-                    <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                      <AlertCircle size={14} />
-                      {errors.category}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Clothing Type *
-                  </label>
-                  <select
-                    name="clothingType"
-                    value={formData.clothingType}
-                    onChange={handleInputChange}
-                    className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:border-black ${
-                      errors.clothingType ? "border-red-500" : "border-gray-200"
-                    }`}
-                  >
-                    <option value="">Select type</option>
-                    {clothingTypes.map((type) => (
-                      <option key={type.value} value={type.value}>
-                        {type.label}
-                      </option>
-                    ))}
-                  </select>
-                  {errors.clothingType && (
-                    <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                      <AlertCircle size={14} />
-                      {errors.clothingType}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Occasion
-                  </label>
-                  <select
-                    name="occasion"
-                    value={formData.occasion}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-black"
-                  >
-                    <option value="">Select occasion</option>
-                    {occasions.map((occ) => (
-                      <option key={occ} value={occ}>
-                        {occ}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Material/Fabric
-                  </label>
-                  <input
-                    type="text"
-                    name="material"
-                    value={formData.material}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-black"
-                    placeholder="e.g., Cotton, Polyester, Denim"
-                  />
-                </div>
-
-                <div className="lg:col-span-2">
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Status
-                  </label>
-                  <select
-                    name="status"
-                    value={formData.status}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-black"
-                  >
-                    <option value="PUBLISHED">Published</option>
-                    <option value="DRAFT">Draft</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            {/* Variants */}
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg sm:text-xl font-semibold text-gray-900">
-                  Variants (Size & Color)
-                </h3>
-                <button
-                  type="button"
-                  onClick={addVariant}
-                  className="px-3 sm:px-4 py-2 bg-black text-white rounded-xl font-semibold hover:bg-gray-800 transition-colors flex items-center gap-2 text-sm"
-                >
-                  <Plus size={18} />
-                  <span className="hidden sm:inline">Add Variant</span>
-                </button>
-              </div>
-
-              <div className="space-y-3">
-                {variants.map((variant, index) => (
                   <div
-                    key={index}
-                    className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 p-4 bg-gray-50 rounded-xl"
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 14,
+                    }}
                   >
-                    <select
-                      value={variant.size}
-                      onChange={(e) =>
-                        updateVariant(index, "size", e.target.value)
-                      }
-                      className="px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-black"
+                    <Field label="Product Title" required error={errors.title}>
+                      <input
+                        name="title"
+                        value={formData.title}
+                        onChange={handleInput}
+                        placeholder="e.g. Oversized Vintage Hoodie"
+                        style={inputStyle(errors.title)}
+                        onFocus={focusStyle}
+                        onBlur={blurStyle}
+                      />
+                    </Field>
+                    <Field
+                      label="Description"
+                      required
+                      error={errors.description}
                     >
-                      {sizes.map((size) => (
-                        <option key={size} value={size}>
-                          {size}
-                        </option>
-                      ))}
-                    </select>
-
-                    <input
-                      type="text"
-                      value={variant.color}
-                      onChange={(e) =>
-                        updateVariant(index, "color", e.target.value)
-                      }
-                      placeholder="Color"
-                      className="flex-1 px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-black"
-                    />
-
-                    <input
-                      type="number"
-                      value={variant.quantity}
-                      onChange={(e) =>
-                        updateVariant(
-                          index,
-                          "quantity",
-                          parseInt(e.target.value) || 0,
-                        )
-                      }
-                      placeholder="Qty"
-                      min="0"
-                      className="w-full sm:w-24 px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-black"
-                    />
-
-                    {variants.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removeVariant(index)}
-                        className="w-full sm:w-10 h-10 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 flex items-center justify-center"
-                      >
-                        <Minus size={18} />
-                      </button>
-                    )}
+                      <textarea
+                        name="description"
+                        value={formData.description}
+                        onChange={handleInput}
+                        placeholder="Describe your product — materials, fit, sizing, care instructions…"
+                        rows={4}
+                        style={{
+                          ...inputStyle(errors.description),
+                          resize: "none",
+                        }}
+                        onFocus={focusStyle}
+                        onBlur={blurStyle}
+                      />
+                    </Field>
                   </div>
-                ))}
-              </div>
-              {errors.variants && (
-                <p className="text-red-500 text-sm mt-2 flex items-center gap-1">
-                  <AlertCircle size={14} />
-                  {errors.variants}
-                </p>
-              )}
-            </div>
+                </div>
 
-            {/* Images */}
-            <div>
-              <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4">
-                Product Images (Minimum 2)
-              </h3>
+                <hr className="epf-divider" style={{ marginTop: 28 }} />
 
-              <div className="flex flex-col sm:flex-row gap-3 mb-4">
-                <input
-                  type="url"
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  placeholder="Paste image URL"
-                  className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-black"
-                />
-                <button
-                  type="button"
-                  onClick={addImage}
-                  className="px-6 py-3 bg-black text-white rounded-xl font-semibold hover:bg-gray-800 flex items-center justify-center gap-2"
-                >
-                  <Plus size={18} />
-                  Add
-                </button>
-              </div>
+                {/* Pricing */}
+                <div>
+                  <SectionHead
+                    title="Pricing"
+                    sub="Adjust your sale price and optional compare-at price"
+                  />
+                  <div className="epf-grid-2">
+                    <Field label="Price (ETB)" required error={errors.price}>
+                      <div style={{ position: "relative" }}>
+                        <span
+                          style={{
+                            position: "absolute",
+                            left: 13,
+                            top: "50%",
+                            transform: "translateY(-50%)",
+                            fontSize: 12,
+                            fontWeight: 700,
+                            color: "var(--muted)",
+                          }}
+                        >
+                          ETB
+                        </span>
+                        <input
+                          type="number"
+                          name="price"
+                          value={formData.price}
+                          onChange={handleInput}
+                          placeholder="1000"
+                          min="0"
+                          step="0.01"
+                          style={{
+                            ...inputStyle(errors.price),
+                            paddingLeft: 46,
+                          }}
+                          onFocus={focusStyle}
+                          onBlur={blurStyle}
+                        />
+                      </div>
+                    </Field>
+                    <Field label="Compare-at Price">
+                      <div style={{ position: "relative" }}>
+                        <span
+                          style={{
+                            position: "absolute",
+                            left: 13,
+                            top: "50%",
+                            transform: "translateY(-50%)",
+                            fontSize: 12,
+                            fontWeight: 700,
+                            color: "var(--muted)",
+                          }}
+                        >
+                          ETB
+                        </span>
+                        <input
+                          type="number"
+                          name="compareAtPrice"
+                          value={formData.compareAtPrice}
+                          onChange={handleInput}
+                          placeholder="1500"
+                          min="0"
+                          step="0.01"
+                          style={{ ...inputStyle(false), paddingLeft: 46 }}
+                          onFocus={focusStyle}
+                          onBlur={blurStyle}
+                        />
+                      </div>
+                      <p
+                        style={{
+                          fontSize: 11,
+                          color: "var(--muted)",
+                          marginTop: 5,
+                        }}
+                      >
+                        Shows a strikethrough — used for sales
+                      </p>
+                    </Field>
+                  </div>
+                </div>
 
-              <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-4">
-                {images.map((img, index) => (
-                  <div key={index} className="relative group">
-                    <img
-                      src={img}
-                      alt={`Product ${index + 1}`}
-                      className="w-full aspect-square object-cover rounded-xl"
+                <hr className="epf-divider" style={{ marginTop: 28 }} />
+
+                {/* Variants */}
+                <div>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      marginBottom: 16,
+                    }}
+                  >
+                    <SectionHead
+                      title="Variants"
+                      sub="Edit sizes, colors & available stock"
                     />
                     <button
                       type="button"
-                      onClick={() => removeImage(index)}
-                      className="absolute top-2 right-2 w-8 h-8 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                      onClick={() =>
+                        setVariants((p) => [
+                          ...p,
+                          { size: "S", color: "Black", quantity: 0 },
+                        ])
+                      }
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 5,
+                        padding: "7px 13px",
+                        background: "var(--text)",
+                        color: "#fff",
+                        border: "none",
+                        borderRadius: 9,
+                        fontSize: 12,
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        fontFamily: "Sora, sans-serif",
+                      }}
                     >
-                      <X size={16} />
+                      <PlusIcon size={13} /> Add
                     </button>
                   </div>
-                ))}
+                  <div
+                    style={{ display: "flex", flexDirection: "column", gap: 9 }}
+                  >
+                    <div
+                      className="epf-variant-row"
+                      style={{ marginBottom: -2 }}
+                    >
+                      {["Size", "Color", "Qty", ""].map((h, i) => (
+                        <span
+                          key={i}
+                          style={{
+                            fontSize: 10,
+                            fontWeight: 700,
+                            color: "var(--muted)",
+                            textTransform: "uppercase",
+                            letterSpacing: "0.6px",
+                          }}
+                        >
+                          {h}
+                        </span>
+                      ))}
+                    </div>
+                    {variants.map((v, i) => (
+                      <motion.div
+                        key={i}
+                        initial={{ opacity: 0, x: -12 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="epf-variant-row"
+                        style={{
+                          background: "var(--hover)",
+                          borderRadius: 11,
+                          padding: "8px 10px",
+                        }}
+                      >
+                        <Dropdown
+                          options={sizes}
+                          value={v.size}
+                          onChange={(val) => {
+                            const n = [...variants];
+                            n[i].size = val;
+                            setVariants(n);
+                          }}
+                          placeholder="Size"
+                        />
+                        <input
+                          value={v.color}
+                          onChange={(e) => {
+                            const n = [...variants];
+                            n[i].color = e.target.value;
+                            setVariants(n);
+                          }}
+                          placeholder="e.g. Midnight Black"
+                          style={{ ...inputStyle(false), fontSize: 13 }}
+                          onFocus={focusStyle}
+                          onBlur={blurStyle}
+                        />
+                        <input
+                          type="number"
+                          value={v.quantity}
+                          min={0}
+                          onChange={(e) => {
+                            const n = [...variants];
+                            n[i].quantity = parseInt(e.target.value) || 0;
+                            setVariants(n);
+                          }}
+                          placeholder="0"
+                          style={{
+                            ...inputStyle(false),
+                            fontSize: 13,
+                            textAlign: "center",
+                          }}
+                          onFocus={focusStyle}
+                          onBlur={blurStyle}
+                        />
+                        {variants.length > 1 ? (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setVariants(variants.filter((_, j) => j !== i))
+                            }
+                            style={{
+                              width: 32,
+                              height: 32,
+                              background: "#fee2e2",
+                              color: "#dc2626",
+                              border: "none",
+                              borderRadius: 8,
+                              cursor: "pointer",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                            }}
+                          >
+                            <MinusIcon size={13} />
+                          </button>
+                        ) : (
+                          <div />
+                        )}
+                      </motion.div>
+                    ))}
+                  </div>
+                  {errors.variants && (
+                    <p
+                      style={{
+                        color: "var(--error)",
+                        fontSize: 11,
+                        marginTop: 6,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 4,
+                      }}
+                    >
+                      <AlertIcon size={11} /> {errors.variants}
+                    </p>
+                  )}
+                </div>
 
-                {images.length === 0 && (
-                  <div className="col-span-3 sm:col-span-4 lg:col-span-5 flex flex-col items-center justify-center py-12 border-2 border-dashed border-gray-300 rounded-xl">
-                    <ImageIcon className="text-gray-400 mb-2" size={48} />
-                    <p className="text-gray-500 text-sm">No images added yet</p>
+                <hr className="epf-divider" style={{ marginTop: 28 }} />
+
+                {/* Images */}
+                <div>
+                  <SectionHead
+                    title="Product Images"
+                    sub="First image is the cover — at least 2 required"
+                  />
+                  <div className="epf-images-grid">
+                    {images.map((img, i) => (
+                      <motion.div
+                        key={i}
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="epf-img-thumb"
+                      >
+                        <img src={img} alt={`Product ${i + 1}`} />
+                        <button
+                          className="epf-img-remove"
+                          type="button"
+                          onClick={() =>
+                            setImages(images.filter((_, j) => j !== i))
+                          }
+                        >
+                          <XIcon size={11} />
+                        </button>
+                        {i === 0 && (
+                          <span className="epf-img-cover">Cover</span>
+                        )}
+                      </motion.div>
+                    ))}
+                    <button
+                      type="button"
+                      className={`epf-upload-zone${dragOver ? " drag" : ""}`}
+                      onClick={() => fileRef.current?.click()}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        setDragOver(true);
+                      }}
+                      onDragLeave={() => setDragOver(false)}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        setDragOver(false);
+                        handleFiles(e.dataTransfer.files);
+                      }}
+                    >
+                      <ImageIcon size={18} />
+                      <span style={{ fontSize: 10, fontWeight: 600 }}>
+                        Add Photo
+                      </span>
+                      <span style={{ fontSize: 9, opacity: 0.6 }}>
+                        or drag & drop
+                      </span>
+                    </button>
+                  </div>
+                  <div className="epf-url-row">
+                    <input
+                      type="url"
+                      value={imageUrl}
+                      onChange={(e) => setImageUrl(e.target.value)}
+                      placeholder="Or paste an image URL…"
+                      className="epf-url-input"
+                      onKeyDown={(e) =>
+                        e.key === "Enter" && (e.preventDefault(), addImageUrl())
+                      }
+                    />
+                    <button
+                      type="button"
+                      className="epf-url-add"
+                      onClick={addImageUrl}
+                    >
+                      Add URL
+                    </button>
+                  </div>
+                  {errors.images && (
+                    <p
+                      style={{
+                        color: "var(--error)",
+                        fontSize: 11,
+                        marginTop: 6,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 4,
+                      }}
+                    >
+                      <AlertIcon size={11} /> {errors.images}
+                    </p>
+                  )}
+                </div>
+              </form>
+            </div>
+
+            {/* Sidebar */}
+            <div className="epf-sidebar">
+              {/* Edit notice */}
+              <div className="epf-edit-banner">
+                <EditIcon size={13} stroke="var(--warn)" />
+                <span
+                  style={{ fontSize: 11, color: "#92400e", fontWeight: 600 }}
+                >
+                  You're editing an existing product
+                </span>
+              </div>
+
+              {/* Status */}
+              <div>
+                <p className="epf-sidebar-label">Status</p>
+                <Dropdown
+                  options={statusOptions}
+                  value={formData.status}
+                  onChange={(v) => setFormData((p) => ({ ...p, status: v }))}
+                  placeholder="Select status"
+                />
+                {formData.status && (
+                  <div style={{ marginTop: 8 }}>
+                    <span
+                      className="epf-status-badge"
+                      style={{
+                        background:
+                          formData.status === "PUBLISHED"
+                            ? "#dcfce7"
+                            : "#fef9c3",
+                        color:
+                          formData.status === "PUBLISHED"
+                            ? "#15803d"
+                            : "#a16207",
+                      }}
+                    >
+                      <span
+                        className="epf-dot"
+                        style={{
+                          background:
+                            formData.status === "PUBLISHED"
+                              ? "#22c55e"
+                              : "#eab308",
+                        }}
+                      />
+                      {
+                        statusOptions.find((o) => o.value === formData.status)
+                          ?.label
+                      }
+                    </span>
                   </div>
                 )}
               </div>
-              {errors.images && (
-                <p className="text-red-500 text-sm mt-2 flex items-center gap-1">
-                  <AlertCircle size={14} />
-                  {errors.images}
-                </p>
-              )}
-            </div>
 
-            {/* Submit */}
-            <div className="flex flex-col sm:flex-row gap-4 sticky bottom-0 bg-white pt-4 border-t">
-              <button
-                type="button"
-                onClick={onClose}
-                className="flex-1 px-6 py-4 border-2 border-gray-200 rounded-xl font-semibold hover:bg-gray-50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="flex-1 px-6 py-4 bg-black text-white rounded-xl font-semibold hover:bg-gray-800 transition-colors disabled:bg-gray-400 flex items-center justify-center gap-2"
-              >
-                {isSubmitting ? (
-                  <>
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Updating...
-                  </>
-                ) : (
-                  <>
-                    <Check size={20} />
-                    Update Product
-                  </>
-                )}
-              </button>
+              <div style={{ height: 1, background: "var(--divider)" }} />
+
+              {/* Organization */}
+              <div>
+                <p className="epf-sidebar-label">Organization</p>
+                <div
+                  style={{ display: "flex", flexDirection: "column", gap: 14 }}
+                >
+                  <Field label="Category" required error={errors.category}>
+                    <Dropdown
+                      options={categoryOptions}
+                      value={formData.category}
+                      onChange={(v) => {
+                        setFormData((p) => ({ ...p, category: v }));
+                        setErrors((p) => ({ ...p, category: "" }));
+                      }}
+                      placeholder="Select category"
+                      error={!!errors.category}
+                    />
+                  </Field>
+                  <Field
+                    label="Clothing Type"
+                    required
+                    error={errors.clothingType}
+                  >
+                    <Dropdown
+                      options={clothingTypeOptions}
+                      value={formData.clothingType}
+                      onChange={(v) => {
+                        setFormData((p) => ({ ...p, clothingType: v }));
+                        setErrors((p) => ({ ...p, clothingType: "" }));
+                      }}
+                      placeholder="Select type"
+                      error={!!errors.clothingType}
+                    />
+                  </Field>
+                  <Field label="Occasion">
+                    <Dropdown
+                      options={occasionOptions}
+                      value={formData.occasion}
+                      onChange={(v) =>
+                        setFormData((p) => ({ ...p, occasion: v }))
+                      }
+                      placeholder="Select occasion"
+                    />
+                  </Field>
+                  <Field label="Material">
+                    <input
+                      name="material"
+                      value={formData.material}
+                      onChange={handleInput}
+                      placeholder="e.g. 100% Cotton"
+                      style={inputStyle(false)}
+                      onFocus={focusStyle}
+                      onBlur={blurStyle}
+                    />
+                  </Field>
+                </div>
+              </div>
+
+              <div style={{ height: 1, background: "var(--divider)" }} />
+
+              {/* Live checklist */}
+              <div>
+                <p className="epf-sidebar-label">Checklist</p>
+                {checklist.map(([label, done]) => (
+                  <div
+                    key={label}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      marginBottom: 8,
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: 18,
+                        height: 18,
+                        borderRadius: 5,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        background: done ? "var(--accent)" : "var(--border)",
+                        flexShrink: 0,
+                        transition: "background 0.2s",
+                      }}
+                    >
+                      {done && (
+                        <CheckIcon size={10} stroke="#fff" strokeWidth={3} />
+                      )}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: 12,
+                        color: done ? "var(--text)" : "var(--muted)",
+                        fontWeight: done ? 600 : 400,
+                      }}
+                    >
+                      {label}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ height: 1, background: "var(--divider)" }} />
+
+              {/* Product meta */}
+              <div>
+                <p className="epf-sidebar-label">Product Info</p>
+                <div
+                  style={{ display: "flex", flexDirection: "column", gap: 8 }}
+                >
+                  {[
+                    ["ID", product.id.slice(0, 12) + "…"],
+                    ["Images", `${images.length} uploaded`],
+                    ["Variants", `${variants.length} total`],
+                  ].map(([k, val]) => (
+                    <div
+                      key={k}
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: 11,
+                          color: "var(--muted)",
+                          fontWeight: 500,
+                        }}
+                      >
+                        {k}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: 11,
+                          color: "var(--text)",
+                          fontWeight: 600,
+                          fontVariantNumeric: "tabular-nums",
+                        }}
+                      >
+                        {val}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
-          </form>
-        </motion.div>
+          </div>
+        </div>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          multiple
+          style={{ display: "none" }}
+          onChange={(e) => e.target.files && handleFiles(e.target.files)}
+        />
       </div>
-    </AnimatePresence>
+    </>
   );
 }

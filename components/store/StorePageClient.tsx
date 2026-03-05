@@ -1,26 +1,257 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import Navbar from "@/components/Navbar";
-import {
-  MapPin,
-  Check,
-  Star,
-  Share2,
-  Heart,
-  Eye,
-  ShoppingBag,
-  Users,
-  Package,
-  Award,
-  Calendar,
-  Instagram,
-  ExternalLink,
-} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+// ─── Icons ────────────────────────────────────────────────────────────────────
+const Ico = ({ d, size = 16, sw = 1.75, fill = "none" }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill={fill}
+    stroke="currentColor"
+    strokeWidth={sw}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d={d} />
+  </svg>
+);
+const MapPinIco = (p) => (
+  <Ico
+    {...p}
+    d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z M12 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"
+  />
+);
+const CalendarIco = (p) => (
+  <Ico
+    {...p}
+    d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"
+  />
+);
+const CheckIco = (p) => <Ico {...p} d="M20 6 9 17l-5-5" sw={2.5} />;
+const StarIco = (p) => (
+  <Ico
+    {...p}
+    d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
+  />
+);
+const ShareIco = (p) => (
+  <Ico
+    {...p}
+    d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13"
+  />
+);
+const HeartIco = ({ filled, ...p }) => (
+  <Ico
+    {...p}
+    d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
+    fill={filled ? "currentColor" : "none"}
+  />
+);
+const EyeIco = (p) => (
+  <Ico
+    {...p}
+    d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"
+  />
+);
+const BagIco = (p) => (
+  <Ico
+    {...p}
+    d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4zM3 6h18M16 10a4 4 0 0 1-8 0"
+  />
+);
+const UsersIco = (p) => (
+  <Ico
+    {...p}
+    d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"
+  />
+);
+const PackageIco = (p) => (
+  <Ico
+    {...p}
+    d="m16.5 9.4-9-5.19M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16zM3.27 6.96 12 12.01l8.73-5.05M12 22.08V12"
+  />
+);
+const AwardIco = (p) => (
+  <Ico
+    {...p}
+    d="M12 15a7 7 0 1 0 0-14 7 7 0 0 0 0 14z M8.21 13.89 7 23l5-3 5 3-1.21-9.12"
+  />
+);
+const InstaIco = (p) => (
+  <Ico
+    {...p}
+    d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37zM17.5 6.5h.01M7.5 2h9A5.5 5.5 0 0 1 22 7.5v9A5.5 5.5 0 0 1 16.5 22h-9A5.5 5.5 0 0 1 2 16.5v-9A5.5 5.5 0 0 1 7.5 2z"
+  />
+);
+const ExtLinkIco = (p) => (
+  <Ico
+    {...p}
+    d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3"
+  />
+);
+
+// ─── CSS ──────────────────────────────────────────────────────────────────────
+const CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&display=swap');
+  :root {
+    --bg: #f6f5f3; --card: #fff; --text: #1a1714; --muted: #9e9890;
+    --border: #e8e4de; --hover: #f5f3f0; --accent: #2563eb;
+    --divider: rgba(0,0,0,0.06);
+  }
+  @keyframes st-fadeUp { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:none; } }
+  @keyframes st-spin { to { transform:rotate(360deg); } }
+
+  .st-page { min-height:100vh; background:var(--bg); padding-top:72px; font-family:'Sora',sans-serif; }
+
+  /* ── Cover ── */
+  .st-cover { position:relative; height:260px; background:#1a1714; overflow:hidden; }
+  .st-cover img { width:100%; height:100%; object-fit:cover; opacity:0.45; }
+  .st-cover-fade { position:absolute; inset:0; background:linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 60%); }
+
+  /* ── Main wrap ── */
+  .st-wrap { max-width:1280px; margin:0 auto; padding:0 24px 72px; }
+
+  /* ── Header card ── */
+  .st-header-card {
+    background:var(--card); border-radius:20px; border:1px solid var(--border);
+    padding:28px 32px; margin-top:-64px; position:relative; z-index:10;
+    box-shadow:0 8px 32px rgba(0,0,0,0.1); animation:st-fadeUp 0.3s ease;
+    margin-bottom:24px;
+  }
+  .st-header-inner { display:flex; gap:24px; align-items:flex-start; flex-wrap:wrap; }
+  .st-logo-wrap { position:relative; flex-shrink:0; }
+  .st-logo { width:100px; height:100px; border-radius:18px; overflow:hidden;
+    border:3px solid #fff; box-shadow:0 4px 16px rgba(0,0,0,0.12); background:var(--hover); }
+  .st-logo img { width:100%; height:100%; object-fit:cover; }
+  .st-verified-badge {
+    position:absolute; bottom:-6px; right:-6px; width:26px; height:26px;
+    background:#2563eb; color:#fff; border-radius:50%; border:3px solid #fff;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .st-info { flex:1; min-width:0; }
+  .st-name { font-size:26px; font-weight:800; color:var(--text); letter-spacing:-0.7px; margin:0 0 10px; }
+  .st-meta-row { display:flex; align-items:center; gap:16px; flex-wrap:wrap; margin-bottom:12px; }
+  .st-meta-item { display:flex; align-items:center; gap:5px; font-size:12px; color:var(--muted); font-weight:500; }
+  .st-meta-item a { color:#e4006d; text-decoration:none; display:flex; align-items:center; gap:4px; }
+  .st-meta-item a:hover { text-decoration:underline; }
+  .st-rating-row { display:flex; align-items:center; gap:6px; margin-bottom:14px; }
+  .st-stars { display:flex; gap:2px; color:#eab308; }
+  .st-rating-val { font-size:14px; font-weight:700; color:var(--text); }
+  .st-rating-count { font-size:12px; color:var(--muted); }
+  .st-badges { display:flex; gap:7px; flex-wrap:wrap; }
+  .st-badge { display:inline-flex; align-items:center; gap:5px; padding:4px 10px;
+    border-radius:20px; font-size:11px; font-weight:700; border:1px solid; }
+
+  /* action buttons */
+  .st-actions { display:flex; gap:10px; align-items:flex-start; flex-shrink:0; }
+  .st-follow-btn {
+    display:flex; align-items:center; gap:7px; padding:10px 20px;
+    border-radius:11px; font-size:13px; font-weight:700; cursor:pointer;
+    border:none; transition:all 0.15s; font-family:'Sora',sans-serif;
+  }
+  .st-follow-btn.following { background:var(--hover); color:var(--text); border:1.5px solid var(--border); }
+  .st-follow-btn.following:hover { border-color:var(--text); }
+  .st-follow-btn.not-following { background:var(--text); color:#fff; border:1.5px solid transparent; }
+  .st-follow-btn.not-following:hover { background:#333; transform:translateY(-1px); box-shadow:0 4px 14px rgba(0,0,0,0.16); }
+  .st-share-btn {
+    width:40px; height:40px; border-radius:11px; border:1.5px solid var(--border);
+    background:var(--card); color:var(--muted); cursor:pointer; display:flex;
+    align-items:center; justify-content:center; transition:all 0.15s;
+  }
+  .st-share-btn:hover { border-color:var(--text); color:var(--text); }
+
+  /* ── Stats ── */
+  .st-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px; }
+  @media(max-width:900px) { .st-stats { grid-template-columns:repeat(2,1fr); } }
+  @media(max-width:500px) { .st-stats { grid-template-columns:1fr 1fr; gap:10px; } }
+  .st-stat {
+    background:var(--card); border-radius:16px; border:1px solid var(--border);
+    padding:20px 22px; display:flex; align-items:center; gap:14px;
+    animation:st-fadeUp 0.35s ease both;
+  }
+  .st-stat-icon { width:44px; height:44px; border-radius:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .st-stat-label { font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; margin:0 0 3px; }
+  .st-stat-val { font-size:22px; font-weight:800; color:var(--text); letter-spacing:-0.5px; margin:0; }
+
+  /* ── Tabs ── */
+  .st-tabs { display:flex; gap:2px; border-bottom:1.5px solid var(--border); margin-bottom:24px; }
+  .st-tab { padding:11px 18px; font-size:13px; font-weight:600; color:var(--muted);
+    background:none; border:none; cursor:pointer; position:relative;
+    font-family:'Sora',sans-serif; transition:color 0.15s; text-transform:capitalize; }
+  .st-tab:hover { color:var(--text); }
+  .st-tab.active { color:var(--text); }
+  .st-tab.active::after { content:''; position:absolute; bottom:-1.5px; left:0; right:0; height:2px; background:var(--text); border-radius:2px 2px 0 0; }
+
+  /* ── Product grid ── */
+  .st-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:18px; }
+  @media(max-width:1100px) { .st-grid { grid-template-columns:repeat(3,1fr); } }
+  @media(max-width:760px)  { .st-grid { grid-template-columns:repeat(2,1fr); } }
+  @media(max-width:420px)  { .st-grid { grid-template-columns:1fr; } }
+
+  .st-product-card {
+    background:var(--card); border-radius:16px; overflow:hidden; border:1px solid var(--border);
+    transition:all 0.2s; cursor:pointer; text-decoration:none; display:block;
+    animation:st-fadeUp 0.35s ease both;
+  }
+  .st-product-card:hover { box-shadow:0 8px 28px rgba(0,0,0,0.09); transform:translateY(-2px); }
+  .st-product-img { position:relative; aspect-ratio:1; overflow:hidden; background:var(--hover); }
+  .st-product-img img { width:100%; height:100%; object-fit:cover; transition:transform 0.4s; }
+  .st-product-card:hover .st-product-img img { transform:scale(1.05); }
+  .st-discount-badge { position:absolute; top:10px; left:10px; background:#dc2626; color:#fff;
+    padding:3px 8px; border-radius:7px; font-size:10px; font-weight:700; }
+  .st-product-body { padding:14px 16px; }
+  .st-product-name { font-size:13px; font-weight:700; color:var(--text); margin:0 0 8px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; letter-spacing:-0.2px; }
+  .st-product-price-row { display:flex; align-items:flex-end; justify-content:space-between; }
+  .st-product-price { font-size:16px; font-weight:800; color:var(--text); letter-spacing:-0.4px; }
+  .st-product-compare { font-size:11px; color:var(--muted); text-decoration:line-through; margin-top:2px; }
+  .st-product-sold { font-size:11px; color:var(--muted); font-weight:600; }
+
+  /* ── Empty ── */
+  .st-empty { display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:80px 24px; background:var(--card); border-radius:18px; border:1.5px dashed var(--border); text-align:center; }
+  .st-empty-icon { width:64px; height:64px; background:var(--hover); border-radius:18px;
+    display:flex; align-items:center; justify-content:center; color:var(--muted); margin-bottom:18px; }
+  .st-empty-title { font-size:17px; font-weight:700; color:var(--text); margin:0 0 8px; }
+  .st-empty-sub { font-size:13px; color:var(--muted); margin:0; }
+
+  /* ── About tab ── */
+  .st-about-grid { display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+  @media(max-width:640px) { .st-about-grid { grid-template-columns:1fr; } }
+  .st-about-card { background:var(--card); border-radius:16px; border:1px solid var(--border); padding:24px; }
+  .st-about-desc { font-size:14px; color:#4a4540; line-height:1.75; margin:0 0 24px; }
+  .st-about-section-title { font-size:13px; font-weight:700; color:var(--text); letter-spacing:-0.2px; margin:0 0 14px; }
+  .st-about-row { display:flex; align-items:center; gap:9px; font-size:13px; color:var(--muted); margin-bottom:10px; }
+  .st-about-row strong { color:var(--text); font-weight:600; }
+  .st-perf-row { display:flex; justify-content:space-between; align-items:center;
+    padding:10px 0; border-bottom:1px solid var(--divider); font-size:13px; }
+  .st-perf-row:last-child { border-bottom:none; padding-bottom:0; }
+  .st-perf-label { color:var(--muted); }
+  .st-perf-val { font-weight:700; color:var(--text); }
+`;
+
+// ─── Star rating ──────────────────────────────────────────────────────────────
+function Stars({ rating }: { rating: number }) {
+  return (
+    <div className="st-stars">
+      {[1, 2, 3, 4, 5].map((s) => (
+        <StarIco
+          key={s}
+          size={13}
+          fill={s <= Math.round(rating) ? "currentColor" : "none"}
+        />
+      ))}
+    </div>
+  );
+}
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 interface SellerStoreClientProps {
   seller: {
     id: string;
@@ -60,511 +291,394 @@ export default function StorePageClient({
   const [activeTab, setActiveTab] = useState<"products" | "about">("products");
   const [followerCount, setFollowerCount] = useState(seller.followers);
 
-  // Check if user is already following
   useEffect(() => {
-    const checkFollowStatus = async () => {
+    const check = async () => {
       const userStr = localStorage.getItem("yog_user");
       if (!userStr) return;
-
       try {
-        const response = await fetch(
-          `/api/store/follow?sellerId=${seller.id}`,
-          {
-            headers: {
-              "x-user-data": userStr,
-            },
-          },
-        );
-
-        const data = await response.json();
+        const res = await fetch(`/api/store/follow?sellerId=${seller.id}`, {
+          headers: { "x-user-data": userStr },
+        });
+        const data = await res.json();
         setIsFollowing(data.isFollowing);
-      } catch (error) {
-        console.error("Error checking follow status:", error);
-      }
+      } catch {}
     };
-
-    checkFollowStatus();
+    check();
   }, [seller.id]);
 
-  // ✅ INSTANT OPTIMISTIC UPDATE
-  // ✅ INSTANT OPTIMISTIC UPDATE
   const handleFollow = async () => {
     const userStr = localStorage.getItem("yog_user");
-
     if (!userStr) {
       alert("Please sign in to follow stores");
       router.push("/login?redirect=/store/" + seller.slug);
       return;
     }
-
-    // ✅ UPDATE UI IMMEDIATELY (OPTIMISTIC)
     const wasFollowing = isFollowing;
-    const newFollowing = !isFollowing;
-
-    setIsFollowing(newFollowing);
-    setFollowerCount((prev) => (wasFollowing ? prev - 1 : prev + 1));
-
-    // ✅ FIX: CHANGE /api/follow TO /api/store/follow
+    setIsFollowing(!wasFollowing);
+    setFollowerCount((p) => (wasFollowing ? p - 1 : p + 1));
     fetch("/api/store/follow", {
-      // ← CHANGED THIS LINE
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-user-data": userStr,
-      },
+      headers: { "Content-Type": "application/json", "x-user-data": userStr },
       body: JSON.stringify({
         sellerId: seller.id,
         action: wasFollowing ? "unfollow" : "follow",
       }),
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Failed");
-        }
-        console.log("✅ Follow saved to database");
-      })
-      .catch((error) => {
-        console.error("❌ Follow failed:", error);
-        // ✅ REVERT ONLY ON ERROR
-        setIsFollowing(wasFollowing);
-        setFollowerCount((prev) => (wasFollowing ? prev + 1 : prev - 1));
-        alert("Failed to update follow status");
-      });
+    }).catch(() => {
+      setIsFollowing(wasFollowing);
+      setFollowerCount((p) => (wasFollowing ? p + 1 : p - 1));
+    });
   };
 
   const handleShare = async () => {
     const url = window.location.href;
-
     if (navigator.share) {
       try {
         await navigator.share({
           title: seller.name,
-          text: `Check out ${seller.name} on YOG Marketplace!`,
+          text: `Check out ${seller.name} on YOG!`,
           url,
         });
-      } catch (error) {
-        console.log("Share cancelled");
-      }
+      } catch {}
     } else {
       navigator.clipboard.writeText(url);
-      alert("Store link copied to clipboard!");
+      alert("Store link copied!");
     }
   };
 
-  const stats = [
+  const statCards = [
     {
-      icon: Eye,
-      label: "Monthly Views", // ✅ CHANGED FROM "Total Views"
+      Icon: EyeIco,
+      label: "Monthly Views",
       value: seller.totalViews.toLocaleString(),
-      color: "blue",
+      iconBg: "#eff6ff",
+      iconColor: "#2563eb",
+      delay: 0,
     },
     {
-      icon: ShoppingBag,
+      Icon: BagIco,
       label: "Total Sales",
       value: seller.totalSales.toLocaleString(),
-      color: "green",
+      iconBg: "#f0fdf4",
+      iconColor: "#16a34a",
+      delay: 60,
     },
     {
-      icon: Users,
+      Icon: UsersIco,
       label: "Followers",
-      value: followerCount.toLocaleString(), // ✅ USES LIVE STATE
-      color: "purple",
+      value: followerCount.toLocaleString(),
+      iconBg: "#faf5ff",
+      iconColor: "#7c3aed",
+      delay: 120,
     },
     {
-      icon: Package,
+      Icon: PackageIco,
       label: "Products",
-      value: seller.totalProducts,
-      color: "orange",
+      value: String(seller.totalProducts),
+      iconBg: "#fff7ed",
+      iconColor: "#d97706",
+      delay: 180,
     },
   ];
 
   return (
     <>
+      <style>{CSS}</style>
       <Navbar />
-      <main className="min-h-screen bg-gradient-to-b from-gray-50 to-white pt-20">
-        {/* Cover Image */}
-        <div className="relative h-64 bg-gradient-to-r from-gray-900 to-gray-700 overflow-hidden">
-          <img
-            src={seller.coverImage}
-            alt={seller.name}
-            className="w-full h-full object-cover opacity-40"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+      <main className="st-page">
+        {/* Cover */}
+        <div className="st-cover">
+          <img src={seller.coverImage} alt={seller.name} />
+          <div className="st-cover-fade" />
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 -mt-20 relative z-10">
-          {/* Store Header */}
-          <div className="bg-white rounded-3xl shadow-xl border-2 border-gray-100 p-8 mb-8">
-            <div className="flex flex-col md:flex-row gap-6 items-start md:items-center">
+        <div className="st-wrap">
+          {/* Header card */}
+          <div className="st-header-card">
+            <div className="st-header-inner">
               {/* Logo */}
-              <div className="relative">
-                <div className="w-32 h-32 rounded-2xl overflow-hidden border-4 border-white shadow-lg bg-white">
-                  <img
-                    src={seller.logo}
-                    alt={seller.name}
-                    className="w-full h-full object-cover"
-                  />
+              <div className="st-logo-wrap">
+                <div className="st-logo">
+                  <img src={seller.logo} alt={seller.name} />
                 </div>
                 {seller.verified && (
-                  <div className="absolute -bottom-2 -right-2 bg-blue-500 text-white p-2 rounded-full shadow-lg">
-                    <Check size={20} strokeWidth={3} />
+                  <div className="st-verified-badge">
+                    <CheckIco size={12} sw={3} />
                   </div>
                 )}
               </div>
 
-              {/* Store Info */}
-              <div className="flex-1">
-                <div className="flex items-start justify-between flex-wrap gap-4">
-                  <div>
-                    <h1
-                      className="text-4xl font-bold text-gray-900 mb-2"
-                      style={{ fontFamily: "'DM Serif Display', serif" }}
-                    >
-                      {seller.name}
-                    </h1>
-                    <div className="flex items-center gap-4 flex-wrap mb-3">
-                      <div className="flex items-center gap-1">
-                        <MapPin size={16} className="text-gray-600" />
-                        <span
-                          className="text-gray-600"
-                          style={{ fontFamily: "'Poppins', sans-serif" }}
-                        >
-                          {seller.location}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Calendar size={16} className="text-gray-600" />
-                        <span
-                          className="text-gray-600"
-                          style={{ fontFamily: "'Poppins', sans-serif" }}
-                        >
-                          Joined {seller.joined}
-                        </span>
-                      </div>
-                      {seller.instagram && (
-                        <a
-                          href={`https://instagram.com/${seller.instagram.replace("@", "")}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1 text-pink-600 hover:text-pink-700 transition-colors"
-                        >
-                          <Instagram size={16} />
-                          <span style={{ fontFamily: "'Poppins', sans-serif" }}>
-                            {seller.instagram}
-                          </span>
-                          <ExternalLink size={12} />
-                        </a>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 mb-4">
-                      <div className="flex items-center gap-1">
-                        <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-                        <span className="font-bold text-lg">
-                          {seller.rating.toFixed(1)}
-                        </span>
-                        <span className="text-gray-600 text-sm">
-                          ({seller.totalReviews} reviews)
-                        </span>
-                      </div>
-                    </div>
-                    {/* Badges */}
-                    <div className="flex flex-wrap gap-2">
-                      {seller.verified && (
-                        <span
-                          className="inline-flex items-center gap-1 bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold border border-blue-200"
-                          style={{ fontFamily: "'Poppins', sans-serif" }}
-                        >
-                          <Award size={12} />
-                          Verified Seller
-                        </span>
-                      )}
-                      {seller.rating >= 4.5 && (
-                        <span
-                          className="inline-flex items-center gap-1 bg-gradient-to-r from-yellow-50 to-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-xs font-semibold border border-yellow-200"
-                          style={{ fontFamily: "'Poppins', sans-serif" }}
-                        >
-                          <Star size={12} />
-                          Top Rated
-                        </span>
-                      )}
-                      {seller.totalStock > 100 && (
-                        <span
-                          className="inline-flex items-center gap-1 bg-gradient-to-r from-green-50 to-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold border border-green-200"
-                          style={{ fontFamily: "'Poppins', sans-serif" }}
-                        >
-                          <Package size={12} />
-                          Large Inventory
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* ✅ INSTANT FOLLOW BUTTON */}
-                  <div className="flex gap-3">
-                    <button
-                      onClick={handleFollow}
-                      className={`px-6 py-3 rounded-full font-semibold transition-all transform active:scale-95 flex items-center gap-2 ${
-                        isFollowing
-                          ? "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                          : "bg-black text-white hover:bg-gray-800"
-                      }`}
-                      style={{ fontFamily: "'Poppins', sans-serif" }}
-                    >
-                      <Heart
-                        size={18}
-                        className={`transition-all ${isFollowing ? "fill-current scale-110" : "scale-100"}`}
-                      />
-                      {isFollowing ? "Following" : "Follow"}
-                    </button>
-                    <button
-                      onClick={handleShare}
-                      className="p-3 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-all"
-                    >
-                      <Share2 size={18} />
-                    </button>
-                  </div>
+              {/* Info */}
+              <div className="st-info">
+                <h1 className="st-name">{seller.name}</h1>
+                <div className="st-meta-row">
+                  {seller.location && (
+                    <span className="st-meta-item">
+                      <MapPinIco size={12} /> {seller.location}
+                    </span>
+                  )}
+                  <span className="st-meta-item">
+                    <CalendarIco size={12} /> Joined {seller.joined}
+                  </span>
+                  {seller.instagram && (
+                    <span className="st-meta-item">
+                      <InstaIco size={12} />
+                      <a
+                        href={`https://instagram.com/${seller.instagram.replace("@", "")}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {seller.instagram} <ExtLinkIco size={10} />
+                      </a>
+                    </span>
+                  )}
                 </div>
+                <div className="st-rating-row">
+                  <Stars rating={seller.rating} />
+                  <span className="st-rating-val">
+                    {seller.rating.toFixed(1)}
+                  </span>
+                  <span className="st-rating-count">
+                    ({seller.totalReviews} reviews)
+                  </span>
+                </div>
+                <div className="st-badges">
+                  {seller.verified && (
+                    <span
+                      className="st-badge"
+                      style={{
+                        background: "#eff6ff",
+                        color: "#2563eb",
+                        borderColor: "#bfdbfe",
+                      }}
+                    >
+                      <AwardIco size={10} /> Verified Seller
+                    </span>
+                  )}
+                  {seller.rating >= 4.5 && (
+                    <span
+                      className="st-badge"
+                      style={{
+                        background: "#fefce8",
+                        color: "#a16207",
+                        borderColor: "#fde68a",
+                      }}
+                    >
+                      <StarIco size={10} /> Top Rated
+                    </span>
+                  )}
+                  {seller.totalStock > 100 && (
+                    <span
+                      className="st-badge"
+                      style={{
+                        background: "#f0fdf4",
+                        color: "#15803d",
+                        borderColor: "#bbf7d0",
+                      }}
+                    >
+                      <PackageIco size={10} /> Large Inventory
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="st-actions">
+                <button
+                  className={`st-follow-btn ${isFollowing ? "following" : "not-following"}`}
+                  onClick={handleFollow}
+                >
+                  <HeartIco size={15} filled={isFollowing} />
+                  {isFollowing ? "Following" : "Follow"}
+                </button>
+                <button className="st-share-btn" onClick={handleShare}>
+                  <ShareIco size={15} />
+                </button>
               </div>
             </div>
           </div>
 
-          {/* Stats Grid */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
-          >
-            {stats.map((stat, index) => {
-              const Icon = stat.icon;
-              const colors = {
-                blue: "from-blue-500 to-blue-600",
-                green: "from-green-500 to-green-600",
-                purple: "from-purple-500 to-purple-600",
-                orange: "from-orange-500 to-orange-600",
-              };
-              return (
+          {/* Stats */}
+          <div className="st-stats">
+            {statCards.map(
+              ({ Icon, label, value, iconBg, iconColor, delay }, i) => (
                 <motion.div
-                  key={stat.label}
-                  initial={{ opacity: 0, y: 20 }}
+                  key={label}
+                  className="st-stat"
+                  initial={{ opacity: 0, y: 14 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 + index * 0.1 }}
-                  className="bg-white rounded-2xl p-6 border-2 border-gray-100 shadow-sm hover:shadow-lg transition-shadow"
+                  transition={{ delay: delay / 1000 + 0.1 }}
                 >
-                  <div className="flex items-center gap-4">
-                    <div
-                      className={`w-14 h-14 rounded-xl bg-gradient-to-br ${colors[stat.color as keyof typeof colors]} flex items-center justify-center`}
-                    >
-                      <Icon size={28} className="text-white" />
-                    </div>
-                    <div>
-                      <p
-                        className="text-sm text-gray-600 mb-1"
-                        style={{ fontFamily: "'Poppins', sans-serif" }}
-                      >
-                        {stat.label}
-                      </p>
-                      <p
-                        className="text-3xl font-bold text-gray-900 transition-all"
-                        style={{ fontFamily: "'Poppins', sans-serif" }}
-                      >
-                        {stat.value}
-                      </p>
-                    </div>
+                  <div
+                    className="st-stat-icon"
+                    style={{ background: iconBg, color: iconColor }}
+                  >
+                    <Icon size={20} />
+                  </div>
+                  <div>
+                    <p className="st-stat-label">{label}</p>
+                    <p className="st-stat-val">{value}</p>
                   </div>
                 </motion.div>
-              );
-            })}
-          </motion.div>
-
-          {/* Tabs */}
-          <div className="mb-8">
-            <div className="border-b border-gray-200">
-              <div className="flex gap-6 overflow-x-auto">
-                {["products", "about"].map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab as typeof activeTab)}
-                    className={`pb-4 font-semibold capitalize transition-colors relative whitespace-nowrap ${
-                      activeTab === tab
-                        ? "text-black"
-                        : "text-gray-400 hover:text-gray-600"
-                    }`}
-                    style={{ fontFamily: "'Poppins', sans-serif" }}
-                  >
-                    {tab}
-                    {activeTab === tab && (
-                      <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-black"></div>
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
+              ),
+            )}
           </div>
 
-          {/* Tab Content */}
-          {activeTab === "products" && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-12">
-              {products.length === 0 ? (
-                <div className="col-span-full flex flex-col items-center justify-center py-20 bg-white rounded-3xl border-2 border-gray-100">
-                  <Package size={64} className="text-gray-300 mb-4" />
-                  <h3
-                    className="text-xl font-semibold text-gray-900 mb-2"
-                    style={{ fontFamily: "'Poppins', sans-serif" }}
-                  >
-                    No products yet
-                  </h3>
-                  <p
-                    className="text-gray-600"
-                    style={{ fontFamily: "'Poppins', sans-serif" }}
-                  >
-                    This store hasn't listed any products yet
-                  </p>
-                </div>
-              ) : (
-                products.map((product, index) => (
-                  <motion.div
-                    key={product.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                  >
-                    <Link href={`/product/${product.id}`}>
-                      <div className="group bg-white rounded-2xl p-3 border-2 border-gray-100 hover:shadow-xl transition-all cursor-pointer">
-                        <div className="relative bg-gray-100 rounded-xl overflow-hidden mb-3 aspect-square">
-                          <img
-                            src={product.image}
-                            alt={product.title}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                          />
-                          {product.compareAtPrice &&
-                            product.compareAtPrice > product.price && (
-                              <div className="absolute top-3 left-3 bg-red-500 text-white px-2 py-1 rounded-lg text-xs font-bold">
-                                -
-                                {Math.round(
-                                  ((product.compareAtPrice - product.price) /
-                                    product.compareAtPrice) *
-                                    100,
-                                )}
-                                %
-                              </div>
-                            )}
-                        </div>
-                        <h3
-                          className="font-semibold mb-1 truncate"
-                          style={{ fontFamily: "'Poppins', sans-serif" }}
-                        >
-                          {product.title}
-                        </h3>
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p
-                              className="font-bold text-lg"
-                              style={{ fontFamily: "'Poppins', sans-serif" }}
-                            >
-                              {product.price.toLocaleString()} ETB
-                            </p>
-                            {product.compareAtPrice &&
-                              product.compareAtPrice > product.price && (
-                                <p className="text-xs text-gray-500 line-through">
-                                  {product.compareAtPrice.toLocaleString()} ETB
-                                </p>
-                              )}
-                          </div>
-                          {product.sold > 0 && (
-                            <span className="text-xs text-gray-500">
-                              {product.sold} sold
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </Link>
-                  </motion.div>
-                ))
-              )}
-            </div>
-          )}
+          {/* Tabs */}
+          <div className="st-tabs">
+            {(["products", "about"] as const).map((tab) => (
+              <button
+                key={tab}
+                className={`st-tab${activeTab === tab ? " active" : ""}`}
+                onClick={() => setActiveTab(tab)}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
 
-          {activeTab === "about" && (
-            <div className="bg-white rounded-2xl p-8 border-2 border-gray-100 mb-12">
-              <h3
-                className="text-2xl font-bold mb-4"
-                style={{ fontFamily: "'Poppins', sans-serif" }}
+          {/* Products tab */}
+          <AnimatePresence mode="wait">
+            {activeTab === "products" && (
+              <motion.div
+                key="products"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.18 }}
               >
-                About This Store
-              </h3>
-              <p
-                className="text-gray-700 leading-relaxed mb-6 text-lg"
-                style={{ fontFamily: "'Poppins', sans-serif" }}
-              >
-                {seller.description}
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h4
-                    className="font-semibold mb-3"
-                    style={{ fontFamily: "'Poppins', sans-serif" }}
-                  >
-                    Store Information
-                  </h4>
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <MapPin size={18} className="text-gray-600" />
-                      <span className="text-gray-700">{seller.location}</span>
+                {products.length === 0 ? (
+                  <div className="st-empty">
+                    <div className="st-empty-icon">
+                      <PackageIco size={28} />
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Calendar size={18} className="text-gray-600" />
-                      <span className="text-gray-700">
-                        Member since {seller.joined}
-                      </span>
-                    </div>
-                    {seller.instagram && (
-                      <div className="flex items-center gap-2">
-                        <Instagram size={18} className="text-gray-600" />
-                        <a
-                          href={`https://instagram.com/${seller.instagram.replace("@", "")}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-pink-600 hover:text-pink-700 flex items-center gap-1"
+                    <p className="st-empty-title">No products yet</p>
+                    <p className="st-empty-sub">
+                      This store hasn't listed any products yet
+                    </p>
+                  </div>
+                ) : (
+                  <div className="st-grid">
+                    {products.map((product, i) => {
+                      const discount =
+                        product.compareAtPrice &&
+                        product.compareAtPrice > product.price
+                          ? Math.round(
+                              ((product.compareAtPrice - product.price) /
+                                product.compareAtPrice) *
+                                100,
+                            )
+                          : null;
+                      return (
+                        <Link
+                          key={product.id}
+                          href={`/product/${product.id}`}
+                          className="st-product-card"
+                          style={{ animationDelay: `${i * 40}ms` }}
                         >
-                          {seller.instagram}
-                          <ExternalLink size={12} />
-                        </a>
+                          <div className="st-product-img">
+                            <img src={product.image} alt={product.title} />
+                            {discount && (
+                              <span className="st-discount-badge">
+                                -{discount}%
+                              </span>
+                            )}
+                          </div>
+                          <div className="st-product-body">
+                            <p className="st-product-name">{product.title}</p>
+                            <div className="st-product-price-row">
+                              <div>
+                                <p className="st-product-price">
+                                  {product.price.toLocaleString()} ETB
+                                </p>
+                                {product.compareAtPrice &&
+                                  product.compareAtPrice > product.price && (
+                                    <p className="st-product-compare">
+                                      {product.compareAtPrice.toLocaleString()}{" "}
+                                      ETB
+                                    </p>
+                                  )}
+                              </div>
+                              {product.sold > 0 && (
+                                <span className="st-product-sold">
+                                  {product.sold} sold
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </motion.div>
+            )}
+
+            {/* About tab */}
+            {activeTab === "about" && (
+              <motion.div
+                key="about"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.18 }}
+              >
+                <div className="st-about-card" style={{ marginBottom: 16 }}>
+                  <p className="st-about-desc">{seller.description}</p>
+                  <div className="st-about-grid">
+                    <div>
+                      <p className="st-about-section-title">
+                        Store Information
+                      </p>
+                      {seller.location && (
+                        <div className="st-about-row">
+                          <MapPinIco size={14} /> {seller.location}
+                        </div>
+                      )}
+                      <div className="st-about-row">
+                        <CalendarIco size={14} /> Member since {seller.joined}
                       </div>
-                    )}
+                      {seller.instagram && (
+                        <div className="st-about-row">
+                          <InstaIco size={14} />
+                          <a
+                            href={`https://instagram.com/${seller.instagram.replace("@", "")}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              color: "#e4006d",
+                              textDecoration: "none",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 4,
+                            }}
+                          >
+                            {seller.instagram} <ExtLinkIco size={11} />
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <p className="st-about-section-title">Performance</p>
+                      {[
+                        ["Total Products", seller.totalProducts],
+                        ["Total Stock", `${seller.totalStock} items`],
+                        [
+                          "Customer Rating",
+                          `${seller.rating.toFixed(1)} / 5.0`,
+                        ],
+                        ["Total Sales", seller.totalSales.toLocaleString()],
+                      ].map(([label, val]) => (
+                        <div key={label as string} className="st-perf-row">
+                          <span className="st-perf-label">{label}</span>
+                          <span className="st-perf-val">{val}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
-                <div>
-                  <h4
-                    className="font-semibold mb-3"
-                    style={{ fontFamily: "'Poppins', sans-serif" }}
-                  >
-                    Performance
-                  </h4>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Total Products:</span>
-                      <span className="font-semibold">
-                        {seller.totalProducts}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Total Stock:</span>
-                      <span className="font-semibold">
-                        {seller.totalStock} items
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Customer Rating:</span>
-                      <span className="font-semibold">
-                        {seller.rating.toFixed(1)}/5.0
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </main>
     </>

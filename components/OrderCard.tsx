@@ -1,19 +1,249 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Clock,
-  CheckCircle,
-  Truck,
-  XCircle,
-  Phone,
-  MapPin,
-  User,
-  Store,
-  Package,
-  Loader2,
-  X,
-} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+
+// ─── Icons ────────────────────────────────────────────────────────────────────
+const Ico = ({ d, size = 16, sw = 1.75, fill = "none" }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill={fill}
+    stroke="currentColor"
+    strokeWidth={sw}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d={d} />
+  </svg>
+);
+const ClockIco = (p) => (
+  <Ico
+    {...p}
+    d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10zm0-8V7"
+  />
+);
+const CheckIco = (p) => (
+  <Ico {...p} d="M22 11.08V12a10 10 0 1 1-5.93-9.14M22 4 12 14.01l-3-3" />
+);
+const TruckIco = (p) => (
+  <Ico
+    {...p}
+    d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3m0 0h3l3 3v4h-3m-3-7v7m0 0H8m0 0a2 2 0 1 0 4 0 2 2 0 0 0-4 0zm9 0a2 2 0 1 0 4 0 2 2 0 0 0-4 0z"
+  />
+);
+const XCircleIco = (p) => (
+  <Ico
+    {...p}
+    d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10zm3-13-6 6m0-6 6 6"
+  />
+);
+const PackageIco = (p) => (
+  <Ico
+    {...p}
+    d="m16.5 9.4-9-5.19M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16zM3.27 6.96 12 12.01l8.73-5.05M12 22.08V12"
+  />
+);
+const PhoneIco = (p) => (
+  <Ico
+    {...p}
+    d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.62 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"
+  />
+);
+const MapPinIco = (p) => (
+  <Ico
+    {...p}
+    d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z M12 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"
+  />
+);
+const UserIco = (p) => (
+  <Ico
+    {...p}
+    d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"
+  />
+);
+const StoreIco = (p) => (
+  <Ico
+    {...p}
+    d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10"
+  />
+);
+const XIcon = (p) => <Ico {...p} d="M18 6 6 18M6 6l12 12" />;
+const SparkleIco = (p) => (
+  <Ico
+    {...p}
+    d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3z"
+  />
+);
+const LoaderIcon = ({ size = 16 }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    style={{ animation: "oc-spin 0.8s linear infinite" }}
+  >
+    <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+  </svg>
+);
+
+// ─── Status config ────────────────────────────────────────────────────────────
+const STATUS_MAP = {
+  PENDING: {
+    label: "Pending",
+    bg: "#fef9c3",
+    color: "#a16207",
+    dot: "#eab308",
+    Icon: ClockIco,
+  },
+  CONFIRMED: {
+    label: "Confirmed",
+    bg: "#dbeafe",
+    color: "#1d4ed8",
+    dot: "#3b82f6",
+    Icon: CheckIco,
+  },
+  PROCESSING: {
+    label: "Processing",
+    bg: "#f3e8ff",
+    color: "#7c3aed",
+    dot: "#a855f7",
+    Icon: PackageIco,
+  },
+  SHIPPED: {
+    label: "Shipped",
+    bg: "#e0e7ff",
+    color: "#4338ca",
+    dot: "#6366f1",
+    Icon: TruckIco,
+  },
+  DELIVERED: {
+    label: "Delivered",
+    bg: "#dcfce7",
+    color: "#15803d",
+    dot: "#22c55e",
+    Icon: CheckIco,
+  },
+  CANCELLED: {
+    label: "Cancelled",
+    bg: "#fee2e2",
+    color: "#dc2626",
+    dot: "#ef4444",
+    Icon: XCircleIco,
+  },
+};
+
+const ALL_STATUSES = Object.entries(STATUS_MAP).map(([value, cfg]) => ({
+  value,
+  ...cfg,
+}));
+
+const CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&display=swap');
+  @keyframes oc-spin { to { transform: rotate(360deg); } }
+  @keyframes oc-fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
+  @keyframes oc-fadeIn { from { opacity:0; transform:scale(0.97); } to { opacity:1; transform:scale(1); } }
+
+  .oc-card {
+    background: #fff; border-radius: 18px; border: 1px solid #e8e4de;
+    overflow: hidden; font-family: 'Sora', sans-serif;
+    transition: box-shadow 0.2s, transform 0.2s;
+    animation: oc-fadeUp 0.3s ease both;
+  }
+  .oc-card:hover { box-shadow: 0 8px 28px rgba(0,0,0,0.08); }
+
+  /* top strip */
+  .oc-top { display: flex; align-items: flex-start; gap: 16px; padding: 18px 18px 0; }
+  .oc-img { width: 76px; height: 76px; border-radius: 12px; object-fit: cover; flex-shrink: 0; border: 1px solid #e8e4de; }
+  .oc-info { flex: 1; min-width: 0; }
+  .oc-title { font-size: 15px; font-weight: 700; color: #1a1714; margin: 0 0 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: -0.2px; }
+  .oc-number { font-size: 11px; color: #9e9890; margin: 0 0 8px; font-weight: 500; }
+  .oc-badges { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .oc-status-pill { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+  .oc-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .oc-date { font-size: 11px; color: #9e9890; }
+  .oc-total-wrap { text-align: right; flex-shrink: 0; }
+  .oc-total-label { font-size: 10px; color: #9e9890; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 3px; }
+  .oc-total-val { font-size: 20px; font-weight: 800; color: #1a1714; letter-spacing: -0.5px; }
+
+  /* meta grid */
+  .oc-meta { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; margin: 16px 0 0; border-top: 1px solid #f0ede9; border-bottom: 1px solid #f0ede9; }
+  .oc-meta-item { padding: 12px 18px; }
+  .oc-meta-item + .oc-meta-item { border-left: 1px solid #f0ede9; }
+  .oc-meta-label { display: flex; align-items: center; gap: 4px; font-size: 10px; color: #9e9890; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
+  .oc-meta-val { font-size: 13px; font-weight: 600; color: #1a1714; }
+
+  /* delivery note */
+  .oc-delivery-note { margin: 14px 18px 0; padding: 10px 14px; border-radius: 10px; display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; }
+
+  /* actions */
+  .oc-actions { display: flex; gap: 10px; padding: 14px 18px 18px; }
+  .oc-btn {
+    flex: 1; display: flex; align-items: center; justify-content: center; gap: 7px;
+    padding: 9px 16px; border-radius: 10px; font-size: 13px; font-weight: 600;
+    cursor: pointer; border: none; transition: all 0.15s; font-family: 'Sora', sans-serif;
+    text-decoration: none;
+  }
+
+  /* Status modal */
+  .oc-overlay {
+    position: fixed; inset: 0; background: rgba(15,12,9,0.55); backdrop-filter: blur(6px);
+    display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 9999;
+  }
+  .oc-modal {
+    background: #fff; border-radius: 20px; width: 100%; max-width: 440px;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.06);
+    font-family: 'Sora', sans-serif; animation: oc-fadeIn 0.22s cubic-bezier(0.16,1,0.3,1);
+    overflow: hidden;
+  }
+  .oc-modal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 24px 16px; border-bottom: 1px solid #f0ede9;
+  }
+  .oc-modal-title { font-size: 17px; font-weight: 800; color: #1a1714; letter-spacing: -0.4px; margin: 0; }
+  .oc-modal-sub { font-size: 11px; color: #9e9890; margin: 3px 0 0; }
+  .oc-icon-btn {
+    width: 34px; height: 34px; border-radius: 9px; border: 1px solid #e8e4de;
+    background: transparent; cursor: pointer; display: flex; align-items: center;
+    justify-content: center; color: #9e9890; transition: all 0.15s;
+  }
+  .oc-icon-btn:hover { background: #f5f3f0; color: #1a1714; }
+
+  .oc-status-list { padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+  .oc-status-option {
+    width: 100%; padding: 12px 14px; border-radius: 12px; border: 1.5px solid #e8e4de;
+    background: transparent; cursor: pointer; display: flex; align-items: center;
+    justify-content: space-between; transition: all 0.15s; font-family: 'Sora', sans-serif;
+    text-align: left;
+  }
+  .oc-status-option:hover:not(:disabled) { border-color: #1a1714; background: #fafaf9; }
+  .oc-status-option.selected { border-color: #1a1714; background: #f5f3f0; }
+  .oc-status-option:disabled { opacity: 0.5; cursor: not-allowed; }
+  .oc-status-option-left { display: flex; align-items: center; gap: 10px; }
+  .oc-status-icon-wrap { width: 32px; height: 32px; border-radius: 9px; display: flex; align-items: center; justify-content: center; }
+  .oc-status-lbl { font-size: 13px; font-weight: 600; color: #1a1714; }
+  .oc-check { width: 20px; height: 20px; border-radius: 6px; background: #1a1714; display: flex; align-items: center; justify-content: center; }
+
+  .oc-modal-footer { display: flex; gap: 10px; padding: 0 16px 16px; }
+  .oc-modal-cancel {
+    flex: 1; padding: 10px; border: 1.5px solid #e8e4de; background: transparent;
+    border-radius: 11px; font-size: 13px; font-weight: 600; cursor: pointer;
+    font-family: 'Sora', sans-serif; transition: all 0.15s; color: #1a1714;
+  }
+  .oc-modal-cancel:hover { background: #f5f3f0; }
+  .oc-modal-confirm {
+    flex: 1; padding: 10px; background: #1a1714; color: #fff; border: none;
+    border-radius: 11px; font-size: 13px; font-weight: 600; cursor: pointer;
+    font-family: 'Sora', sans-serif; transition: all 0.15s;
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+  }
+  .oc-modal-confirm:hover:not(:disabled) { background: #333; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(0,0,0,0.16); }
+  .oc-modal-confirm:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+`;
 
 interface Order {
   id: string;
@@ -28,81 +258,32 @@ interface Order {
   deliveryAddress: string | null;
   status: string;
   createdAt: string;
-  product: {
-    title: string;
-    images: Array<{ url: string }>;
-  };
+  product: { title: string; images: Array<{ url: string }> };
 }
-
 interface OrderCardProps {
   order: Order;
   onUpdateStatus: (order: Order, newStatus: string) => Promise<void>;
 }
 
 export default function OrderCard({ order, onUpdateStatus }: OrderCardProps) {
-  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [selectedStatus, setSelectedStatus] = useState(order.status);
+  const [selected, setSelected] = useState(order.status);
 
-  const statuses = [
-    { value: "PENDING", label: "Pending", color: "yellow" },
-    { value: "CONFIRMED", label: "Confirmed", color: "blue" },
-    { value: "PROCESSING", label: "Processing", color: "purple" },
-    { value: "SHIPPED", label: "Shipped", color: "indigo" },
-    { value: "DELIVERED", label: "Delivered", color: "green" },
-    { value: "CANCELLED", label: "Cancelled", color: "red" },
-  ];
+  const statusCfg = STATUS_MAP[order.status] || STATUS_MAP.PENDING;
+  const StatusIcon = statusCfg.Icon;
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "PENDING":
-        return "bg-yellow-100 text-yellow-800";
-      case "CONFIRMED":
-        return "bg-blue-100 text-blue-800";
-      case "PROCESSING":
-        return "bg-purple-100 text-purple-800";
-      case "SHIPPED":
-        return "bg-indigo-100 text-indigo-800";
-      case "DELIVERED":
-        return "bg-green-100 text-green-800";
-      case "CANCELLED":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "PENDING":
-        return <Clock size={16} />;
-      case "CONFIRMED":
-      case "DELIVERED":
-        return <CheckCircle size={16} />;
-      case "PROCESSING":
-        return <Package size={16} />;
-      case "SHIPPED":
-        return <Truck size={16} />;
-      case "CANCELLED":
-        return <XCircle size={16} />;
-      default:
-        return <Clock size={16} />;
-    }
-  };
-
-  const handleUpdateStatus = async () => {
-    if (selectedStatus === order.status) {
-      setShowStatusModal(false);
+  const handleUpdate = async () => {
+    if (selected === order.status) {
+      setShowModal(false);
       return;
     }
-
     setIsUpdating(true);
-
     try {
-      await onUpdateStatus(order, selectedStatus);
-      setShowStatusModal(false);
-    } catch (error) {
-      console.error("Failed to update status:", error);
+      await onUpdateStatus(order, selected);
+      setShowModal(false);
+    } catch (e) {
+      console.error(e);
     } finally {
       setIsUpdating(false);
     }
@@ -110,192 +291,212 @@ export default function OrderCard({ order, onUpdateStatus }: OrderCardProps) {
 
   return (
     <>
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex gap-4">
-            <img
-              src={
-                order.product.images[0]?.url ||
-                "https://via.placeholder.com/100"
-              }
-              alt={order.product.title}
-              className="w-20 h-20 rounded-lg object-cover"
-            />
-            <div>
-              <h3
-                className="font-bold text-lg mb-1"
-                style={{ fontFamily: "'Poppins', sans-serif" }}
+      <style>{CSS}</style>
+
+      <div className="oc-card">
+        {/* Top */}
+        <div className="oc-top">
+          <img
+            src={
+              order.product.images[0]?.url || "https://via.placeholder.com/100"
+            }
+            alt={order.product.title}
+            className="oc-img"
+          />
+          <div className="oc-info">
+            <p className="oc-title">{order.product.title}</p>
+            <p className="oc-number">Order #{order.orderNumber}</p>
+            <div className="oc-badges">
+              <span
+                className="oc-status-pill"
+                style={{ background: statusCfg.bg, color: statusCfg.color }}
               >
-                {order.product.title}
-              </h3>
-              <p className="text-sm text-gray-600 mb-2">
-                Order #{order.orderNumber}
-              </p>
-              <div className="flex items-center gap-2">
                 <span
-                  className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 ${getStatusColor(order.status)}`}
-                >
-                  {getStatusIcon(order.status)}
-                  {order.status}
-                </span>
-                <span className="text-xs text-gray-500">
-                  {new Date(order.createdAt).toLocaleDateString()}
-                </span>
-              </div>
+                  className="oc-dot"
+                  style={{ background: statusCfg.dot }}
+                />
+                <StatusIcon size={11} />
+                {statusCfg.label}
+              </span>
+              <span className="oc-date">
+                {new Date(order.createdAt).toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                })}
+              </span>
             </div>
           </div>
-          <div className="text-right">
-            <p className="text-sm text-gray-600 mb-1">Total</p>
-            <p
-              className="text-2xl font-bold"
-              style={{ fontFamily: "'Poppins', sans-serif" }}
-            >
+          <div className="oc-total-wrap">
+            <p className="oc-total-label">Total</p>
+            <p className="oc-total-val">
               {order.finalTotal.toLocaleString()} ETB
             </p>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4 pt-4 border-t border-gray-100">
-          <div>
-            <p className="text-xs text-gray-600 mb-1 flex items-center gap-1">
-              <User size={12} />
-              Customer
-            </p>
-            <p className="font-semibold text-sm">{order.customerName}</p>
-          </div>
-          <div>
-            <p className="text-xs text-gray-600 mb-1 flex items-center gap-1">
-              <Phone size={12} />
-              Phone
-            </p>
-            <p className="font-semibold text-sm">{order.customerPhone}</p>
-          </div>
-          <div>
-            <p className="text-xs text-gray-600 mb-1">Size / Color</p>
-            <p className="font-semibold text-sm">
-              {order.selectedSize} / {order.selectedColor}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs text-gray-600 mb-1">Quantity</p>
-            <p className="font-semibold text-sm">{order.quantity}x</p>
-          </div>
+        {/* Meta */}
+        <div className="oc-meta">
+          {[
+            { Icon: UserIco, label: "Customer", val: order.customerName },
+            { Icon: PhoneIco, label: "Phone", val: order.customerPhone },
+            {
+              Icon: PackageIco,
+              label: "Size / Color",
+              val: `${order.selectedSize} · ${order.selectedColor}`,
+            },
+            { Icon: SparkleIco, label: "Quantity", val: `${order.quantity}×` },
+          ].map(({ Icon, label, val }) => (
+            <div key={label} className="oc-meta-item">
+              <div className="oc-meta-label">
+                <Icon size={10} /> {label}
+              </div>
+              <div className="oc-meta-val">{val}</div>
+            </div>
+          ))}
         </div>
 
+        {/* Delivery note */}
         {order.deliveryMethod === "DELIVERY" && order.deliveryAddress && (
-          <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-            <p className="text-xs text-gray-600 mb-1 flex items-center gap-1">
-              <MapPin size={12} />
-              Delivery Address
-            </p>
-            <p className="text-sm">{order.deliveryAddress}</p>
-          </div>
-        )}
-
-        {order.deliveryMethod === "MEETUP" && (
-          <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-            <p className="text-sm text-blue-800 flex items-center gap-2">
-              <Store size={16} />
-              Meet-up - Contact customer to arrange location
-            </p>
-          </div>
-        )}
-
-        <div className="flex gap-2">
-          <button
-            onClick={() => setShowStatusModal(true)}
-            disabled={isUpdating}
-            className="flex-1 bg-black text-white py-2 rounded-lg font-semibold hover:bg-gray-800 transition-colors disabled:bg-gray-400 flex items-center justify-center gap-2"
-            style={{ fontFamily: "'Poppins', sans-serif" }}
+          <div
+            className="oc-delivery-note"
+            style={{ background: "#f0fdf4", color: "#15803d" }}
           >
-            {isUpdating ? (
-              <>
-                <Loader2 size={16} className="animate-spin" />
-                Updating...
-              </>
-            ) : (
-              "Update Status"
-            )}
+            <MapPinIco size={14} /> {order.deliveryAddress}
+          </div>
+        )}
+        {order.deliveryMethod === "MEETUP" && (
+          <div
+            className="oc-delivery-note"
+            style={{ background: "#eff6ff", color: "#1d4ed8" }}
+          >
+            <StoreIco size={14} /> Meet-up — contact customer to arrange
+            location
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="oc-actions">
+          <button
+            className="oc-btn"
+            onClick={() => setShowModal(true)}
+            disabled={isUpdating}
+            style={{ background: "#1a1714", color: "#fff" }}
+            onMouseEnter={(e) =>
+              !isUpdating && (e.currentTarget.style.background = "#333")
+            }
+            onMouseLeave={(e) => (e.currentTarget.style.background = "#1a1714")}
+          >
+            {isUpdating ? <LoaderIcon size={14} /> : null}
+            {isUpdating ? "Updating…" : "Update Status"}
           </button>
           <a
             href={`tel:${order.customerPhone}`}
-            className="flex-1 bg-green-50 text-green-700 py-2 rounded-lg font-semibold hover:bg-green-100 transition-colors flex items-center justify-center gap-2"
-            style={{ fontFamily: "'Poppins', sans-serif" }}
+            className="oc-btn"
+            style={{ background: "#f0fdf4", color: "#15803d" }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "#dcfce7")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "#f0fdf4")}
           >
-            <Phone size={16} />
-            Call
+            <PhoneIco size={14} /> Call
           </a>
         </div>
       </div>
 
-      {/* ✅ STATUS UPDATE MODAL */}
-      {showStatusModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold">Update Order Status</h3>
-              <button
-                onClick={() => setShowStatusModal(false)}
-                disabled={isUpdating}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors disabled:opacity-50"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <p className="text-sm text-gray-600 mb-4">
-              Order #{order.orderNumber}
-            </p>
-
-            <div className="space-y-2 mb-6">
-              {statuses.map((status) => (
+      {/* Status modal */}
+      <AnimatePresence>
+        {showModal && (
+          <motion.div
+            className="oc-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="oc-modal"
+              initial={{ opacity: 0, scale: 0.96, y: 12 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 12 }}
+              transition={{ duration: 0.2 }}
+            >
+              <div className="oc-modal-header">
+                <div>
+                  <h3 className="oc-modal-title">Update Order Status</h3>
+                  <p className="oc-modal-sub">Order #{order.orderNumber}</p>
+                </div>
                 <button
-                  key={status.value}
-                  onClick={() => setSelectedStatus(status.value)}
+                  className="oc-icon-btn"
+                  onClick={() => setShowModal(false)}
                   disabled={isUpdating}
-                  className={`w-full p-4 rounded-lg border-2 transition-all text-left flex items-center justify-between ${
-                    selectedStatus === status.value
-                      ? "border-black bg-gray-50"
-                      : "border-gray-200 hover:border-gray-300"
-                  } disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
-                  <div className="flex items-center gap-3">
-                    {getStatusIcon(status.value)}
-                    <span className="font-semibold">{status.label}</span>
-                  </div>
-                  {selectedStatus === status.value && (
-                    <CheckCircle size={20} className="text-black" />
+                  <XIcon size={15} />
+                </button>
+              </div>
+
+              <div className="oc-status-list">
+                {ALL_STATUSES.map(({ value, label, bg, color, dot, Icon }) => {
+                  const isSelected = selected === value;
+                  return (
+                    <button
+                      key={value}
+                      className={`oc-status-option${isSelected ? " selected" : ""}`}
+                      onClick={() => setSelected(value)}
+                      disabled={isUpdating}
+                    >
+                      <div className="oc-status-option-left">
+                        <div
+                          className="oc-status-icon-wrap"
+                          style={{ background: bg, color }}
+                        >
+                          <Icon size={14} />
+                        </div>
+                        <span className="oc-status-lbl">{label}</span>
+                      </div>
+                      {isSelected && (
+                        <div className="oc-check">
+                          <svg
+                            width="11"
+                            height="11"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="#fff"
+                            strokeWidth={3}
+                            strokeLinecap="round"
+                          >
+                            <path d="M20 6 9 17l-5-5" />
+                          </svg>
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="oc-modal-footer">
+                <button
+                  className="oc-modal-cancel"
+                  onClick={() => setShowModal(false)}
+                  disabled={isUpdating}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="oc-modal-confirm"
+                  onClick={handleUpdate}
+                  disabled={isUpdating || selected === order.status}
+                >
+                  {isUpdating ? (
+                    <>
+                      <LoaderIcon size={14} /> Updating…
+                    </>
+                  ) : (
+                    "Save Status"
                   )}
                 </button>
-              ))}
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowStatusModal(false)}
-                disabled={isUpdating}
-                className="flex-1 px-6 py-3 border-2 border-gray-200 rounded-lg font-semibold hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleUpdateStatus}
-                disabled={isUpdating || selectedStatus === order.status}
-                className="flex-1 px-6 py-3 bg-black text-white rounded-lg font-semibold hover:bg-gray-800 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {isUpdating ? (
-                  <>
-                    <Loader2 size={18} className="animate-spin" />
-                    Updating...
-                  </>
-                ) : (
-                  "Update"
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }
