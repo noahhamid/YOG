@@ -1,90 +1,151 @@
 import Link from "next/link";
-import { Store, Star, Check } from "lucide-react";
 
-interface Props {
-  seller: any;
-}
+const CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&display=swap');
+  .sc-card {
+    background:#fff; border:1px solid #e8e4de; border-radius:16px;
+    padding:18px 20px; display:flex; align-items:center;
+    justify-content:space-between; gap:14px; font-family:'Sora',sans-serif;
+    transition:box-shadow 0.2s, border-color 0.2s;
+  }
+  .sc-card:hover { box-shadow:0 4px 18px rgba(0,0,0,0.07); border-color:rgba(0,0,0,0.1); }
+  .sc-left { display:flex; align-items:center; gap:14px; min-width:0; }
+  .sc-avatar {
+    width:52px; height:52px; border-radius:14px; overflow:hidden;
+    background:#f5f3f0; flex-shrink:0; border:1.5px solid #e8e4de;
+  }
+  .sc-avatar img { width:100%; height:100%; object-fit:cover; }
+  .sc-avatar-fallback {
+    width:100%; height:100%; display:flex; align-items:center;
+    justify-content:center; background:linear-gradient(135deg,#1a1714,#4a4540); color:#fff;
+  }
+  .sc-info { min-width:0; }
+  .sc-name-row { display:flex; align-items:center; gap:7px; margin-bottom:3px; }
+  .sc-name { font-size:15px; font-weight:700; color:#1a1714; letter-spacing:-0.2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .sc-verified { width:18px; height:18px; background:#2563eb; color:#fff; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .sc-rating-row { display:flex; align-items:center; gap:5px; margin-bottom:3px; }
+  .sc-stars { display:flex; gap:2px; color:#eab308; }
+  .sc-rating-val { font-size:12px; font-weight:700; color:#1a1714; }
+  .sc-rating-count { font-size:11px; color:#9e9890; }
+  .sc-no-rating { font-size:12px; color:#9e9890; margin-bottom:3px; }
+  .sc-followers { font-size:11px; color:#9e9890; font-weight:500; }
+  .sc-btn {
+    padding:8px 18px; border:1.5px solid #1a1714; border-radius:20px;
+    font-size:12px; font-weight:700; color:#1a1714; background:#fff;
+    cursor:pointer; transition:all 0.15s; white-space:nowrap;
+    font-family:'Sora',sans-serif; text-decoration:none; display:inline-block;
+  }
+  .sc-btn:hover { background:#1a1714; color:#fff; }
+`;
 
-export default function SellerCard({ seller }: Props) {
-  // ✅ ADD DEBUGGING
-  console.log("SellerCard seller data:", {
-    name: seller.name,
-    logo: seller.logo,
-    image: seller.image,
-    hasLogo: !!seller.logo,
-    hasImage: !!seller.image,
-  });
+const StoreIco = () => (
+  <svg
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="white"
+    strokeWidth="1.75"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+    <polyline points="9 22 9 12 15 12 15 22" />
+  </svg>
+);
+const CheckIco = () => (
+  <svg
+    width="10"
+    height="10"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="white"
+    strokeWidth="3"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <polyline points="20 6 9 17 4 12" />
+  </svg>
+);
+const StarIco = ({ filled }: { filled?: boolean }) => (
+  <svg
+    width="12"
+    height="12"
+    viewBox="0 0 24 24"
+    fill={filled ? "currentColor" : "none"}
+    stroke="currentColor"
+    strokeWidth="1.75"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+  </svg>
+);
+
+export default function SellerCard({ seller }: { seller: any }) {
+  const logoSrc =
+    (seller.logo && seller.logo.trim()) ||
+    (seller.image && seller.image.trim()) ||
+    null;
 
   return (
-    <div className="border border-gray-200 rounded-xl p-4 bg-gradient-to-r from-gray-50 to-white">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
-            {/* ✅ CHECK IF VALUE EXISTS AND IS NOT EMPTY STRING */}
-            {(seller.logo && seller.logo.trim() !== "") ||
-            (seller.image && seller.image.trim() !== "") ? (
+    <>
+      <style>{CSS}</style>
+      <div className="sc-card">
+        <div className="sc-left">
+          <div className="sc-avatar">
+            {logoSrc ? (
               <img
-                src={seller.logo || seller.image}
+                src={logoSrc}
                 alt={seller.name}
-                className="w-full h-full object-cover"
                 onError={(e) => {
-                  // ✅ FALLBACK IF IMAGE FAILS TO LOAD
-                  console.error(
-                    "Image failed to load:",
-                    seller.logo || seller.image,
-                  );
-
                   e.currentTarget.style.display = "none";
-                  e.currentTarget.parentElement!.innerHTML = `
-                    <div class="w-full h-full bg-gradient-to-br from-black to-gray-700 flex items-center justify-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-                    </div>
-                  `;
+                  (e.currentTarget.parentElement as HTMLElement).classList.add(
+                    "sc-avatar-fallback",
+                  );
+                  (e.currentTarget.parentElement as HTMLElement).innerHTML =
+                    '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.75"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>';
                 }}
               />
             ) : (
-              <div className="w-full h-full bg-gradient-to-br from-black to-gray-700 flex items-center justify-center">
-                <Store size={24} className="text-white" />
+              <div className="sc-avatar-fallback">
+                <StoreIco />
               </div>
             )}
           </div>
-
-          <div>
-            <div className="flex items-center gap-2 mb-0.5">
-              <h3 className="font-bold">{seller.name}</h3>
+          <div className="sc-info">
+            <div className="sc-name-row">
+              <span className="sc-name">{seller.name}</span>
               {seller.verified && (
-                <div className="bg-blue-500 text-white p-1 rounded-full">
-                  <Check size={10} />
+                <div className="sc-verified">
+                  <CheckIco />
                 </div>
               )}
             </div>
-
             {seller.rating && seller.reviewCount > 0 ? (
-              <div className="flex items-center gap-1 mb-0.5">
-                <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
-                <span className="font-semibold text-sm">{seller.rating}</span>
-                <span className="text-xs text-gray-500">
-                  ({seller.reviewCount})
-                </span>
+              <div className="sc-rating-row">
+                <div className="sc-stars">
+                  {[1, 2, 3, 4, 5].map((s) => (
+                    <StarIco key={s} filled={s <= Math.round(seller.rating)} />
+                  ))}
+                </div>
+                <span className="sc-rating-val">{seller.rating}</span>
+                <span className="sc-rating-count">({seller.reviewCount})</span>
               </div>
             ) : (
-              <p className="text-xs text-gray-500 mb-0.5">No reviews yet</p>
+              <p className="sc-no-rating">No reviews yet</p>
             )}
-
-            <p className="text-xs text-gray-600">
-              {seller.followers?.toLocaleString() || 0} followers
+            <p className="sc-followers">
+              {(seller.followers || 0).toLocaleString()} followers
             </p>
           </div>
         </div>
-
         {seller.slug && (
-          <Link href={`/store/${seller.slug}`}>
-            <button className="px-4 py-1.5 border-2 border-black rounded-full font-semibold hover:bg-black hover:text-white text-sm">
-              View Store
-            </button>
+          <Link href={`/store/${seller.slug}`} className="sc-btn">
+            View Store
           </Link>
         )}
       </div>
-    </div>
+    </>
   );
 }

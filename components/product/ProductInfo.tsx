@@ -1,15 +1,137 @@
 "use client";
-
 import { useState } from "react";
-import { Star, ShoppingCart, Package } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import OrderModal from "./OrderModal";
 
-interface Props {
-  product: any;
-}
+const CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&display=swap');
+  @keyframes pi-fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
+  .pi-wrap { font-family:'Sora',sans-serif; display:flex; flex-direction:column; gap:20px; }
+  .pi-brand { font-size:11px; font-weight:700; color:#9e9890; text-transform:uppercase; letter-spacing:0.8px; margin:0; }
+  .pi-title { font-size:26px; font-weight:800; color:#1a1714; letter-spacing:-0.7px; line-height:1.2; margin:4px 0 10px; }
 
-export default function ProductInfo({ product }: Props) {
+  .pi-rating-row { display:flex; align-items:center; gap:8px; }
+  .pi-stars { display:flex; gap:2px; color:#eab308; }
+  .pi-rating-val { font-size:13px; font-weight:700; color:#1a1714; }
+  .pi-rating-count { font-size:12px; color:#9e9890; }
+  .pi-sold-divider { width:3px; height:3px; border-radius:50%; background:#d1cdc7; }
+  .pi-sold { font-size:12px; color:#9e9890; font-weight:500; }
+  .pi-no-reviews { font-size:12px; color:#9e9890; }
+
+  .pi-price-row { display:flex; align-items:baseline; gap:10px; }
+  .pi-price { font-size:30px; font-weight:800; color:#1a1714; letter-spacing:-1px; }
+  .pi-compare { font-size:16px; color:#c4bfb8; text-decoration:line-through; }
+  .pi-discount-tag { font-size:11px; font-weight:700; background:#fef2f2; color:#dc2626; padding:3px 8px; border-radius:6px; }
+
+  .pi-stock-row { display:flex; align-items:center; gap:7px; }
+  .pi-stock-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+  .pi-stock-label { font-size:12px; font-weight:600; }
+
+  .pi-section-label { font-size:11px; font-weight:700; color:#9e9890; text-transform:uppercase; letter-spacing:0.6px; margin-bottom:10px; }
+  .pi-section-label span { color:#1a1714; font-weight:700; text-transform:none; letter-spacing:0; }
+
+  /* Colors */
+  .pi-colors { display:flex; gap:8px; flex-wrap:wrap; }
+  .pi-color-btn {
+    width:32px; height:32px; border-radius:50%; border:2px solid #e8e4de;
+    cursor:pointer; transition:all 0.15s; position:relative;
+  }
+  .pi-color-btn.active { border-color:#1a1714; border-width:2.5px; box-shadow:0 0 0 3px rgba(26,23,20,0.12); }
+  .pi-color-btn:hover:not(.active) { border-color:#9e9890; transform:scale(1.1); }
+
+  /* Sizes */
+  .pi-sizes { display:flex; gap:8px; flex-wrap:wrap; }
+  .pi-size-btn {
+    padding:7px 16px; border-radius:20px; border:1.5px solid #e8e4de;
+    font-size:13px; font-weight:600; color:#1a1714; background:#fff;
+    cursor:pointer; transition:all 0.15s; font-family:'Sora',sans-serif;
+  }
+  .pi-size-btn:hover:not(.active):not(:disabled) { border-color:#1a1714; }
+  .pi-size-btn.active { background:#1a1714; color:#fff; border-color:#1a1714; }
+  .pi-size-btn:disabled { border-color:#f0ede8; color:#d1cdc7; cursor:not-allowed; text-decoration:line-through; }
+
+  /* Quantity */
+  .pi-qty-row { display:flex; align-items:center; gap:0; background:#f5f3f0; border-radius:22px; width:fit-content; border:1px solid #e8e4de; overflow:hidden; }
+  .pi-qty-btn {
+    width:36px; height:36px; border:none; background:transparent; font-size:18px;
+    font-weight:600; cursor:pointer; color:#1a1714; transition:background 0.15s;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .pi-qty-btn:hover:not(:disabled) { background:#ebebeb; }
+  .pi-qty-btn:disabled { color:#c4bfb8; cursor:not-allowed; }
+  .pi-qty-val { min-width:36px; text-align:center; font-size:14px; font-weight:700; color:#1a1714; }
+
+  /* Buttons */
+  .pi-actions { display:flex; flex-direction:column; gap:10px; }
+  .pi-btn-primary {
+    width:100%; padding:14px; border-radius:12px; border:none;
+    background:#1a1714; color:#fff; font-size:14px; font-weight:700;
+    cursor:pointer; transition:all 0.15s; display:flex; align-items:center;
+    justify-content:center; gap:8px; font-family:'Sora',sans-serif;
+  }
+  .pi-btn-primary:hover:not(:disabled) { background:#333; box-shadow:0 4px 16px rgba(0,0,0,0.18); transform:translateY(-1px); }
+  .pi-btn-primary:disabled { background:#e8e4de; color:#9e9890; cursor:not-allowed; transform:none; box-shadow:none; }
+  .pi-btn-ghost {
+    width:100%; padding:13px; border-radius:12px;
+    border:1.5px solid #e8e4de; background:#fff; color:#1a1714;
+    font-size:14px; font-weight:700; cursor:pointer; transition:all 0.15s;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    font-family:'Sora',sans-serif;
+  }
+  .pi-btn-ghost:hover:not(:disabled) { border-color:#1a1714; background:#f5f3f0; }
+  .pi-btn-ghost:disabled { border-color:#f0ede8; color:#c4bfb8; cursor:not-allowed; }
+
+  .pi-divider { border:none; border-top:1px solid #e8e4de; margin:0; }
+`;
+
+const StarIco = ({ filled }: { filled?: boolean }) => (
+  <svg
+    width="13"
+    height="13"
+    viewBox="0 0 24 24"
+    fill={filled ? "currentColor" : "none"}
+    stroke="currentColor"
+    strokeWidth="1.75"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+  </svg>
+);
+const PackageIco = () => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.75"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="m16.5 9.4-9-5.19M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+    <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+    <line x1="12" y1="22.08" x2="12" y2="12" />
+  </svg>
+);
+const CartIco = () => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.75"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="9" cy="21" r="1" />
+    <circle cx="20" cy="21" r="1" />
+    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+  </svg>
+);
+
+export default function ProductInfo({ product }: { product: any }) {
   const { addToCart } = useCart();
   const [selectedSize, setSelectedSize] = useState("");
   const [selectedColor, setSelectedColor] = useState(
@@ -23,7 +145,6 @@ export default function ProductInfo({ product }: Props) {
       alert("Please select a size");
       return;
     }
-
     addToCart({
       productId: product.id,
       title: product.title,
@@ -36,8 +157,7 @@ export default function ProductInfo({ product }: Props) {
       sellerId: product.seller.id,
       sellerName: product.seller.name,
     });
-
-    alert(`✅ Added to cart!`);
+    alert("✅ Added to cart!");
   };
 
   const handleOrderNow = () => {
@@ -45,139 +165,138 @@ export default function ProductInfo({ product }: Props) {
       alert("Please select a size");
       return;
     }
-
     setIsOrderModalOpen(true);
   };
 
+  const canOrder = product.inStock && selectedSize;
+
   return (
     <>
-      <div className="space-y-4">
-        {/* Title & Rating */}
+      <style>{CSS}</style>
+      <div className="pi-wrap">
+        {/* Title */}
         <div>
-          <p className="text-gray-600 text-xs mb-1">{product.brand}</p>
-          <h1
-            className="text-2xl font-bold mb-2"
-            style={{ fontFamily: "'Poppins', sans-serif" }}
-          >
-            {product.title}
-          </h1>
+          {product.brand && <p className="pi-brand">{product.brand}</p>}
+          <h1 className="pi-title">{product.title}</h1>
 
-          {/* ✅ CONDITIONALLY SHOW RATING OR "NO REVIEWS YET" WITH EMPTY STARS */}
-          <div className="flex items-center gap-3 text-sm">
-            {product.reviewCount > 0 ? (
-              <>
-                <div className="flex items-center gap-1">
-                  <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                  <span className="font-semibold">{product.rating}</span>
-                  <span className="text-gray-600">
-                    ({product.reviewCount} review
-                    {product.reviewCount !== 1 ? "s" : ""})
-                  </span>
-                </div>
-                {product.sold > 0 && (
-                  <span className="text-gray-600">{product.sold} sold</span>
-                )}
-              </>
-            ) : (
-              <div className="flex items-center gap-2">
-                {/* ✅ SHOW EMPTY STARS */}
-                <div className="flex items-center gap-0.5">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Star key={star} className="w-4 h-4 text-gray-300" />
-                  ))}
-                </div>
-                <span className="text-gray-500 font-medium">
-                  No reviews yet
-                </span>
+          {/* Rating */}
+          {product.reviewCount > 0 ? (
+            <div className="pi-rating-row">
+              <div className="pi-stars">
+                {[1, 2, 3, 4, 5].map((s) => (
+                  <StarIco key={s} filled={s <= Math.round(product.rating)} />
+                ))}
               </div>
-            )}
-          </div>
+              <span className="pi-rating-val">{product.rating}</span>
+              <span className="pi-rating-count">
+                ({product.reviewCount} review
+                {product.reviewCount !== 1 ? "s" : ""})
+              </span>
+              {product.sold > 0 && (
+                <>
+                  <div className="pi-sold-divider" />
+                  <span className="pi-sold">{product.sold} sold</span>
+                </>
+              )}
+            </div>
+          ) : (
+            <div className="pi-rating-row">
+              <div className="pi-stars">
+                {[1, 2, 3, 4, 5].map((s) => (
+                  <StarIco key={s} />
+                ))}
+              </div>
+              <span className="pi-no-reviews">No reviews yet</span>
+            </div>
+          )}
         </div>
 
+        <hr className="pi-divider" />
+
         {/* Price */}
-        <div className="flex items-center gap-2">
-          <span className="text-3xl font-bold">
-            {product.price.toLocaleString()} ETB
-          </span>
+        <div className="pi-price-row">
+          <span className="pi-price">{product.price.toLocaleString()} ETB</span>
           {product.compareAtPrice && product.compareAtPrice > product.price && (
-            <span className="text-lg text-gray-400 line-through">
-              {product.compareAtPrice.toLocaleString()} ETB
-            </span>
+            <>
+              <span className="pi-compare">
+                {product.compareAtPrice.toLocaleString()} ETB
+              </span>
+              <span className="pi-discount-tag">
+                -
+                {Math.round(
+                  ((product.compareAtPrice - product.price) /
+                    product.compareAtPrice) *
+                    100,
+                )}
+                %
+              </span>
+            </>
           )}
         </div>
 
         {/* Stock */}
-        <div className="flex items-center gap-2 text-sm">
+        <div className="pi-stock-row">
           <div
-            className={`w-2 h-2 rounded-full ${product.inStock ? "bg-green-500" : "bg-red-500"}`}
-          ></div>
+            className="pi-stock-dot"
+            style={{ background: product.inStock ? "#22c55e" : "#ef4444" }}
+          />
           <span
-            className={`font-medium ${product.inStock ? "text-green-600" : "text-red-600"}`}
+            className="pi-stock-label"
+            style={{ color: product.inStock ? "#16a34a" : "#dc2626" }}
           >
             {product.inStock
-              ? `In Stock (${product.totalStock} available)`
+              ? `In Stock · ${product.totalStock} available`
               : "Out of Stock"}
           </span>
         </div>
 
-        {/* Color Selection */}
+        <hr className="pi-divider" />
+
+        {/* Color */}
         {product.colors.length > 0 && (
           <div>
-            <h3 className="font-semibold mb-2 text-sm">
+            <p className="pi-section-label">
               Color:{" "}
-              <span className="text-gray-600 font-normal">
+              <span>
                 {product.colors.find((c: any) => c.value === selectedColor)
                   ?.name || "Select"}
               </span>
-            </h3>
-            <div className="flex gap-2">
-              {product.colors.map((color: any) => (
+            </p>
+            <div className="pi-colors">
+              {product.colors.map((c: any) => (
                 <button
-                  key={color.value}
-                  onClick={() => setSelectedColor(color.value)}
-                  className={`w-10 h-10 rounded-full border-2 transition-all ${
-                    selectedColor === color.value
-                      ? "border-black scale-110"
-                      : "border-gray-300"
-                  }`}
+                  key={c.value}
+                  className={`pi-color-btn ${selectedColor === c.value ? "active" : ""}`}
                   style={{
-                    backgroundColor: color.hex,
+                    background: c.hex,
                     boxShadow:
-                      color.hex === "#FFFFFF"
-                        ? "inset 0 0 0 1px #e5e7eb"
+                      c.hex === "#FFFFFF" || c.hex === "white"
+                        ? "inset 0 0 0 1px #e8e4de"
                         : "none",
                   }}
-                  title={color.name}
+                  onClick={() => setSelectedColor(c.value)}
+                  title={c.name}
                 />
               ))}
             </div>
           </div>
         )}
 
-        {/* Size Selection */}
+        {/* Size */}
         {product.sizes.length > 0 && (
           <div>
-            <h3 className="font-semibold mb-2 text-sm">
-              Size:{" "}
-              <span className="text-gray-600 font-normal">
-                {selectedSize || "Select"}
-              </span>
-            </h3>
-            <div className="flex gap-2 flex-wrap">
-              {product.sizes.map((size: any) => (
+            <p className="pi-section-label">
+              Size: <span>{selectedSize || "Select"}</span>
+            </p>
+            <div className="pi-sizes">
+              {product.sizes.map((s: any) => (
                 <button
-                  key={size.value}
-                  onClick={() => size.available && setSelectedSize(size.value)}
-                  disabled={!size.available}
-                  className={`px-5 py-2 rounded-full border-2 font-medium text-sm transition-all ${
-                    selectedSize === size.value
-                      ? "bg-black text-white border-black"
-                      : size.available
-                        ? "border-gray-300 hover:border-black"
-                        : "border-gray-200 text-gray-300 cursor-not-allowed"
-                  }`}
+                  key={s.value}
+                  className={`pi-size-btn ${selectedSize === s.value ? "active" : ""}`}
+                  disabled={!s.available}
+                  onClick={() => s.available && setSelectedSize(s.value)}
                 >
-                  {size.value}
+                  {s.value}
                 </button>
               ))}
             </div>
@@ -186,52 +305,47 @@ export default function ProductInfo({ product }: Props) {
 
         {/* Quantity */}
         <div>
-          <h3 className="font-semibold mb-2 text-sm">Quantity</h3>
-          <div className="flex items-center gap-2">
+          <p className="pi-section-label">Quantity</p>
+          <div className="pi-qty-row">
             <button
+              className="pi-qty-btn"
               onClick={() => setQuantity(Math.max(1, quantity - 1))}
-              className="w-8 h-8 border-2 border-gray-300 rounded-full hover:border-black font-bold"
+              disabled={quantity <= 1}
             >
-              -
+              −
             </button>
-            <span className="text-lg font-semibold w-10 text-center">
-              {quantity}
-            </span>
+            <span className="pi-qty-val">{quantity}</span>
             <button
+              className="pi-qty-btn"
               onClick={() =>
                 setQuantity(Math.min(product.totalStock, quantity + 1))
               }
-              className="w-8 h-8 border-2 border-gray-300 rounded-full hover:border-black font-bold"
+              disabled={quantity >= product.totalStock}
             >
               +
             </button>
           </div>
         </div>
 
-        {/* Buttons */}
-        <div className="space-y-2">
+        {/* Actions */}
+        <div className="pi-actions">
           <button
+            className="pi-btn-primary"
             onClick={handleOrderNow}
-            disabled={!product.inStock || !selectedSize}
-            className="w-full bg-black text-white py-3 rounded-full font-semibold hover:bg-gray-800 flex items-center justify-center gap-2 disabled:bg-gray-300 disabled:cursor-not-allowed"
-            style={{ fontFamily: "'Poppins', sans-serif" }}
+            disabled={!canOrder}
           >
-            <Package size={18} />
-            Order Now
+            <PackageIco /> Order Now
           </button>
           <button
+            className="pi-btn-ghost"
             onClick={handleAddToCart}
-            disabled={!product.inStock || !selectedSize}
-            className="w-full border-2 border-black py-3 rounded-full font-semibold hover:bg-gray-50 flex items-center justify-center gap-2 disabled:border-gray-300 disabled:text-gray-300 disabled:cursor-not-allowed"
-            style={{ fontFamily: "'Poppins', sans-serif" }}
+            disabled={!canOrder}
           >
-            <ShoppingCart size={18} />
-            Add to Cart
+            <CartIco /> Add to Cart
           </button>
         </div>
       </div>
 
-      {/* ORDER MODAL */}
       <OrderModal
         isOpen={isOrderModalOpen}
         onClose={() => setIsOrderModalOpen(false)}

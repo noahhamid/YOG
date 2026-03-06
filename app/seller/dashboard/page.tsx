@@ -2,14 +2,13 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import AddProductForm from "@/components/AddProductForm";
 import EditProductForm from "@/components/EditProductForm";
 import OrdersTab from "@/components/OrdersTab";
 
-// ─── Inline Icons ─────────────────────────────────────────────────────────────
-const Ico = ({ d, size = 18, sw = 1.75, fill = "none" }) => (
+const Ico = ({ d, size = 18, sw = 1.75, fill = "none" }: any) => (
   <svg
     width={size}
     height={size}
@@ -23,225 +22,294 @@ const Ico = ({ d, size = 18, sw = 1.75, fill = "none" }) => (
     <path d={d} />
   </svg>
 );
-const PlusIco = (p) => <Ico {...p} d="M12 5v14M5 12h14" />;
-const PackageIco = (p) => (
-  <Ico
-    {...p}
-    d="m16.5 9.4-9-5.19M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16zM3.27 6.96 12 12.01l8.73-5.05M12 22.08V12"
-  />
-);
-const DollarIco = (p) => (
-  <Ico {...p} d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-);
-const TrendIco = (p) => (
-  <Ico {...p} d="M22 7 13.5 15.5 8.5 10.5 2 17M16 7h6v6" />
-);
-const BagIco = (p) => (
-  <Ico
-    {...p}
-    d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4zM3 6h18M16 10a4 4 0 0 1-8 0"
-  />
-);
-const EditIco = (p) => (
+const PlusIco = (p: any) => <Ico {...p} d="M12 5v14M5 12h14" />;
+const EditIco = (p: any) => (
   <Ico
     {...p}
     d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
   />
 );
-const TrashIco = (p) => (
+const TrashIco = (p: any) => (
   <Ico
     {...p}
     d="M3 6h18m-2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
   />
 );
-const SettingsIco = (p) => (
+const SettingsIco = (p: any) => (
   <Ico
     {...p}
     d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"
   />
 );
-const ClockIco = (p) => (
+const ClockIco = (p: any) => (
   <Ico
     {...p}
     d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10zM12 6v6l4 2"
   />
 );
-const XCircleIco = (p) => (
+const XCircleIco = (p: any) => (
   <Ico
     {...p}
     d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10zm3-13-6 6m0-6 6 6"
   />
 );
-const SparkleIco = (p) => (
+const SparkleIco = (p: any) => (
   <Ico
     {...p}
     d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3z"
   />
 );
-const ArrowRightIco = (p) => <Ico {...p} d="M5 12h14m-7-7 7 7-7 7" />;
+const ArrowRightIco = (p: any) => <Ico {...p} d="M5 12h14m-7-7 7 7-7 7" />;
+const PkgStatIco = (p: any) => (
+  <Ico
+    {...p}
+    d="m16.5 9.4-9-5.19M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16zM3.27 6.96 12 12.01l8.73-5.05M12 22.08V12"
+  />
+);
 
-// ─── Shared CSS vars (same tokens as Add/Edit forms) ─────────────────────────
-const GLOBAL_CSS = `
+function AnimPackage({ size = 22, color = "currentColor" }: any) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth={1.75}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="sd-i-pkg"
+    >
+      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+      <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+      <line x1="12" y1="22.08" x2="12" y2="12" />
+    </svg>
+  );
+}
+
+function AnimBag({ size = 22, color = "currentColor" }: any) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth={1.75}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="sd-i-bag"
+    >
+      <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+      <line x1="3" y1="6" x2="21" y2="6" />
+      <path d="M16 10a4 4 0 0 1-8 0" />
+    </svg>
+  );
+}
+
+function AnimCoin({ size = 22, color = "currentColor" }: any) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth={1.75}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="sd-i-coin"
+    >
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v1m0 8v1" />
+      <path d="M9.5 9.5C9.5 8.67 10.17 8 11 8h2a1.5 1.5 0 0 1 0 3H11a1.5 1.5 0 0 0 0 3h2a1 1 0 0 1 0 2h-2" />
+    </svg>
+  );
+}
+
+function AnimUsers({ size = 22, color = "currentColor" }: any) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth={1.75}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" className="sd-i-ubb" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" className="sd-i-ubh" />
+      <path
+        d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"
+        className="sd-i-ufb"
+      />
+      <circle cx="9" cy="7" r="4" className="sd-i-ufh" />
+    </svg>
+  );
+}
+
+const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&display=swap');
   :root {
-    --bg: #f6f5f3;
-    --card: #ffffff;
-    --text: #1a1714;
-    --muted: #9e9890;
-    --border: #e8e4de;
-    --accent: #2563eb;
-    --accent-soft: rgba(37,99,235,0.08);
-    --error: #dc2626;
-    --hover: #f5f3f0;
-    --divider: rgba(0,0,0,0.06);
-    --success: #16a34a;
-    --success-soft: #dcfce7;
-    --warn: #d97706;
-    --warn-soft: #fef3c7;
+    --bg:#f6f5f3;--card:#fff;--text:#1a1714;--muted:#9e9890;
+    --border:#e8e4de;--error:#dc2626;--hover:#f5f3f0;--divider:rgba(0,0,0,0.06);
+    --success:#16a34a;--warn:#d97706;--warn-soft:#fef3c7;
   }
-  *, *::before, *::after { box-sizing: border-box; }
-  body { font-family: 'Sora', sans-serif !important; background: var(--bg); }
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(14px); }
-    to   { opacity: 1; transform: none; }
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .sd-page { min-height: 100vh; background: var(--bg); padding-top: 72px; font-family: 'Sora', sans-serif; }
-  .sd-wrap { max-width: 1320px; margin: 0 auto; padding: 36px 24px 60px; }
+  *,*::before,*::after{box-sizing:border-box;}
+  body{font-family:'Sora',sans-serif!important;background:var(--bg);}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  @keyframes spin{to{transform:rotate(360deg)}}
 
-  /* ── Header ── */
-  .sd-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 36px; flex-wrap: wrap; gap: 16px; }
-  .sd-header-title { font-size: 28px; font-weight: 800; color: var(--text); letter-spacing: -0.8px; margin: 0; }
-  .sd-header-sub { font-size: 13px; color: var(--muted); margin: 4px 0 0; }
-  .sd-header-actions { display: flex; gap: 10px; align-items: center; }
+  /* ── ANIMATED ICONS: pure transform keyframes, zero opacity ──
+     Reason: framer-motion animates card from opacity:0→1, so any
+     opacity in icon keyframes makes them invisible during load.   */
 
-  .sd-btn-primary {
-    display: flex; align-items: center; gap: 7px; padding: 10px 20px;
-    background: var(--text); color: #fff; border: none; border-radius: 11px;
-    font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 600;
-    cursor: pointer; transition: all 0.15s; letter-spacing: -0.1px; text-decoration: none;
+  /* 📦 Package — drops from above, spring settle, shake on hover */
+  @keyframes sd-pkg-drop {
+    0%   {transform:translateY(-18px) scale(0.78);}
+    50%  {transform:translateY(5px)   scale(1.12);}
+    70%  {transform:translateY(-4px)  scale(0.95);}
+    85%  {transform:translateY(2px)   scale(1.03);}
+    100% {transform:translateY(0)     scale(1);   }
   }
-  .sd-btn-primary:hover { background: #333; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(0,0,0,0.16); }
-
-  .sd-btn-ghost {
-    display: flex; align-items: center; gap: 7px; padding: 10px 18px;
-    background: var(--card); color: var(--text); border: 1.5px solid var(--border);
-    border-radius: 11px; font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 600;
-    cursor: pointer; transition: all 0.15s; text-decoration: none;
+  @keyframes sd-pkg-shake {
+    0%,100%{transform:translateX(0) rotate(0deg);}
+    20%    {transform:translateX(-3px) rotate(-8deg);}
+    40%    {transform:translateX(3px)  rotate(7deg); }
+    60%    {transform:translateX(-2px) rotate(-5deg);}
+    80%    {transform:translateX(2px)  rotate(4deg); }
   }
-  .sd-btn-ghost:hover { border-color: var(--text); background: var(--hover); }
-
-  /* ── Stats ── */
-  .sd-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 36px; }
-  @media (max-width: 1024px) { .sd-stats { grid-template-columns: repeat(2, 1fr); } }
-  @media (max-width: 600px)  { .sd-stats { grid-template-columns: 1fr; } }
-
-  .sd-stat {
-    background: var(--card); border-radius: 16px; padding: 22px 24px;
-    border: 1px solid var(--border); display: flex; align-items: center; gap: 16px;
-    animation: fadeUp 0.4s ease both;
+  .sd-i-pkg{
+    transform-origin:center bottom;
+    animation:sd-pkg-drop 0.65s cubic-bezier(0.34,1.56,0.64,1) both;
+    animation-delay:0.05s;
   }
-  .sd-stat-icon {
-    width: 48px; height: 48px; border-radius: 13px;
-    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-  }
-  .sd-stat-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; margin: 0 0 4px; }
-  .sd-stat-value { font-size: 24px; font-weight: 800; color: var(--text); letter-spacing: -0.8px; margin: 0; }
-
-  /* ── Tabs ── */
-  .sd-tabs { display: flex; gap: 2px; border-bottom: 1.5px solid var(--border); margin-bottom: 28px; }
-  .sd-tab {
-    padding: 12px 20px; font-size: 13px; font-weight: 600; color: var(--muted);
-    background: none; border: none; cursor: pointer; position: relative;
-    font-family: 'Sora', sans-serif; transition: color 0.15s; white-space: nowrap;
-  }
-  .sd-tab:hover { color: var(--text); }
-  .sd-tab.active { color: var(--text); }
-  .sd-tab.active::after {
-    content: ''; position: absolute; bottom: -1.5px; left: 0; right: 0;
-    height: 2px; background: var(--text); border-radius: 2px 2px 0 0;
-  }
-  .sd-tab-count {
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 20px; height: 20px; border-radius: 6px; font-size: 10px; font-weight: 700;
-    background: var(--hover); color: var(--muted); margin-left: 6px;
-  }
-  .sd-tab.active .sd-tab-count { background: var(--text); color: #fff; }
-
-  /* ── Products toolbar ── */
-  .sd-toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
-  .sd-toolbar-meta { display: flex; gap: 20px; align-items: center; }
-  .sd-meta-chip {
-    display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600;
-    color: var(--muted); padding: 5px 10px; background: var(--card);
-    border: 1px solid var(--border); border-radius: 8px;
-  }
-  .sd-meta-dot { width: 7px; height: 7px; border-radius: 50%; }
-
-  /* ── Product grid ── */
-  .sd-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
-  @media (max-width: 1200px) { .sd-grid { grid-template-columns: repeat(3, 1fr); } }
-  @media (max-width: 860px)  { .sd-grid { grid-template-columns: repeat(2, 1fr); } }
-  @media (max-width: 540px)  { .sd-grid { grid-template-columns: 1fr; } }
-
-  .sd-product-card {
-    background: var(--card); border-radius: 16px; overflow: hidden;
-    border: 1px solid var(--border); transition: all 0.2s;
-    animation: fadeUp 0.35s ease both;
-  }
-  .sd-product-card:hover { box-shadow: 0 8px 28px rgba(0,0,0,0.09); transform: translateY(-2px); }
-
-  .sd-product-img { position: relative; aspect-ratio: 1; background: var(--hover); overflow: hidden; }
-  .sd-product-img img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s; }
-  .sd-product-card:hover .sd-product-img img { transform: scale(1.04); }
-
-  .sd-badge {
-    position: absolute; top: 10px; right: 10px;
-    display: flex; flex-direction: column; align-items: flex-end; gap: 5px;
-  }
-  .sd-badge-pill {
-    padding: 3px 9px; border-radius: 20px; font-size: 10px; font-weight: 700;
-    letter-spacing: 0.3px; backdrop-filter: blur(4px);
+  .sd-stat:hover .sd-i-pkg{
+    animation:sd-pkg-shake 0.5s ease-in-out infinite!important;
+    animation-delay:0s!important;
   }
 
-  .sd-product-body { padding: 16px; }
-  .sd-product-name { font-size: 14px; font-weight: 700; color: var(--text); margin: 0 0 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: -0.2px; }
-  .sd-product-desc { font-size: 12px; color: var(--muted); margin: 0 0 14px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.5; }
-
-  .sd-product-price-row { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 14px; }
-  .sd-product-price { font-size: 18px; font-weight: 800; color: var(--text); letter-spacing: -0.5px; }
-  .sd-product-compare { font-size: 11px; color: var(--muted); text-decoration: line-through; margin-top: 1px; }
-  .sd-product-stock-label { font-size: 10px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; text-align: right; }
-  .sd-product-stock-val { font-size: 15px; font-weight: 800; text-align: right; }
-
-  .sd-product-actions { display: flex; gap: 8px; }
-  .sd-action-btn {
-    flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
-    padding: 8px; border-radius: 9px; font-size: 12px; font-weight: 600;
-    cursor: pointer; border: none; transition: all 0.15s; font-family: 'Sora', sans-serif;
+  /* 🛍 Bag — bounces up from below, rocks on hover */
+  @keyframes sd-bag-bounce {
+    0%   {transform:translateY(12px) scale(0.82);}
+    50%  {transform:translateY(-7px) scale(1.10);}
+    70%  {transform:translateY(3px)  scale(0.96);}
+    85%  {transform:translateY(-2px) scale(1.02);}
+    100% {transform:translateY(0)    scale(1);   }
+  }
+  @keyframes sd-bag-rock {
+    0%,100%{transform:rotate(0deg);}
+    25%    {transform:rotate(-12deg);}
+    75%    {transform:rotate(12deg); }
+  }
+  .sd-i-bag{
+    transform-origin:bottom center;
+    animation:sd-bag-bounce 0.7s cubic-bezier(0.34,1.56,0.64,1) both;
+    animation-delay:0.1s;
+  }
+  .sd-stat:hover .sd-i-bag{
+    animation:sd-bag-rock 0.46s ease-in-out infinite!important;
+    animation-delay:0s!important;
+    transform-origin:bottom center;
   }
 
-  /* ── Empty state ── */
-  .sd-empty {
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    padding: 80px 24px; background: var(--card); border-radius: 20px; border: 1.5px dashed var(--border);
-    text-align: center;
+  /* 💰 Coin — spring-pops in from scale 0, spins on hover */
+  @keyframes sd-coin-pop {
+    0%   {transform:scale(0);}
+    55%  {transform:scale(1.20);}
+    75%  {transform:scale(0.91);}
+    88%  {transform:scale(1.06);}
+    100% {transform:scale(1);  }
   }
-  .sd-empty-icon { width: 72px; height: 72px; background: var(--hover); border-radius: 20px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; color: var(--muted); }
-  .sd-empty-title { font-size: 18px; font-weight: 700; color: var(--text); margin: 0 0 8px; }
-  .sd-empty-sub { font-size: 13px; color: var(--muted); margin: 0 0 24px; }
+  @keyframes sd-coin-spin {
+    from{transform:rotate(0deg);}
+    to  {transform:rotate(360deg);}
+  }
+  .sd-i-coin{
+    transform-origin:center;
+    animation:sd-coin-pop 0.6s cubic-bezier(0.34,1.56,0.64,1) both;
+    animation-delay:0.15s;
+  }
+  .sd-stat:hover .sd-i-coin{
+    animation:sd-coin-spin 0.55s linear infinite!important;
+    animation-delay:0s!important;
+  }
 
-  /* ── Loading ── */
-  .sd-loader { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--bg); }
-  .sd-spinner { width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: var(--text); border-radius: 50%; animation: spin 0.7s linear infinite; }
+  /* 👥 Users — slide in from sides, bob on hover */
+  @keyframes sd-u-left  {from{transform:translateX(-11px);}to{transform:translateX(0);}}
+  @keyframes sd-u-right {from{transform:translateX(11px); }to{transform:translateX(0);}}
+  @keyframes sd-u-bob   {0%,100%{transform:translateY(0);}50%{transform:translateY(-4px);}}
+  .sd-i-ufb,.sd-i-ufh{animation:sd-u-left  0.38s ease both;animation-delay:0.15s;}
+  .sd-i-ubb,.sd-i-ubh{animation:sd-u-right 0.38s ease both;animation-delay:0.28s;}
+  .sd-stat:hover .sd-i-ufh{animation:sd-u-bob 0.5s ease-in-out infinite!important;animation-delay:0s!important;transform-origin:center;}
+  .sd-stat:hover .sd-i-ubh{animation:sd-u-bob 0.5s ease-in-out 0.15s infinite!important;animation-delay:0.15s!important;transform-origin:center;}
+  .sd-stat:hover .sd-i-ufb,.sd-stat:hover .sd-i-ubb{animation:none!important;transform:translateX(0);}
 
-  /* ── Status pages (pending/rejected) ── */
-  .sd-status-page { min-height: 100vh; background: var(--bg); display: flex; align-items: center; justify-content: center; padding: 24px; }
-  .sd-status-card { background: var(--card); border-radius: 24px; padding: 48px 40px; max-width: 440px; width: 100%; text-align: center; border: 1px solid var(--border); box-shadow: 0 16px 48px rgba(0,0,0,0.08); }
-  .sd-status-icon { width: 72px; height: 72px; border-radius: 22px; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; }
-  .sd-status-title { font-size: 22px; font-weight: 800; color: var(--text); margin: 0 0 12px; letter-spacing: -0.5px; }
-  .sd-status-body { font-size: 13px; color: var(--muted); line-height: 1.7; margin: 0 0 20px; }
-  .sd-status-box { border-radius: 12px; padding: 14px 16px; text-align: left; margin-bottom: 24px; }
+  /* ── PAGE ── */
+  .sd-page{min-height:100vh;background:var(--bg);padding-top:72px;font-family:'Sora',sans-serif;}
+  .sd-wrap{max-width:1320px;margin:0 auto;padding:36px 24px 60px;}
+  .sd-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:36px;flex-wrap:wrap;gap:16px;}
+  .sd-header-title{font-size:28px;font-weight:800;color:var(--text);letter-spacing:-0.8px;margin:0;}
+  .sd-header-sub{font-size:13px;color:var(--muted);margin:4px 0 0;}
+  .sd-header-actions{display:flex;gap:10px;align-items:center;}
+  .sd-btn-primary{display:flex;align-items:center;gap:7px;padding:10px 20px;background:var(--text);color:#fff;border:none;border-radius:11px;font-family:'Sora',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.15s;text-decoration:none;}
+  .sd-btn-primary:hover{background:#333;transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,0.16);}
+  .sd-btn-ghost{display:flex;align-items:center;gap:7px;padding:10px 18px;background:var(--card);color:var(--text);border:1.5px solid var(--border);border-radius:11px;font-family:'Sora',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.15s;text-decoration:none;}
+  .sd-btn-ghost:hover{border-color:var(--text);background:var(--hover);}
+  .sd-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:36px;}
+  @media(max-width:1024px){.sd-stats{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:600px){.sd-stats{grid-template-columns:1fr;}}
+  .sd-stat{background:var(--card);border-radius:16px;padding:22px 24px;border:1px solid var(--border);display:flex;align-items:center;gap:16px;cursor:default;transition:box-shadow 0.2s,transform 0.2s,border-color 0.2s;}
+  .sd-stat:hover{box-shadow:0 6px 22px rgba(0,0,0,0.08);transform:translateY(-2px);border-color:rgba(0,0,0,0.1);}
+  .sd-stat-icon{width:48px;height:48px;border-radius:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:visible;}
+  .sd-stat-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px;margin:0 0 4px;}
+  .sd-stat-value{font-size:24px;font-weight:800;color:var(--text);letter-spacing:-0.8px;margin:0;}
+  .sd-tabs{display:flex;gap:2px;border-bottom:1.5px solid var(--border);margin-bottom:28px;}
+  .sd-tab{padding:12px 20px;font-size:13px;font-weight:600;color:var(--muted);background:none;border:none;cursor:pointer;position:relative;font-family:'Sora',sans-serif;transition:color 0.15s;white-space:nowrap;}
+  .sd-tab:hover{color:var(--text);}
+  .sd-tab.active{color:var(--text);}
+  .sd-tab.active::after{content:'';position:absolute;bottom:-1.5px;left:0;right:0;height:2px;background:var(--text);border-radius:2px 2px 0 0;}
+  .sd-tab-count{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:6px;font-size:10px;font-weight:700;background:var(--hover);color:var(--muted);margin-left:6px;}
+  .sd-tab.active .sd-tab-count{background:var(--text);color:#fff;}
+  .sd-toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;}
+  .sd-toolbar-meta{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+  .sd-meta-chip{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--muted);padding:5px 10px;background:var(--card);border:1px solid var(--border);border-radius:8px;}
+  .sd-meta-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+  .sd-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;}
+  @media(max-width:1200px){.sd-grid{grid-template-columns:repeat(3,1fr);}}
+  @media(max-width:860px){.sd-grid{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:540px){.sd-grid{grid-template-columns:1fr;}}
+  .sd-product-card{background:var(--card);border-radius:16px;overflow:hidden;border:1px solid var(--border);transition:all 0.2s;animation:fadeUp 0.35s ease both;}
+  .sd-product-card:hover{box-shadow:0 8px 28px rgba(0,0,0,0.09);transform:translateY(-2px);}
+  .sd-product-img{position:relative;aspect-ratio:1;background:var(--hover);overflow:hidden;}
+  .sd-product-img img{width:100%;height:100%;object-fit:cover;transition:transform 0.4s;}
+  .sd-product-card:hover .sd-product-img img{transform:scale(1.04);}
+  .sd-badge{position:absolute;top:10px;right:10px;display:flex;flex-direction:column;align-items:flex-end;gap:5px;}
+  .sd-badge-pill{padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;backdrop-filter:blur(4px);}
+  .sd-product-body{padding:16px;}
+  .sd-product-name{font-size:14px;font-weight:700;color:var(--text);margin:0 0 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-0.2px;}
+  .sd-product-desc{font-size:12px;color:var(--muted);margin:0 0 14px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.5;}
+  .sd-product-price-row{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:14px;}
+  .sd-product-price{font-size:18px;font-weight:800;color:var(--text);letter-spacing:-0.5px;}
+  .sd-product-compare{font-size:11px;color:var(--muted);text-decoration:line-through;margin-top:1px;}
+  .sd-product-stock-label{font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;text-align:right;}
+  .sd-product-stock-val{font-size:15px;font-weight:800;text-align:right;}
+  .sd-product-actions{display:flex;gap:8px;}
+  .sd-action-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px;border-radius:9px;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:all 0.15s;font-family:'Sora',sans-serif;}
+  .sd-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 24px;background:var(--card);border-radius:20px;border:1.5px dashed var(--border);text-align:center;}
+  .sd-empty-icon{width:72px;height:72px;background:var(--hover);border-radius:20px;display:flex;align-items:center;justify-content:center;margin-bottom:20px;color:var(--muted);}
+  .sd-empty-title{font-size:18px;font-weight:700;color:var(--text);margin:0 0 8px;}
+  .sd-empty-sub{font-size:13px;color:var(--muted);margin:0 0 24px;}
+  .sd-loader{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);}
+  .sd-spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--text);border-radius:50%;animation:spin 0.7s linear infinite;}
+  .sd-status-page{min-height:100vh;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px;}
+  .sd-status-card{background:var(--card);border-radius:24px;padding:48px 40px;max-width:440px;width:100%;text-align:center;border:1px solid var(--border);box-shadow:0 16px 48px rgba(0,0,0,0.08);}
+  .sd-status-icon{width:72px;height:72px;border-radius:22px;display:flex;align-items:center;justify-content:center;margin:0 auto 24px;}
+  .sd-status-title{font-size:22px;font-weight:800;color:var(--text);margin:0 0 12px;letter-spacing:-0.5px;}
+  .sd-status-body{font-size:13px;color:var(--muted);line-height:1.7;margin:0 0 20px;}
+  .sd-status-box{border-radius:12px;padding:14px 16px;text-align:left;margin-bottom:24px;}
 `;
 
 interface Product {
@@ -271,27 +339,11 @@ interface OrdersCache {
   timestamp: number;
 }
 
-// ─── Stat card ────────────────────────────────────────────────────────────────
-function StatCard({ icon: Icon, label, value, iconBg, iconColor, delay = 0 }) {
-  return (
-    <div className="sd-stat" style={{ animationDelay: `${delay}ms` }}>
-      <div
-        className="sd-stat-icon"
-        style={{ background: iconBg, color: iconColor }}
-      >
-        <Icon size={22} />
-      </div>
-      <div>
-        <p className="sd-stat-label">{label}</p>
-        <p className="sd-stat-value">{value}</p>
-      </div>
-    </div>
+function ProductCard({ product, onEdit, onDelete, delay = 0 }: any) {
+  const stock = product.variants.reduce(
+    (s: number, v: any) => s + v.quantity,
+    0,
   );
-}
-
-// ─── Product card ─────────────────────────────────────────────────────────────
-function ProductCard({ product, onEdit, onDelete, delay = 0 }) {
-  const stock = product.variants.reduce((s, v) => s + v.quantity, 0);
   const oos = stock === 0;
   return (
     <div className="sd-product-card" style={{ animationDelay: `${delay}ms` }}>
@@ -379,7 +431,6 @@ function ProductCard({ product, onEdit, onDelete, delay = 0 }) {
   );
 }
 
-// ─── Main Dashboard ───────────────────────────────────────────────────────────
 export default function SellerDashboard() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
@@ -402,166 +453,145 @@ export default function SellerDashboard() {
   useEffect(() => {
     checkAuth();
   }, []);
-
   useEffect(() => {
-    const preloadAllOrders = async () => {
+    if (isLoading || !user) return;
+    (async () => {
       try {
-        const userStr = localStorage.getItem("yog_user");
-        if (!userStr) return;
-        const [all, pending, confirmed, shipped, delivered] = await Promise.all(
-          [
-            fetch("/api/seller/orders", {
-              headers: { "x-user-data": userStr },
-            }).then((r) => r.json()),
-            fetch("/api/seller/orders?status=pending", {
-              headers: { "x-user-data": userStr },
-            }).then((r) => r.json()),
-            fetch("/api/seller/orders?status=confirmed", {
-              headers: { "x-user-data": userStr },
-            }).then((r) => r.json()),
-            fetch("/api/seller/orders?status=shipped", {
-              headers: { "x-user-data": userStr },
-            }).then((r) => r.json()),
-            fetch("/api/seller/orders?status=delivered", {
-              headers: { "x-user-data": userStr },
-            }).then((r) => r.json()),
-          ],
-        );
+        const u = localStorage.getItem("yog_user") || "";
+        const [all, p, c, s, d] = await Promise.all([
+          fetch("/api/seller/orders", { headers: { "x-user-data": u } }).then(
+            (r) => r.json(),
+          ),
+          fetch("/api/seller/orders?status=pending", {
+            headers: { "x-user-data": u },
+          }).then((r) => r.json()),
+          fetch("/api/seller/orders?status=confirmed", {
+            headers: { "x-user-data": u },
+          }).then((r) => r.json()),
+          fetch("/api/seller/orders?status=shipped", {
+            headers: { "x-user-data": u },
+          }).then((r) => r.json()),
+          fetch("/api/seller/orders?status=delivered", {
+            headers: { "x-user-data": u },
+          }).then((r) => r.json()),
+        ]);
         setOrdersCache({
           all: all.orders || [],
-          pending: pending.orders || [],
-          confirmed: confirmed.orders || [],
-          shipped: shipped.orders || [],
-          delivered: delivered.orders || [],
+          pending: p.orders || [],
+          confirmed: c.orders || [],
+          shipped: s.orders || [],
+          delivered: d.orders || [],
           timestamp: Date.now(),
         });
         setOrderStats(all.stats);
-      } catch (err) {
-        console.error("Error preloading orders:", err);
-      }
-    };
-    if (!isLoading && user) preloadAllOrders();
+      } catch {}
+    })();
   }, [isLoading, user]);
 
   const checkAuth = async () => {
-    const userStr = localStorage.getItem("yog_user");
-    if (!userStr) {
+    const u = localStorage.getItem("yog_user");
+    if (!u) {
       router.push("/login");
       return;
     }
-    const userData = JSON.parse(userStr);
-    setUser(userData);
-    if (userData.role !== "SELLER" && userData.role !== "ADMIN") {
+    const data = JSON.parse(u);
+    setUser(data);
+    if (data.role !== "SELLER" && data.role !== "ADMIN") {
       router.push("/seller/apply");
       return;
     }
-    if (userData.role === "ADMIN") {
+    if (data.role === "ADMIN") {
       setIsLoading(false);
-      await fetchProducts(userStr);
+      await fetchProducts(u);
       return;
     }
-    await checkSellerStatus(userStr);
-    await fetchProducts(userStr);
+    await checkSellerStatus(u);
+    await fetchProducts(u);
   };
-
-  const checkSellerStatus = async (userStr: string) => {
+  const checkSellerStatus = async (u: string) => {
     try {
-      const res = await fetch("/api/seller/status", {
-        headers: { "x-user-data": userStr },
+      const r = await fetch("/api/seller/status", {
+        headers: { "x-user-data": u },
       });
-      setSellerStatus(await res.json());
-      setIsLoading(false);
-    } catch {
-      setIsLoading(false);
-    }
+      setSellerStatus(await r.json());
+    } catch {}
+    setIsLoading(false);
   };
-
-  const fetchProducts = async (userStr?: string) => {
+  const fetchProducts = async (u?: string) => {
     try {
-      const res = await fetch("/api/products", {
-        headers: {
-          "x-user-data": userStr || localStorage.getItem("yog_user") || "",
-        },
+      const r = await fetch("/api/products", {
+        headers: { "x-user-data": u || localStorage.getItem("yog_user") || "" },
       });
-      const data = await res.json();
-      if (res.ok) setProducts(data.products);
-    } catch (err) {
-      console.error(err);
-    }
+      const d = await r.json();
+      if (r.ok) setProducts(d.products);
+    } catch {}
   };
-
-  const handleDeleteProduct = async (productId: string) => {
+  const handleDeleteProduct = async (id: string) => {
     if (!confirm("Delete this product? This can't be undone.")) return;
     try {
-      const userStr = localStorage.getItem("yog_user");
-      const res = await fetch(`/api/products/${productId}`, {
+      const u = localStorage.getItem("yog_user") || "";
+      const r = await fetch(`/api/products/${id}`, {
         method: "DELETE",
-        headers: { "x-user-data": userStr || "" },
+        headers: { "x-user-data": u },
       });
-      if (res.ok) {
+      if (r.ok) {
         alert("Product deleted!");
         fetchProducts();
       } else {
-        const d = await res.json();
+        const d = await r.json();
         alert(d.error || "Failed");
       }
     } catch {
-      alert("Failed to delete product");
+      alert("Failed to delete");
     }
   };
-
   const refreshOrdersCache = async () => {
-    const userStr = localStorage.getItem("yog_user");
-    if (!userStr) return;
-    const [all, pending, confirmed, shipped, delivered] = await Promise.all([
-      fetch("/api/seller/orders", { headers: { "x-user-data": userStr } }).then(
-        (r) => r.json(),
+    const u = localStorage.getItem("yog_user") || "";
+    const [all, p, c, s, d] = await Promise.all([
+      fetch("/api/seller/orders", { headers: { "x-user-data": u } }).then((r) =>
+        r.json(),
       ),
       fetch("/api/seller/orders?status=pending", {
-        headers: { "x-user-data": userStr },
+        headers: { "x-user-data": u },
       }).then((r) => r.json()),
       fetch("/api/seller/orders?status=confirmed", {
-        headers: { "x-user-data": userStr },
+        headers: { "x-user-data": u },
       }).then((r) => r.json()),
       fetch("/api/seller/orders?status=shipped", {
-        headers: { "x-user-data": userStr },
+        headers: { "x-user-data": u },
       }).then((r) => r.json()),
       fetch("/api/seller/orders?status=delivered", {
-        headers: { "x-user-data": userStr },
+        headers: { "x-user-data": u },
       }).then((r) => r.json()),
     ]);
     setOrdersCache({
       all: all.orders || [],
-      pending: pending.orders || [],
-      confirmed: confirmed.orders || [],
-      shipped: shipped.orders || [],
-      delivered: delivered.orders || [],
+      pending: p.orders || [],
+      confirmed: c.orders || [],
+      shipped: s.orders || [],
+      delivered: d.orders || [],
       timestamp: Date.now(),
     });
     setOrderStats(all.stats);
   };
 
-  // ── Loading ──────────────────────────────────────────────────────────────────
-  if (isLoading) {
+  if (isLoading)
     return (
       <>
-        <style>{GLOBAL_CSS}</style>
+        <style>{CSS}</style>
         <div className="sd-loader">
           <div className="sd-spinner" />
         </div>
       </>
     );
-  }
-
-  // ── Pending approval ─────────────────────────────────────────────────────────
   if (
     sellerStatus?.seller &&
     !sellerStatus.seller.approved &&
     !sellerStatus.seller.rejectionReason
-  ) {
+  )
     return (
       <>
-        <style>{GLOBAL_CSS}</style>
+        <style>{CSS}</style>
         <Navbar />
         <div className="sd-status-page">
           <div className="sd-status-card">
@@ -589,13 +619,10 @@ export default function SellerDashboard() {
         </div>
       </>
     );
-  }
-
-  // ── Rejected ─────────────────────────────────────────────────────────────────
-  if (sellerStatus?.seller?.rejectionReason) {
+  if (sellerStatus?.seller?.rejectionReason)
     return (
       <>
-        <style>{GLOBAL_CSS}</style>
+        <style>{CSS}</style>
         <Navbar />
         <div className="sd-status-page">
           <div className="sd-status-card">
@@ -635,9 +662,7 @@ export default function SellerDashboard() {
         </div>
       </>
     );
-  }
 
-  // ── Dashboard ─────────────────────────────────────────────────────────────────
   const totalStock = products.reduce(
     (s, p) => s + p.variants.reduce((vs, v) => vs + v.quantity, 0),
     0,
@@ -645,46 +670,43 @@ export default function SellerDashboard() {
   const publishedCount = products.filter(
     (p) => p.status === "PUBLISHED",
   ).length;
-
   const statCards = [
     {
-      icon: PackageIco,
+      icon: <AnimPackage size={22} color="#2563eb" />,
       label: "Total Products",
       value: products.length,
       iconBg: "#eff6ff",
-      iconColor: "#2563eb",
+      delay: 0,
     },
     {
-      icon: BagIco,
+      icon: <AnimBag size={22} color="#16a34a" />,
       label: "Total Orders",
       value: orderStats?.total || 0,
       iconBg: "#f0fdf4",
-      iconColor: "#16a34a",
+      delay: 80,
     },
     {
-      icon: DollarIco,
+      icon: <AnimCoin size={22} color="#7c3aed" />,
       label: "Revenue (ETB)",
       value: (orderStats?.revenue || 0).toLocaleString(),
       iconBg: "#faf5ff",
-      iconColor: "#7c3aed",
+      delay: 160,
     },
     {
-      icon: TrendIco,
+      icon: <AnimUsers size={22} color="#d97706" />,
       label: "Pending Orders",
       value: orderStats?.pending || 0,
       iconBg: "#fff7ed",
-      iconColor: "#d97706",
+      delay: 240,
     },
   ];
 
   return (
     <>
-      <style>{GLOBAL_CSS}</style>
+      <style>{CSS}</style>
       <Navbar />
-
       <div className="sd-page">
         <div className="sd-wrap">
-          {/* ── Header ── */}
           <div className="sd-header">
             <div>
               <div
@@ -717,14 +739,30 @@ export default function SellerDashboard() {
             </div>
           </div>
 
-          {/* ── Stats ── */}
           <div className="sd-stats">
-            {statCards.map((s, i) => (
-              <StatCard key={s.label} {...s} delay={i * 60} />
+            {statCards.map((s) => (
+              <motion.div
+                key={s.label}
+                className="sd-stat"
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{
+                  delay: s.delay / 1000,
+                  duration: 0.3,
+                  ease: [0.22, 1, 0.36, 1],
+                }}
+              >
+                <div className="sd-stat-icon" style={{ background: s.iconBg }}>
+                  {s.icon}
+                </div>
+                <div>
+                  <p className="sd-stat-label">{s.label}</p>
+                  <p className="sd-stat-value">{s.value}</p>
+                </div>
+              </motion.div>
             ))}
           </div>
 
-          {/* ── Tabs ── */}
           <div className="sd-tabs">
             <button
               className={`sd-tab ${activeTab === "products" ? "active" : ""}`}
@@ -741,10 +779,8 @@ export default function SellerDashboard() {
             </button>
           </div>
 
-          {/* ── Products tab ── */}
           {activeTab === "products" && (
             <>
-              {/* Toolbar */}
               <div className="sd-toolbar">
                 <div className="sd-toolbar-meta">
                   <div className="sd-meta-chip">
@@ -761,25 +797,20 @@ export default function SellerDashboard() {
                     />
                     {products.length - publishedCount} Drafts
                   </div>
-                  <div className="sd-meta-chip" style={{ display: "flex" }}>
-                    <PackageIco
-                      size={12}
-                      style={{ marginRight: 4, color: "var(--muted)" }}
-                    />
-                    {totalStock} in stock
+                  <div className="sd-meta-chip">
+                    <PkgStatIco size={12} />
+                    &nbsp;{totalStock} in stock
                   </div>
                 </div>
               </div>
-
-              {/* Grid */}
               {products.length > 0 ? (
                 <div className="sd-grid">
-                  {products.map((product, i) => (
+                  {products.map((p, i) => (
                     <ProductCard
-                      key={product.id}
-                      product={product}
+                      key={p.id}
+                      product={p}
                       delay={i * 40}
-                      onEdit={(p) => setEditingProduct(p)}
+                      onEdit={(p: Product) => setEditingProduct(p)}
                       onDelete={handleDeleteProduct}
                     />
                   ))}
@@ -787,7 +818,7 @@ export default function SellerDashboard() {
               ) : (
                 <div className="sd-empty">
                   <div className="sd-empty-icon">
-                    <PackageIco size={32} />
+                    <PkgStatIco size={32} />
                   </div>
                   <h3 className="sd-empty-title">No products yet</h3>
                   <p className="sd-empty-sub">
@@ -804,7 +835,6 @@ export default function SellerDashboard() {
             </>
           )}
 
-          {/* ── Orders tab ── */}
           {activeTab === "orders" && (
             <OrdersTab
               isActive={activeTab === "orders"}
@@ -815,7 +845,6 @@ export default function SellerDashboard() {
         </div>
       </div>
 
-      {/* ── Add modal ── */}
       {showAddModal && (
         <AddProductForm
           onClose={() => setShowAddModal(false)}
@@ -825,8 +854,6 @@ export default function SellerDashboard() {
           }}
         />
       )}
-
-      {/* ── Edit modal ── */}
       {editingProduct && (
         <EditProductForm
           product={editingProduct}
