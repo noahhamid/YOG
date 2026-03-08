@@ -299,7 +299,7 @@ export default function OrderModal({
   return (
     <>
       <style>{CSS}</style>
-      <div className="om-backdrop" onClick={onClose}>
+      <div className="om-backdrop " onClick={onClose}>
         <div className="om-modal" onClick={(e) => e.stopPropagation()}>
           <div className="om-header">
             <h2 className="om-title">Place Order</h2>

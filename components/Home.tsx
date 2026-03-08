@@ -1,257 +1,355 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+
+// Only keyframes stay here — Tailwind can't generate these
+const KEYFRAMES = `
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&display=swap');
+
+  * { font-family: 'Sora', sans-serif; }
+
+  @keyframes hm-grain {
+    0%,100%{transform:translate(0,0)} 20%{transform:translate(-1px,2px)}
+    40%{transform:translate(2px,-1px)} 60%{transform:translate(-2px,1px)} 80%{transform:translate(1px,-2px)}
+  }
+  @keyframes hm-marquee { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+  @keyframes hm-word-in { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
+
+  .anim-grain    { animation: hm-grain 0.5s steps(1) infinite; }
+  .anim-marquee  { animation: hm-marquee 28s linear infinite; }
+  .anim-word     { animation: hm-word-in 0.5s cubic-bezier(0.16,1,0.3,1) forwards; }
+
+  .frame-transition { transition: all 0.72s cubic-bezier(0.4,0,0.2,1); }
+`;
+
+const ChevLeft = () => (
+  <svg
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <polyline points="15 18 9 12 15 6" />
+  </svg>
+);
+const ChevRight = () => (
+  <svg
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <polyline points="9 18 15 12 9 6" />
+  </svg>
+);
+const ArrowIco = () => (
+  <svg
+    width="13"
+    height="13"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <line x1="5" y1="12" x2="19" y2="12" />
+    <polyline points="12 5 19 12 12 19" />
+  </svg>
+);
+
+const IMAGES = [
+  "https://i.pinimg.com/736x/20/c6/59/20c65924540dfb04f838becaa011024f.jpg",
+  "https://i.pinimg.com/736x/60/0a/dd/600add9cd7c693096eb36e0f4816fb3f.jpg",
+  "https://i.pinimg.com/736x/ab/bb/f3/abbbf3e25662109c77967649cff0f65e.jpg",
+  "https://i.pinimg.com/1200x/e9/3a/72/e93a72d23920a6cda792be63b7df8879.jpg",
+  "https://i.pinimg.com/736x/9e/08/02/9e080294c3e98b72af065936d7354819.jpg",
+];
+
+const MARQUEE = [
+  "Free shipping above 500 ETB",
+  "New drops every week",
+  "Verified Ethiopian sellers",
+  "Secure checkout",
+  "500+ styles available",
+  "Free shipping above 500 ETB",
+  "New drops every week",
+  "Verified Ethiopian sellers",
+  "Secure checkout",
+  "500+ styles available",
+];
+
+const HEADLINE = ["Dress", "for every", "moment."];
 
 export default function Home() {
-  const [animationStage, setAnimationStage] = useState(0);
-  const [centerIndex, setCenterIndex] = useState(2); // Start with middle image (index 2)
+  const [stage, setStage] = useState(0);
+  const [center, setCenter] = useState(2);
 
   useEffect(() => {
-    // Stage 0: Initial load with big middle image (0-500ms)
-    const timer1 = setTimeout(() => setAnimationStage(1), 500);
-
-    // Stage 1: Middle image scales down AND side images start sliding in (500-1500ms)
-    const timer2 = setTimeout(() => setAnimationStage(2), 1500);
-
-    // Stage 2: Text appears word by word (1500ms+)
-
+    const t1 = setTimeout(() => setStage(1), 500);
+    const t2 = setTimeout(() => setStage(2), 1400);
     return () => {
-      clearTimeout(timer1);
-      clearTimeout(timer2);
+      clearTimeout(t1);
+      clearTimeout(t2);
     };
   }, []);
 
-  // Auto-slide effect - starts after animation completes
   useEffect(() => {
-    if (animationStage < 2) return; // Don't auto-slide until animation is done
+    if (stage < 2) return;
+    const iv = setInterval(
+      () => setCenter((p) => (p + 1) % IMAGES.length),
+      3500,
+    );
+    return () => clearInterval(iv);
+  }, [stage, center]);
 
-    const autoSlideInterval = setInterval(() => {
-      setCenterIndex((prev) => (prev === demoImages.length - 1 ? 0 : prev + 1));
-    }, 3500); // Slide every 3.5 seconds
+  const prev = () => setCenter((p) => (p === 0 ? IMAGES.length - 1 : p - 1));
+  const next = () => setCenter((p) => (p === IMAGES.length - 1 ? 0 : p + 1));
 
-    return () => clearInterval(autoSlideInterval);
-  }, [animationStage, centerIndex]); // Reset timer when centerIndex changes (manual navigation)
-
-  // High-quality fashion/workout images
-  const demoImages = [
-    "https://i.pinimg.com/736x/20/c6/59/20c65924540dfb04f838becaa011024f.jpg",
-    "https://i.pinimg.com/736x/60/0a/dd/600add9cd7c693096eb36e0f4816fb3f.jpg",
-    "https://i.pinimg.com/736x/ab/bb/f3/abbbf3e25662109c77967649cff0f65e.jpg",
-    "https://i.pinimg.com/1200x/e9/3a/72/e93a72d23920a6cda792be63b7df8879.jpg",
-    "https://i.pinimg.com/736x/9e/08/02/9e080294c3e98b72af065936d7354819.jpg",
-  ];
-
-  const handlePrev = () => {
-    setCenterIndex((prev) => (prev === 0 ? demoImages.length - 1 : prev - 1));
+  const getPos = (idx: number) => {
+    let d = idx - center;
+    if (d > 2) d -= IMAGES.length;
+    if (d < -2) d += IMAGES.length;
+    return d;
   };
 
-  const handleNext = () => {
-    setCenterIndex((prev) => (prev === demoImages.length - 1 ? 0 : prev + 1));
-  };
-
-  // Calculate position of each image relative to center
-  const getImagePosition = (imageIndex: number) => {
-    const diff = imageIndex - centerIndex;
-    if (diff > 2) return diff - demoImages.length;
-    if (diff < -2) return diff + demoImages.length;
-    return diff;
-  };
-
-  // Split text into words for animation
-  const words = "gear up every season every workout".split(" ");
+  const fadeUp = (delay: number) => ({
+    opacity: stage >= 2 ? 1 : 0,
+    transform: stage >= 2 ? "translateY(0)" : "translateY(12px)",
+    transition: `all 0.5s ease ${delay}s`,
+  });
 
   return (
-    <div className="flex flex-col items-center overflow-hidden pt-25">
-      {/* Text Section - Hidden until stage 2 */}
-      <div className="flex flex-col items-center justify-center text-center">
-        <p
-          className="text-black font-light uppercase leading-[1.1] text-[68px] max-w-2/3 mx-auto"
-          style={{
-            fontFamily: "'Montserrat', 'Helvetica Neue', 'Arial', sans-serif",
-            letterSpacing: "0.08em",
-            fontWeight: 300,
-          }}
-        >
-          {words.map((word, index) => (
-            <span
-              key={index}
-              className="inline-block mr-4"
-              style={{
-                opacity: animationStage >= 2 ? 1 : 0,
-                transform:
-                  animationStage >= 2 ? "translateY(0)" : "translateY(50px)",
-                transition: "all 0.4s ease-out",
-                transitionDelay:
-                  animationStage >= 2 ? `${index * 0.08}s` : "0s",
-              }}
-            >
-              {word}
-            </span>
-          ))}
-        </p>
+    <>
+      <style>{KEYFRAMES}</style>
 
-        {/* Buttons - Fade in after text with same speed as arrow buttons */}
+      {/* Page — locked to viewport */}
+      <div className="flex flex-col items-center h-screen max-h-screen overflow-hidden bg-[#f6f5f3] pt-10">
+        {/* Grain overlay */}
         <div
-          className="mt-5 flex flex-col sm:flex-row justify-center gap-4"
+          className="fixed inset-0 pointer-events-none z-0 opacity-35 anim-grain"
           style={{
-            opacity: animationStage >= 2 ? 1 : 0,
-            transform:
-              animationStage >= 2 ? "translateY(0)" : "translateY(100px)",
-            transition: "all 0.5s ease-out",
-            transitionDelay: animationStage >= 2 ? "0.4s" : "0s",
+            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E")`,
+            backgroundSize: "200px 200px",
           }}
-        >
-          <a
-            href="/shop"
-            className="px-5 py-[13px] bg-black text-white text-[12px] font-semibold uppercase rounded-full hover:bg-gray-800 transition-colors"
-          >
-            Shop Now
-          </a>
-          <a
-            href="/explore"
-            className="px-5 py-[13px] border bg-white border-none text-black text-[12px] font-semibold uppercase rounded-full hover:bg-gray-100 transition-colors"
-          >
-            Explore More
-          </a>
+        />
+
+        {/* Marquee */}
+        <div className="w-full overflow-hidden border-b border-[#e8e4de] py-2 bg-[#f6f5f3] relative z-10 shrink-0">
+          <div className="flex w-max anim-marquee">
+            {MARQUEE.map((item, i) => (
+              <div
+                key={i}
+                className="flex items-center gap-4 px-7 text-[11px] font-bold text-[#9e9890] uppercase tracking-[1.4px] whitespace-nowrap"
+              >
+                <span className="w-1 h-1 rounded-full bg-[#e8e4de] shrink-0" />
+                {item}
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* Showcase Section with Curved Layout */}
-      <div className="w-full flex-shrink-0 pt-3 overflow-hidden relative">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="relative" style={{ height: "400px" }}>
-            <div className="flex justify-center items-end h-full absolute bottom-0 left-0 right-0">
-              {demoImages.map((url, imageIndex) => {
-                const position = getImagePosition(imageIndex);
-                const isMiddle = position === 0;
-                const isVisible = Math.abs(position) <= 2;
+        {/* Text block */}
+        <div className="flex flex-col items-center text-center pt-10 pb-[5px] px-6 relative z-10 w-full max-w-[900px] shrink-0 border-b border-[#e8e4de]">
+          {/* Eyebrow */}
+          <div
+            className="flex items-center gap-2.5 mb-2.5"
+            style={fadeUp(0.05)}
+          >
+            <div className="w-7 h-[1.5px] bg-[#9e9890]" />
+            <span className="text-[11px] font-bold text-[#9e9890] uppercase tracking-[1.2px]">
+              Yog Fashion · Ethiopia
+            </span>
+            <div className="w-7 h-[1.5px] bg-[#9e9890]" />
+          </div>
 
-                // Default sizing based on position - SYMMETRIC for outer images
-                const distanceFromMiddle = Math.abs(position);
-                const heightPercentage = 1 - distanceFromMiddle * 0.05;
-                const maxHeight = 350;
-                const imageHeight = maxHeight * heightPercentage;
+          {/* Headline */}
+          <h1 className="text-[clamp(44px,5.5vw,80px)] font-extrabold text-[#1a1714] leading-none tracking-[-3px] mb-2.5 whitespace-nowrap">
+            {HEADLINE.map((line, li) => (
+              <span
+                key={li}
+                style={{ marginRight: li < HEADLINE.length - 1 ? "0.22em" : 0 }}
+              >
+                {line.split(" ").map((word, wi, arr) => {
+                  const delay = stage >= 2 ? (li * 3 + wi) * 0.08 + 0.1 : 0;
+                  return (
+                    <span
+                      key={wi}
+                      style={{
+                        marginRight: wi < arr.length - 1 ? "0.22em" : 0,
+                      }}
+                    >
+                      <span
+                        className="inline-block opacity-0 anim-word"
+                        style={{
+                          animationDelay: `${delay}s`,
+                          animationPlayState: stage >= 2 ? "running" : "paused",
+                        }}
+                      >
+                        {li === 1 ? (
+                          <em className="not-italic text-[#9e9890] font-light tracking-[-2px]">
+                            {word}
+                          </em>
+                        ) : (
+                          word
+                        )}
+                      </span>
+                    </span>
+                  );
+                })}
+              </span>
+            ))}
+          </h1>
 
-                // Rotation based on position - SYMMETRIC
-                const maxRotation = 8;
-                const rotation = position * (maxRotation / 2);
+          {/* Sub */}
+          <p
+            className="text-[13px] text-[#9e9890] font-normal leading-relaxed max-w-[400px] mb-2.5"
+            style={fadeUp(0.55)}
+          >
+            Shop verified sellers across Ethiopia — streetwear, formal,
+            activewear and more, delivered to your door.
+          </p>
 
-                // Push down based on rotation - SYMMETRIC
-                const width = 275;
-                const pushDown =
-                  Math.abs(rotation) *
-                  (width / 10) *
-                  Math.sin((Math.abs(rotation) * Math.PI) / 180);
+          {/* Buttons */}
+          <div
+            className="flex gap-2.5 flex-wrap justify-center"
+            style={fadeUp(0.68)}
+          >
+            <a
+              href="/shop"
+              className="inline-flex items-center gap-1.5 px-[22px] py-[10px] bg-[#1a1714] text-white text-[12px] font-bold rounded-[11px] no-underline transition-all duration-200 hover:bg-[#333] hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(0,0,0,0.14)]"
+            >
+              Shop Now <ArrowIco />
+            </a>
+            <a
+              href="/explore"
+              className="inline-flex items-center gap-1.5 px-5 py-[10px] bg-transparent text-[#1a1714] text-[12px] font-bold border border-[#e8e4de] rounded-[11px] no-underline transition-all duration-200 hover:border-[#1a1714] hover:bg-white"
+            >
+              Explore More
+            </a>
+          </div>
+        </div>
 
-                // Animation logic
-                let scale = 1;
-                let translateX = `${position * 300}px`;
-                let translateY = `${pushDown}px`;
-                let opacity = isVisible ? 1 : 0;
-                let height = `${imageHeight}px`;
-                let widthStyle = "275px";
+        {/* Arc carousel — takes remaining height */}
+        <div className="w-full flex-1 min-h-0 overflow-visible relative z-10">
+          <div className="max-w-[1280px] mx-auto px-4 h-full">
+            <div className="relative h-full">
+              {/* Images */}
+              <div className="absolute inset-0 flex justify-center items-end">
+                {IMAGES.map((url, idx) => {
+                  const pos = getPos(idx);
+                  const absDist = Math.abs(pos);
+                  const isCenter = pos === 0;
+                  const visible = absDist <= 2;
 
-                if (isMiddle) {
-                  // Middle image: starts HUGE in both width and height to cover text area
-                  if (animationStage === 0) {
-                    widthStyle = "650px";
-                    height = "700px";
-                    translateY = "-450px";
-                    translateX = "0px";
-                    scale = 1;
-                  } else if (animationStage >= 1) {
-                    widthStyle = "300px";
-                    height = `${imageHeight}px`;
-                    translateY = `${pushDown}px`;
-                    translateX = "0px";
-                    scale = 1;
-                  }
-                } else {
-                  // Side images: start sliding in when middle image starts scaling down (stage 1)
-                  if (animationStage < 1) {
+                  const H = Math.round(window.innerHeight * 0.52);
+                  const imgH = H * (1 - absDist * 0.05);
+                  const W = isCenter
+                    ? Math.round(window.innerHeight * 0.38)
+                    : Math.round(window.innerHeight * 0.34);
+                  const rot = pos * 4;
+                  const pushDn =
+                    Math.abs(rot) *
+                    (W / 10) *
+                    Math.sin((Math.abs(rot) * Math.PI) / 180);
+                  const gapX = 270;
+
+                  let tX = `${pos * gapX}px`;
+                  let tY = `${pushDn}px`;
+                  let imgW = `${W}px`;
+                  let imgHstr = `${imgH}px`;
+                  let opacity = visible ? 1 : 0;
+
+                  if (isCenter && stage === 0) {
+                    imgW = `${Math.round(window.innerHeight * 0.56)}px`;
+                    imgHstr = `${Math.round(window.innerHeight * 0.7)}px`;
+                    tY = `${-Math.round(window.innerHeight * 0.42)}px`;
+                  } else if (!isCenter && stage < 1) {
                     opacity = 0;
-                    if (position < 0) {
-                      translateX = "-1000px";
-                    } else if (position > 0) {
-                      translateX = "1000px";
-                    }
+                    tX = pos < 0 ? "-900px" : "900px";
                   }
-                }
 
-                const transform = `translateX(${translateX}) translateY(${translateY}) rotate(${rotation}deg) scale(${scale})`;
+                  return (
+                    <div
+                      key={idx}
+                      className="shrink-0 overflow-hidden absolute left-1/2 shadow-[0_10px_36px_rgba(0,0,0,0.13)] frame-transition"
+                      style={{
+                        width: imgW,
+                        height: imgHstr,
+                        borderRadius: "9999px 9999px 0 0",
+                        transform: `translateX(calc(-50% + ${tX})) translateY(${tY}) rotate(${rot}deg)`,
+                        transformOrigin: "bottom center",
+                        opacity,
+                        pointerEvents: visible ? "auto" : "none",
+                        cursor: isCenter ? "default" : "pointer",
+                      }}
+                      onClick={() => !isCenter && setCenter(idx)}
+                    >
+                      <img
+                        src={url}
+                        alt={`Look ${idx + 1}`}
+                        className="w-full h-full object-cover object-top block"
+                      />
+                    </div>
+                  );
+                })}
+              </div>
 
-                return (
-                  <div
-                    key={imageIndex}
-                    className="flex-shrink-0 overflow-hidden shadow-lg absolute left-1/2 -translate-x-1/2"
+              {/* Arrows */}
+              {(["prev", "next"] as const).map((dir) => (
+                <button
+                  key={dir}
+                  onClick={dir === "prev" ? prev : next}
+                  aria-label={dir}
+                  className={`absolute bottom-4 z-30 w-[46px] h-[46px] rounded-full flex items-center justify-center text-[#d7d4d4] border border-white/10 backdrop-blur-md cursor-pointer hover:text-white ${dir === "prev" ? "left-[100px]" : "right-[100px]"}`}
+                  style={{
+                    background: "rgba(26,23,20,0.82)",
+                    transform:
+                      stage >= 2
+                        ? `rotate(${dir === "prev" ? -8 : 8}deg) translateY(0)`
+                        : `rotate(${dir === "prev" ? -8 : 8}deg) translateY(100px)`,
+                    opacity: stage >= 2 ? 1 : 0,
+                    transition:
+                      "transform 0.4s ease 0.6s, opacity 0.4s ease 0.6s, background 0.2s, color 0.2s",
+                  }}
+                >
+                  {dir === "prev" ? <ChevLeft /> : <ChevRight />}
+                </button>
+              ))}
+
+              {/* Dots */}
+              <div
+                className="absolute bottom-[22px] left-1/2 -translate-x-1/2 flex gap-[7px] z-30"
+                style={{
+                  opacity: stage >= 2 ? 1 : 0,
+                  transition: "opacity 0.4s ease 0.7s",
+                }}
+              >
+                {IMAGES.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setCenter(i)}
+                    className="h-[6px] rounded-[3px] border-none cursor-pointer transition-all duration-300"
                     style={{
-                      width: widthStyle,
-                      height: height,
-                      borderRadius: "9999px 9999px 0 0",
-                      transform: transform,
-                      transformOrigin: "bottom center",
-                      opacity: opacity,
-                      transition: "all 0.8s ease-in-out",
-                      pointerEvents: isVisible ? "auto" : "none",
+                      width: i === center ? "20px" : "6px",
+                      background:
+                        i === center ? "#1a1714" : "rgba(26,23,20,0.18)",
                     }}
-                  >
-                    <img
-                      src={url}
-                      alt={`Showcase ${imageIndex}`}
-                      className="w-full h-full object-cover object-top"
-                    />
-                  </div>
-                );
-              })}
+                  />
+                ))}
+              </div>
             </div>
-
-            {/* Left Arrow - Animated from bottom */}
-            <button
-              onClick={handlePrev}
-              className="absolute left-35 bottom-12 z-30 bg-[#000000c5] hover:bg-[#000000db] p-4 rounded-full transition-all border border-black/20 cursor-pointer"
-              style={{
-                transform:
-                  animationStage >= 2
-                    ? "rotate(-8deg) translateY(0)"
-                    : "rotate(-8deg) translateY(100px)",
-                opacity: animationStage >= 2 ? 1 : 0,
-                transition: "all 0.3s ease-out",
-                transitionDelay: animationStage >= 2 ? "0.6s" : "0s",
-              }}
-              aria-label="Previous image"
-            >
-              <ChevronLeft
-                size={32}
-                strokeWidth={2.5}
-                className="text-[#d7d4d4]"
-              />
-            </button>
-
-            {/* Right Arrow - Animated from bottom */}
-            <button
-              onClick={handleNext}
-              className="absolute right-30 bottom-12 z-30 bg-[#000000c5] hover:bg-[#000000db] p-4 rounded-full transition-all border border-black/20 cursor-pointer"
-              style={{
-                transform:
-                  animationStage >= 2
-                    ? "rotate(8deg) translateY(0)"
-                    : "rotate(8deg) translateY(100px)",
-                opacity: animationStage >= 2 ? 1 : 0,
-                transition: "all 0.3s ease-out",
-                transitionDelay: animationStage >= 2 ? "0.6s" : "0s",
-              }}
-              aria-label="Next image"
-            >
-              <ChevronRight
-                size={32}
-                strokeWidth={2.5}
-                className="text-[#d7d4d4]"
-              />
-            </button>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

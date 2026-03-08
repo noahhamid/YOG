@@ -1,36 +1,320 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import { useRouter } from "next/navigation";
-import {
-  Store,
-  User,
-  Phone,
-  Instagram,
-  MapPin,
-  Shirt,
-  Mail,
-  Upload,
-  CheckCircle2,
-  AlertCircle,
-  FileText,
-  Building2,
-  ArrowRight,
-  ShoppingBag,
-  TrendingUp,
-  Zap,
-  Award,
-  DollarSign,
-  Users,
-  Sparkles,
-} from "lucide-react";
 
+// ── Icons ──────────────────────────────────────────────────────────────────
+const StoreIcon = () => (
+  <svg
+    width="14"
+    height="14"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+    <polyline points="9 22 9 12 15 12 15 22" />
+  </svg>
+);
+const UserIcon = () => (
+  <svg
+    width="14"
+    height="14"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+    <circle cx="12" cy="7" r="4" />
+  </svg>
+);
+const PhoneIcon = () => (
+  <svg
+    width="14"
+    height="14"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.56 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.29 6.29l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" />
+  </svg>
+);
+const MailIcon = () => (
+  <svg
+    width="14"
+    height="14"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+    <polyline points="22,6 12,13 2,6" />
+  </svg>
+);
+const InstagramIcon = () => (
+  <svg
+    width="14"
+    height="14"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+    <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+  </svg>
+);
+const MapPinIcon = () => (
+  <svg
+    width="14"
+    height="14"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+    <circle cx="12" cy="10" r="3" />
+  </svg>
+);
+const ShirtIcon = () => (
+  <svg
+    width="14"
+    height="14"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.57a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.57a2 2 0 0 0-1.34-2.23z" />
+  </svg>
+);
+const BriefcaseIcon = () => (
+  <svg
+    width="14"
+    height="14"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+  </svg>
+);
+const ClockIcon = () => (
+  <svg
+    width="14"
+    height="14"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="12" cy="12" r="10" />
+    <polyline points="12 6 12 12 16 14" />
+  </svg>
+);
+const TextIcon = () => (
+  <svg
+    width="14"
+    height="14"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <line x1="17" y1="10" x2="3" y2="10" />
+    <line x1="21" y1="6" x2="3" y2="6" />
+    <line x1="21" y1="14" x2="3" y2="14" />
+    <line x1="17" y1="18" x2="3" y2="18" />
+  </svg>
+);
+const CheckIcon = () => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <polyline points="20 6 9 17 4 12" />
+  </svg>
+);
+const AlertIcon = () => (
+  <svg
+    width="12"
+    height="12"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="12" cy="12" r="10" />
+    <line x1="12" y1="8" x2="12" y2="12" />
+    <line x1="12" y1="16" x2="12.01" y2="16" />
+  </svg>
+);
+const ArrowIcon = () => (
+  <svg
+    width="14"
+    height="14"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <line x1="5" y1="12" x2="19" y2="12" />
+    <polyline points="12 5 19 12 12 19" />
+  </svg>
+);
+const SparkIcon = () => (
+  <svg
+    width="13"
+    height="13"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M12 3L9.5 9.5 3 12l6.5 2.5L12 21l2.5-6.5L21 12l-6.5-2.5z" />
+  </svg>
+);
+const DollarIcon = () => (
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <line x1="12" y1="1" x2="12" y2="23" />
+    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+  </svg>
+);
+const ZapIcon = () => (
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+  </svg>
+);
+const BagIcon = () => (
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+    <line x1="3" y1="6" x2="21" y2="6" />
+    <path d="M16 10a4 4 0 0 1-8 0" />
+  </svg>
+);
+
+// ── Types ──────────────────────────────────────────────────────────────────
+const clothingTypes = [
+  "Streetwear",
+  "Casual Wear",
+  "Formal Wear",
+  "Athletic Wear",
+  "Traditional Wear",
+  "Accessories",
+  "Mixed Collection",
+];
+const businessTypes = [
+  "Individual Designer",
+  "Small Business",
+  "Established Brand",
+  "Wholesaler",
+];
+
+const inputClass = (err?: string) =>
+  `w-full px-4 py-3 rounded-[11px] text-[13px] font-medium text-[#1a1714] bg-white placeholder:text-[#c4c0bb] focus:outline-none transition-all ${
+    err ? "border-red-400" : "border-[#e8e4de] focus:border-[#1a1714]"
+  }`;
+
+const LabelRow = ({
+  icon,
+  label,
+  optional,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  optional?: boolean;
+}) => (
+  <label className="flex items-center gap-1.5 text-[11px] font-bold text-[#9e9890] uppercase tracking-[0.9px] mb-1.5">
+    <span className="text-[#b8b4ae]">{icon}</span>
+    {label}
+    {optional && (
+      <span className="font-normal normal-case tracking-normal text-[#c4c0bb] ml-1">
+        optional
+      </span>
+    )}
+  </label>
+);
+
+const ErrMsg = ({ msg }: { msg?: string }) =>
+  msg ? (
+    <p className="flex items-center gap-1 text-[11px] text-red-500 mt-1.5">
+      <AlertIcon />
+      {msg}
+    </p>
+  ) : null;
+
+// ── Main component ─────────────────────────────────────────────────────────
 export default function SellerOnboarding() {
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<any>(null);
-
   const [formData, setFormData] = useState({
     brandName: "",
     ownerName: "",
@@ -44,210 +328,149 @@ export default function SellerOnboarding() {
     description: "",
     termsAccepted: false,
   });
-
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
-  const clothingTypes = [
-    "Streetwear",
-    "Casual Wear",
-    "Formal Wear",
-    "Athletic Wear",
-    "Traditional Wear",
-    "Accessories",
-    "Mixed Collection",
-  ];
-
-  const businessTypes = [
-    "Individual Designer",
-    "Small Business",
-    "Established Brand",
-    "Wholesaler",
-  ];
-
-  // Load user data on mount
   useEffect(() => {
     const userStr = localStorage.getItem("yog_user");
     if (userStr) {
       const user = JSON.parse(userStr);
       setCurrentUser(user);
-      // Pre-fill email from logged-in user
-      setFormData((prev) => ({
-        ...prev,
-        email: user.email,
-        ownerName: user.name,
-      }));
+      setFormData((p) => ({ ...p, email: user.email, ownerName: user.name }));
     }
   }, []);
 
-  const handleInputChange = (
+  const set = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
     >,
   ) => {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
-
-    setFormData({
-      ...formData,
+    setFormData((p) => ({
+      ...p,
       [name]: type === "checkbox" ? checked : value,
-    });
-
-    if (errors[name]) {
-      setErrors({ ...errors, [name]: "" });
-    }
+    }));
+    if (errors[name]) setErrors((p) => ({ ...p, [name]: "" }));
   };
 
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {};
-
-    if (!formData.brandName.trim())
-      newErrors.brandName = "Brand name is required";
-    if (!formData.ownerName.trim())
-      newErrors.ownerName = "Owner name is required";
-    if (!formData.phone.trim()) newErrors.phone = "Phone number is required";
+  const validate = () => {
+    const e: Record<string, string> = {};
+    if (!formData.brandName.trim()) e.brandName = "Brand name is required";
+    if (!formData.ownerName.trim()) e.ownerName = "Owner name is required";
+    if (!formData.phone.trim()) e.phone = "Phone number is required";
     else if (!/^[0-9+\-\s()]+$/.test(formData.phone))
-      newErrors.phone = "Invalid phone number";
-
-    if (!formData.email.trim()) newErrors.email = "Email is required";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
-      newErrors.email = "Invalid email address";
-
-    if (!formData.location.trim()) newErrors.location = "Location is required";
-    if (!formData.clothingType)
-      newErrors.clothingType = "Please select clothing type";
-    if (!formData.businessType)
-      newErrors.businessType = "Please select business type";
-    if (!formData.termsAccepted)
-      newErrors.termsAccepted = "You must accept the terms";
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+      e.phone = "Invalid phone number";
+    if (!formData.email.trim()) e.email = "Email is required";
+    if (!formData.location.trim()) e.location = "Location is required";
+    if (!formData.clothingType) e.clothingType = "Select a clothing type";
+    if (!formData.businessType) e.businessType = "Select a business type";
+    if (!formData.termsAccepted) e.termsAccepted = "You must accept the terms";
+    setErrors(e);
+    return Object.keys(e).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!validateForm()) {
-      return;
-    }
-
-    // Check if user is logged in
+    if (!validate()) return;
     if (!currentUser) {
-      alert("Please sign in first");
       router.push("/login?redirect=/seller/apply");
       return;
     }
-
     setIsSubmitting(true);
-
     try {
-      const response = await fetch("/api/seller/apply", {
+      const res = await fetch("/api/seller/apply", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          brandName: formData.brandName,
-          ownerName: formData.ownerName,
-          phone: formData.phone,
-          email: formData.email,
-          instagram: formData.instagram,
-          location: formData.location,
-          clothingType: formData.clothingType,
-          businessType: formData.businessType,
-          experience: formData.experience,
-          description: formData.description,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
       });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        console.log("✅ Seller application submitted:", data);
-
-        // Update user in localStorage to SELLER role
-        const updatedUser = { ...currentUser, role: "SELLER" };
-        localStorage.setItem("yog_user", JSON.stringify(updatedUser));
-
+      const data = await res.json();
+      if (res.ok) {
+        localStorage.setItem(
+          "yog_user",
+          JSON.stringify({ ...currentUser, role: "SELLER" }),
+        );
         setSubmitSuccess(true);
       } else {
-        alert(data.error || "Failed to submit application");
-        setIsSubmitting(false);
+        alert(data.error || "Failed to submit");
       }
-    } catch (error) {
-      console.error("Submission error:", error);
-      alert("Failed to submit application. Please try again.");
+    } catch {
+      alert("Failed to submit. Please try again.");
+    } finally {
       setIsSubmitting(false);
     }
   };
 
+  // ── Success screen ───────────────────────────────────────────────────────
   if (submitSuccess) {
     return (
       <>
         <Navbar />
-        <div className="min-h-screen bg-linear-to-b from-gray-50 to-white flex items-center justify-center px-4 pt-32">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="max-w-md w-full bg-white rounded-3xl p-12 text-center border-2 border-gray-100 shadow-xl"
-          >
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.2, type: "spring" }}
-              className="w-24 h-24 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg"
+        <div
+          className="min-h-screen bg-[#f6f5f3] flex items-center justify-center px-4 py-20"
+          style={{ fontFamily: "'Sora',sans-serif" }}
+        >
+          <div className="w-full max-w-md">
+            <div
+              className="bg-white rounded-3xl p-8 text-center mb-4"
+              style={{ border: "1px solid #e8e4de" }}
             >
-              <CheckCircle2 size={48} className="text-white" />
-            </motion.div>
-            <h2
-              className="text-4xl font-light text-gray-900 mb-4"
-              style={{ fontFamily: "'DM Serif Display', serif" }}
-            >
-              Application Submitted!
-            </h2>
-            <p
-              className="text-gray-600 mb-6 leading-relaxed"
-              style={{ fontFamily: "'Poppins', sans-serif", fontSize: "16px" }}
-            >
-              Thank you for applying to sell on YOG. Our team will review your
-              application and contact you within 2-3 business days.
-            </p>
+              <div className="w-16 h-16 rounded-2xl bg-[#1a1714] flex items-center justify-center mx-auto mb-5 text-white">
+                <CheckIcon />
+              </div>
+              <p className="text-[11px] font-bold text-[#9e9890] uppercase tracking-[1.2px] mb-1">
+                Submitted
+              </p>
+              <h2 className="text-[24px] font-extrabold text-[#1a1714] tracking-tight mb-2">
+                Application received!
+              </h2>
+              <p className="text-[13px] text-[#9e9890] leading-relaxed max-w-xs mx-auto">
+                Our team will review your application and contact you within 2–3
+                business days.
+              </p>
+            </div>
 
-            <div className="space-y-3 mb-8 text-left">
-              <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
-                <div className="flex items-start gap-3">
-                  <Mail
-                    className="text-blue-600 flex-shrink-0 mt-0.5"
-                    size={20}
-                  />
+            <div
+              className="bg-white rounded-2xl p-5 mb-4"
+              style={{ border: "1px solid #e8e4de" }}
+            >
+              <p className="text-[11px] font-bold text-[#9e9890] uppercase tracking-[1.2px] mb-3">
+                Next steps
+              </p>
+              {[
+                [
+                  <MailIcon />,
+                  "Check your email",
+                  `Confirmation sent to ${formData.email}`,
+                ],
+                [
+                  <PhoneIcon />,
+                  "Stay reachable",
+                  `We may call ${formData.phone} for verification`,
+                ],
+              ].map(([icon, title, desc], i) => (
+                <div
+                  key={i}
+                  className={`flex items-start gap-3 ${i > 0 ? "mt-3 pt-3" : ""}`}
+                  style={i > 0 ? { borderTop: "1px solid #e8e4de" } : {}}
+                >
+                  <div
+                    className="w-8 h-8 rounded-[9px] bg-[#f6f5f3] flex items-center justify-center text-[#1a1714] shrink-0"
+                    style={{ border: "1px solid #e8e4de" }}
+                  >
+                    {icon as React.ReactNode}
+                  </div>
                   <div>
-                    <p className="text-sm font-semibold text-blue-900">
-                      Check Your Email
+                    <p className="text-[13px] font-semibold text-[#1a1714]">
+                      {title as string}
                     </p>
-                    <p className="text-xs text-blue-700">
-                      We've sent a confirmation to {formData.email}
+                    <p className="text-[11px] text-[#9e9890]">
+                      {desc as string}
                     </p>
                   </div>
                 </div>
-              </div>
-              <div className="bg-purple-50 rounded-xl p-4 border border-purple-100">
-                <div className="flex items-start gap-3">
-                  <Phone
-                    className="text-purple-600 flex-shrink-0 mt-0.5"
-                    size={20}
-                  />
-                  <div>
-                    <p className="text-sm font-semibold text-purple-900">
-                      Stay Available
-                    </p>
-                    <p className="text-xs text-purple-700">
-                      We may call {formData.phone} for verification
-                    </p>
-                  </div>
-                </div>
-              </div>
+              ))}
             </div>
 
             <button
@@ -255,588 +478,350 @@ export default function SellerOnboarding() {
                 router.push("/");
                 router.refresh();
               }}
-              className="w-full bg-black text-white py-4 rounded-full font-semibold hover:bg-gray-800 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2 group"
-              style={{ fontFamily: "'Poppins', sans-serif" }}
+              className="w-full bg-[#1a1714] text-white py-3.5 rounded-[12px] text-[13px] font-bold flex items-center justify-center gap-2 hover:bg-[#333] transition-all cursor-pointer hover:-translate-y-px hover:shadow-lg"
             >
-              Back to Home
-              <ArrowRight
-                size={18}
-                className="group-hover:translate-x-1 transition-transform"
-              />
+              Back to Home <ArrowIcon />
             </button>
-          </motion.div>
+          </div>
         </div>
       </>
     );
   }
 
+  // ── Section header helper ────────────────────────────────────────────────
+  const SectionHead = ({ label, step }: { label: string; step: number }) => (
+    <div
+      className="flex items-center gap-3 mb-5 pb-4"
+      style={{ borderBottom: "1px solid #e8e4de" }}
+    >
+      <div className="w-6 h-6 rounded-full bg-[#1a1714] text-white flex items-center justify-center text-[11px] font-bold shrink-0">
+        {step}
+      </div>
+      <p className="text-[14px] font-extrabold text-[#1a1714]">{label}</p>
+    </div>
+  );
+
+  // ── Form ─────────────────────────────────────────────────────────────────
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-gray-50 pt-32 pb-20 px-4">
-        <div className="max-w-4xl mx-auto">
-          {/* Header Section */}
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-12"
-          >
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.2, type: "spring" }}
-              className="inline-flex items-center gap-3 bg-gradient-to-r from-gray-900 to-gray-700 px-6 py-3 rounded-full mb-6 shadow-lg"
-            >
-              <Store className="text-white" size={20} />
-              <span
-                className="text-white font-semibold text-sm uppercase tracking-wider"
-                style={{ fontFamily: "'Poppins', sans-serif" }}
-              >
-                Seller Application
-              </span>
-            </motion.div>
-
-            <h1
-              className="text-gray-900 text-5xl md:text-6xl font-light mb-6"
-              style={{ fontFamily: "'DM Serif Display', serif" }}
-            >
-              Apply to Sell on YOG
-            </h1>
-            <p
-              className="text-gray-600 text-lg max-w-2xl mx-auto leading-relaxed mb-8"
-              style={{ fontFamily: "'Poppins', sans-serif" }}
-            >
-              Join Ethiopia's premier fashion marketplace. We carefully review
-              each application to maintain quality standards.
+      <main
+        className="min-h-screen bg-[#f6f5f3] pt-28 pb-20 px-4"
+        style={{ fontFamily: "'Sora',sans-serif" }}
+      >
+        <div className="max-w-3xl mx-auto">
+          {/* Page header */}
+          <div className="mb-8">
+            <p className="text-[11px] font-bold text-[#9e9890] uppercase tracking-[1.2px] mb-1.5">
+              Become a seller
             </p>
+            <h1 className="text-[30px] font-extrabold text-[#1a1714] tracking-tight leading-tight mb-2">
+              Apply to sell on Yog
+            </h1>
+            <p className="text-[13px] text-[#9e9890] max-w-lg leading-relaxed">
+              Join Ethiopia's premier fashion marketplace. We review each
+              application to ensure quality for our buyers.
+            </p>
+          </div>
 
-            {/* Stats Grid */}
-            <div className="grid grid-cols-3 gap-4 max-w-2xl mx-auto">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="bg-white rounded-2xl p-4 shadow-md border border-gray-100 hover:shadow-lg transition-shadow"
+          {/* Benefits strip */}
+          <div className="grid grid-cols-3 gap-3 mb-7">
+            {[
+              [<DollarIcon />, "Zero listing fees", "Only pay when you sell"],
+              [<ZapIcon />, "Fast payments", "Paid within 24 hrs"],
+              [<BagIcon />, "Marketing support", "Featured placements"],
+            ].map(([icon, title, desc], i) => (
+              <div
+                key={i}
+                className="bg-white rounded-xl p-4 flex flex-col gap-2"
+                style={{ border: "1px solid #e8e4de" }}
               >
-                <Users className="text-blue-600 mx-auto mb-2" size={24} />
-                <p className="text-2xl font-bold text-gray-900">5,000+</p>
-                <p className="text-xs text-gray-600">Active Buyers</p>
-              </motion.div>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 }}
-                className="bg-white rounded-2xl p-4 shadow-md border border-gray-100 hover:shadow-lg transition-shadow"
-              >
-                <Award className="text-green-600 mx-auto mb-2" size={24} />
-                <p className="text-2xl font-bold text-gray-900">98%</p>
-                <p className="text-xs text-gray-600">Satisfaction</p>
-              </motion.div>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5 }}
-                className="bg-white rounded-2xl p-4 shadow-md border border-gray-100 hover:shadow-lg transition-shadow"
-              >
-                <Zap className="text-purple-600 mx-auto mb-2" size={24} />
-                <p className="text-2xl font-bold text-gray-900">24/7</p>
-                <p className="text-xs text-gray-600">Support</p>
-              </motion.div>
-            </div>
-          </motion.div>
-
-          {/* Form Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="bg-white rounded-3xl p-8 md:p-12 shadow-2xl border border-gray-100"
-          >
-            <form onSubmit={handleSubmit} className="space-y-10">
-              {/* Business Information */}
-              <div>
-                <h3
-                  className="text-2xl font-semibold text-gray-900 mb-6 flex items-center gap-3"
-                  style={{ fontFamily: "'Poppins', sans-serif" }}
+                <div
+                  className="w-8 h-8 rounded-[9px] bg-[#f6f5f3] flex items-center justify-center text-[#1a1714]"
+                  style={{ border: "1px solid #e8e4de" }}
                 >
-                  <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
-                    <Building2 size={22} className="text-blue-600" />
-                  </div>
-                  Business Information
-                </h3>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Brand Name */}
-                  <div className="group">
-                    <label
-                      className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2"
-                      style={{ fontFamily: "'Poppins', sans-serif" }}
-                    >
-                      <Store size={16} className="text-gray-500" />
-                      Brand Name *
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        name="brandName"
-                        value={formData.brandName}
-                        onChange={handleInputChange}
-                        className={`w-full px-4 py-4 bg-gray-50 border-2 rounded-xl focus:outline-none focus:border-black focus:ring-2 focus:ring-black/10 transition-all group-hover:border-gray-300 ${
-                          errors.brandName
-                            ? "border-red-500"
-                            : "border-gray-200"
-                        }`}
-                        placeholder="e.g., UrbanStyle Co."
-                        style={{ fontFamily: "'Poppins', sans-serif" }}
-                      />
-                    </div>
-                    {errors.brandName && (
-                      <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                        <AlertCircle size={14} />
-                        {errors.brandName}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Owner Name */}
-                  <div className="group">
-                    <label
-                      className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2"
-                      style={{ fontFamily: "'Poppins', sans-serif" }}
-                    >
-                      <User size={16} className="text-gray-500" />
-                      Owner Name *
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        name="ownerName"
-                        value={formData.ownerName}
-                        onChange={handleInputChange}
-                        className={`w-full px-4 py-4 bg-gray-50 border-2 rounded-xl focus:outline-none focus:border-black focus:ring-2 focus:ring-black/10 transition-all group-hover:border-gray-300 ${
-                          errors.ownerName
-                            ? "border-red-500"
-                            : "border-gray-200"
-                        }`}
-                        placeholder="Your full name"
-                        style={{ fontFamily: "'Poppins', sans-serif" }}
-                      />
-                    </div>
-                    {errors.ownerName && (
-                      <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                        <AlertCircle size={14} />
-                        {errors.ownerName}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Business Type */}
-                  <div className="group">
-                    <label
-                      className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2"
-                      style={{ fontFamily: "'Poppins', sans-serif" }}
-                    >
-                      <Building2 size={16} className="text-gray-500" />
-                      Business Type *
-                    </label>
-                    <select
-                      name="businessType"
-                      value={formData.businessType}
-                      onChange={handleInputChange}
-                      className={`w-full px-4 py-4 bg-gray-50 border-2 rounded-xl focus:outline-none focus:border-black focus:ring-2 focus:ring-black/10 transition-all group-hover:border-gray-300 cursor-pointer ${
-                        errors.businessType
-                          ? "border-red-500"
-                          : "border-gray-200"
-                      }`}
-                      style={{ fontFamily: "'Poppins', sans-serif" }}
-                    >
-                      <option value="">Select business type</option>
-                      {businessTypes.map((type) => (
-                        <option key={type} value={type}>
-                          {type}
-                        </option>
-                      ))}
-                    </select>
-                    {errors.businessType && (
-                      <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                        <AlertCircle size={14} />
-                        {errors.businessType}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Clothing Type */}
-                  <div className="group">
-                    <label
-                      className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2"
-                      style={{ fontFamily: "'Poppins', sans-serif" }}
-                    >
-                      <Shirt size={16} className="text-gray-500" />
-                      Clothing Type *
-                    </label>
-                    <select
-                      name="clothingType"
-                      value={formData.clothingType}
-                      onChange={handleInputChange}
-                      className={`w-full px-4 py-4 bg-gray-50 border-2 rounded-xl focus:outline-none focus:border-black focus:ring-2 focus:ring-black/10 transition-all group-hover:border-gray-300 cursor-pointer ${
-                        errors.clothingType
-                          ? "border-red-500"
-                          : "border-gray-200"
-                      }`}
-                      style={{ fontFamily: "'Poppins', sans-serif" }}
-                    >
-                      <option value="">Select type</option>
-                      {clothingTypes.map((type) => (
-                        <option key={type} value={type}>
-                          {type}
-                        </option>
-                      ))}
-                    </select>
-                    {errors.clothingType && (
-                      <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                        <AlertCircle size={14} />
-                        {errors.clothingType}
-                      </p>
-                    )}
-                  </div>
+                  {icon as React.ReactNode}
                 </div>
+                <p className="text-[12px] font-bold text-[#1a1714] leading-tight">
+                  {title as string}
+                </p>
+                <p className="text-[11px] text-[#9e9890]">{desc as string}</p>
               </div>
+            ))}
+          </div>
 
-              {/* Contact Information */}
-              <div>
-                <h3
-                  className="text-2xl font-semibold text-gray-900 mb-6 flex items-center gap-3"
-                  style={{ fontFamily: "'Poppins', sans-serif" }}
-                >
-                  <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
-                    <Phone size={22} className="text-green-600" />
-                  </div>
-                  Contact Information
-                </h3>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Phone */}
-                  <div className="group">
-                    <label
-                      className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2"
-                      style={{ fontFamily: "'Poppins', sans-serif" }}
-                    >
-                      <Phone size={16} className="text-gray-500" />
-                      Phone Number *
-                    </label>
-                    <input
-                      type="tel"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleInputChange}
-                      className={`w-full px-4 py-4 bg-gray-50 border-2 rounded-xl focus:outline-none focus:border-black focus:ring-2 focus:ring-black/10 transition-all group-hover:border-gray-300 ${
-                        errors.phone ? "border-red-500" : "border-gray-200"
-                      }`}
-                      placeholder="+251 912 345 678"
-                      style={{ fontFamily: "'Poppins', sans-serif" }}
-                    />
-                    {errors.phone && (
-                      <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                        <AlertCircle size={14} />
-                        {errors.phone}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Email */}
-                  <div className="group">
-                    <label
-                      className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2"
-                      style={{ fontFamily: "'Poppins', sans-serif" }}
-                    >
-                      <Mail size={16} className="text-gray-500" />
-                      Email Address *
-                    </label>
-                    <input
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      className={`w-full px-4 py-4 bg-gray-50 border-2 rounded-xl focus:outline-none focus:border-black focus:ring-2 focus:ring-black/10 transition-all group-hover:border-gray-300 ${
-                        errors.email ? "border-red-500" : "border-gray-200"
-                      }`}
-                      placeholder="your@email.com"
-                      style={{ fontFamily: "'Poppins', sans-serif" }}
-                      readOnly
-                    />
-                    {errors.email && (
-                      <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                        <AlertCircle size={14} />
-                        {errors.email}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Instagram */}
-                  <div className="group">
-                    <label
-                      className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2"
-                      style={{ fontFamily: "'Poppins', sans-serif" }}
-                    >
-                      <Instagram size={16} className="text-gray-500" />
-                      Instagram
-                      <span className="text-xs text-gray-500 font-normal">
-                        (Optional)
-                      </span>
-                    </label>
-                    <input
-                      type="text"
-                      name="instagram"
-                      value={formData.instagram}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-4 bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-black focus:ring-2 focus:ring-black/10 transition-all group-hover:border-gray-300"
-                      placeholder="@yourbrand"
-                      style={{ fontFamily: "'Poppins', sans-serif" }}
-                    />
-                  </div>
-
-                  {/* Location */}
-                  <div className="group">
-                    <label
-                      className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2"
-                      style={{ fontFamily: "'Poppins', sans-serif" }}
-                    >
-                      <MapPin size={16} className="text-gray-500" />
-                      Location *
-                    </label>
-                    <input
-                      type="text"
-                      name="location"
-                      value={formData.location}
-                      onChange={handleInputChange}
-                      className={`w-full px-4 py-4 bg-gray-50 border-2 rounded-xl focus:outline-none focus:border-black focus:ring-2 focus:ring-black/10 transition-all group-hover:border-gray-300 ${
-                        errors.location ? "border-red-500" : "border-gray-200"
-                      }`}
-                      placeholder="City, Ethiopia"
-                      style={{ fontFamily: "'Poppins', sans-serif" }}
-                    />
-                    {errors.location && (
-                      <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                        <AlertCircle size={14} />
-                        {errors.location}
-                      </p>
-                    )}
-                  </div>
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            {/* ─ Business Info ─ */}
+            <div
+              className="bg-white rounded-2xl p-6"
+              style={{ border: "1px solid #e8e4de" }}
+            >
+              <SectionHead label="Business Information" step={1} />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <LabelRow icon={<StoreIcon />} label="Brand Name" />
+                  <input
+                    type="text"
+                    name="brandName"
+                    value={formData.brandName}
+                    onChange={set}
+                    placeholder="e.g., UrbanStyle Co."
+                    className={inputClass(errors.brandName)}
+                    style={{
+                      border: `1px solid ${errors.brandName ? "#f87171" : "#e8e4de"}`,
+                    }}
+                  />
+                  <ErrMsg msg={errors.brandName} />
                 </div>
-              </div>
-
-              {/* Additional Details */}
-              <div>
-                <h3
-                  className="text-2xl font-semibold text-gray-900 mb-6 flex items-center gap-3"
-                  style={{ fontFamily: "'Poppins', sans-serif" }}
-                >
-                  <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
-                    <FileText size={22} className="text-purple-600" />
-                  </div>
-                  Tell Us More
-                </h3>
-
-                {/* Years of Experience */}
-                <div className="mb-6 group">
-                  <label
-                    className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2"
-                    style={{ fontFamily: "'Poppins', sans-serif" }}
+                <div>
+                  <LabelRow icon={<UserIcon />} label="Owner Name" />
+                  <input
+                    type="text"
+                    name="ownerName"
+                    value={formData.ownerName}
+                    onChange={set}
+                    placeholder="Your full name"
+                    className={inputClass(errors.ownerName)}
+                    style={{
+                      border: `1px solid ${errors.ownerName ? "#f87171" : "#e8e4de"}`,
+                    }}
+                  />
+                  <ErrMsg msg={errors.ownerName} />
+                </div>
+                <div>
+                  <LabelRow icon={<BriefcaseIcon />} label="Business Type" />
+                  <select
+                    name="businessType"
+                    value={formData.businessType}
+                    onChange={set}
+                    className={`${inputClass(errors.businessType)} cursor-pointer`}
+                    style={{
+                      border: `1px solid ${errors.businessType ? "#f87171" : "#e8e4de"}`,
+                    }}
                   >
-                    <TrendingUp size={16} className="text-gray-500" />
-                    Years of Experience
-                    <span className="text-xs text-gray-500 font-normal">
-                      (Optional)
-                    </span>
-                  </label>
+                    <option value="">Select type</option>
+                    {businessTypes.map((t) => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ))}
+                  </select>
+                  <ErrMsg msg={errors.businessType} />
+                </div>
+                <div>
+                  <LabelRow icon={<ShirtIcon />} label="Clothing Type" />
+                  <select
+                    name="clothingType"
+                    value={formData.clothingType}
+                    onChange={set}
+                    className={`${inputClass(errors.clothingType)} cursor-pointer`}
+                    style={{
+                      border: `1px solid ${errors.clothingType ? "#f87171" : "#e8e4de"}`,
+                    }}
+                  >
+                    <option value="">Select type</option>
+                    {clothingTypes.map((t) => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ))}
+                  </select>
+                  <ErrMsg msg={errors.clothingType} />
+                </div>
+              </div>
+            </div>
+
+            {/* ─ Contact Info ─ */}
+            <div
+              className="bg-white rounded-2xl p-6"
+              style={{ border: "1px solid #e8e4de" }}
+            >
+              <SectionHead label="Contact Information" step={2} />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <LabelRow icon={<PhoneIcon />} label="Phone Number" />
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={set}
+                    placeholder="+251 912 345 678"
+                    className={inputClass(errors.phone)}
+                    style={{
+                      border: `1px solid ${errors.phone ? "#f87171" : "#e8e4de"}`,
+                    }}
+                  />
+                  <ErrMsg msg={errors.phone} />
+                </div>
+                <div>
+                  <LabelRow icon={<MailIcon />} label="Email" />
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={set}
+                    readOnly
+                    placeholder="your@email.com"
+                    className={`${inputClass(errors.email)} bg-[#f6f5f3] text-[#9e9890] cursor-not-allowed`}
+                    style={{
+                      border: `1px solid ${errors.email ? "#f87171" : "#e8e4de"}`,
+                    }}
+                  />
+                  <ErrMsg msg={errors.email} />
+                </div>
+                <div>
+                  <LabelRow
+                    icon={<InstagramIcon />}
+                    label="Instagram"
+                    optional
+                  />
+                  <input
+                    type="text"
+                    name="instagram"
+                    value={formData.instagram}
+                    onChange={set}
+                    placeholder="@yourbrand"
+                    className={inputClass()}
+                    style={{ border: "1px solid #e8e4de" }}
+                  />
+                </div>
+                <div>
+                  <LabelRow icon={<MapPinIcon />} label="Location" />
+                  <input
+                    type="text"
+                    name="location"
+                    value={formData.location}
+                    onChange={set}
+                    placeholder="City, Ethiopia"
+                    className={inputClass(errors.location)}
+                    style={{
+                      border: `1px solid ${errors.location ? "#f87171" : "#e8e4de"}`,
+                    }}
+                  />
+                  <ErrMsg msg={errors.location} />
+                </div>
+              </div>
+            </div>
+
+            {/* ─ About your brand ─ */}
+            <div
+              className="bg-white rounded-2xl p-6"
+              style={{ border: "1px solid #e8e4de" }}
+            >
+              <SectionHead label="About Your Brand" step={3} />
+              <div className="flex flex-col gap-4">
+                <div>
+                  <LabelRow
+                    icon={<ClockIcon />}
+                    label="Years of Experience"
+                    optional
+                  />
                   <input
                     type="text"
                     name="experience"
                     value={formData.experience}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-4 bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-black focus:ring-2 focus:ring-black/10 transition-all group-hover:border-gray-300"
+                    onChange={set}
                     placeholder="e.g., 2 years"
-                    style={{ fontFamily: "'Poppins', sans-serif" }}
+                    className={inputClass()}
+                    style={{ border: "1px solid #e8e4de" }}
                   />
                 </div>
-
-                {/* Description */}
-                <div className="group">
-                  <label
-                    className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2"
-                    style={{ fontFamily: "'Poppins', sans-serif" }}
-                  >
-                    <Sparkles size={16} className="text-gray-500" />
-                    Brand Description
-                    <span className="text-xs text-gray-500 font-normal">
-                      (Optional)
-                    </span>
-                  </label>
+                <div>
+                  <LabelRow
+                    icon={<TextIcon />}
+                    label="Brand Description"
+                    optional
+                  />
                   <textarea
                     name="description"
                     value={formData.description}
-                    onChange={handleInputChange}
-                    rows={5}
-                    className="w-full px-4 py-4 bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-black focus:ring-2 focus:ring-black/10 transition-all resize-none group-hover:border-gray-300"
-                    placeholder="Tell us about your brand, products, and what makes you unique..."
-                    style={{ fontFamily: "'Poppins', sans-serif" }}
+                    onChange={set}
+                    rows={4}
+                    placeholder="Tell us about your brand, products, and what makes you unique…"
+                    className={`${inputClass()} resize-none`}
+                    style={{ border: "1px solid #e8e4de" }}
                   />
                 </div>
               </div>
+            </div>
 
-              {/* Info Box - Application Review */}
-              <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-6 border-2 border-blue-100">
-                <div className="flex gap-4">
-                  <div className="flex-shrink-0">
-                    <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center shadow-lg">
-                      <CheckCircle2 className="text-white" size={24} />
-                    </div>
-                  </div>
-                  <div>
-                    <h4
-                      className="font-bold text-blue-900 mb-2 text-base"
-                      style={{ fontFamily: "'Poppins', sans-serif" }}
-                    >
-                      Application Review Process
-                    </h4>
-                    <p
-                      className="text-sm text-blue-800 leading-relaxed"
-                      style={{ fontFamily: "'Poppins', sans-serif" }}
-                    >
-                      Your application will be carefully reviewed within{" "}
-                      <strong>2-3 business days</strong>. We'll contact you via
-                      phone and email with the next steps. Make sure to keep
-                      your contact information accessible!
-                    </p>
-                  </div>
-                </div>
+            {/* ─ Review notice ─ */}
+            <div
+              className="rounded-xl px-4 py-3.5 flex items-start gap-3"
+              style={{ background: "#f0ede9", border: "1px solid #e8e4de" }}
+            >
+              <div className="w-7 h-7 rounded-[8px] bg-[#1a1714] flex items-center justify-center text-white shrink-0 mt-0.5">
+                <SparkIcon />
               </div>
+              <div>
+                <p className="text-[12px] font-bold text-[#1a1714]">
+                  Application review
+                </p>
+                <p className="text-[11px] text-[#9e9890] mt-0.5 leading-relaxed">
+                  We review applications within{" "}
+                  <strong className="text-[#1a1714]">2–3 business days</strong>{" "}
+                  and will contact you via phone and email with next steps.
+                </p>
+              </div>
+            </div>
 
-              {/* Terms and Conditions */}
-              <div className="bg-gray-50 rounded-2xl p-6 border-2 border-gray-200">
-                <label className="flex items-start gap-3 cursor-pointer group">
+            {/* ─ Terms ─ */}
+            <div
+              className="bg-white rounded-2xl px-5 py-4"
+              style={{
+                border: `1px solid ${errors.termsAccepted ? "#f87171" : "#e8e4de"}`,
+              }}
+            >
+              <label className="flex items-start gap-3 cursor-pointer">
+                <div className="relative mt-0.5">
                   <input
                     type="checkbox"
                     name="termsAccepted"
                     checked={formData.termsAccepted}
-                    onChange={handleInputChange}
-                    className="mt-1 w-5 h-5 rounded border-2 border-gray-300 checked:bg-black checked:border-black focus:ring-2 focus:ring-black cursor-pointer transition-all"
+                    onChange={set}
+                    className="sr-only peer"
                   />
-                  <span
-                    className="text-sm text-gray-700 leading-relaxed"
-                    style={{ fontFamily: "'Poppins', sans-serif" }}
+                  <div
+                    className="w-5 h-5 rounded-[5px] border flex items-center justify-center transition-all peer-checked:bg-[#1a1714] peer-checked:border-[#1a1714] text-white"
+                    style={{
+                      border: formData.termsAccepted
+                        ? "1px solid #1a1714"
+                        : "1px solid #e8e4de",
+                      background: formData.termsAccepted ? "#1a1714" : "#fff",
+                    }}
                   >
-                    I agree to YOG's seller terms and conditions. I understand
-                    that my application will be reviewed and I may be contacted
-                    for additional information. *
-                  </span>
-                </label>
-                {errors.termsAccepted && (
-                  <p className="text-red-500 text-sm mt-2 flex items-center gap-1 ml-8">
-                    <AlertCircle size={14} />
-                    {errors.termsAccepted}
-                  </p>
-                )}
-              </div>
-
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full bg-black text-white py-5 rounded-full font-bold text-base uppercase tracking-wider hover:bg-gray-800 transition-all duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-3 shadow-xl hover:shadow-2xl group"
-                style={{ fontFamily: "'Poppins', sans-serif" }}
-              >
-                {isSubmitting ? (
-                  <>
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Processing Application...
-                  </>
-                ) : (
-                  <>
-                    <Upload size={20} />
-                    Apply to Sell on YOG
-                    <ArrowRight
-                      size={20}
-                      className="group-hover:translate-x-1 transition-transform"
-                    />
-                  </>
-                )}
-              </button>
-
-              {/* Info Note */}
-              <p
-                className="text-center text-sm text-gray-500"
-                style={{ fontFamily: "'Poppins', sans-serif" }}
-              >
-                Applications are reviewed within 2-3 business days. We'll
-                contact you at the provided email.
-              </p>
-            </form>
-          </motion.div>
-
-          {/* Benefits Section */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-            className="mt-16 grid md:grid-cols-3 gap-6"
-          >
-            <div className="text-center p-8 bg-white rounded-2xl border-2 border-gray-100 hover:shadow-xl transition-all hover:border-purple-200 group">
-              <div className="w-16 h-16 bg-gradient-to-br from-purple-100 to-purple-200 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                <DollarSign className="text-purple-600" size={28} />
-              </div>
-              <h3
-                className="font-bold text-gray-900 mb-2 text-lg"
-                style={{ fontFamily: "'Poppins', sans-serif" }}
-              >
-                Zero Listing Fees
-              </h3>
-              <p
-                className="text-sm text-gray-600 leading-relaxed"
-                style={{ fontFamily: "'Poppins', sans-serif" }}
-              >
-                List unlimited products at no cost. Only pay when you make a
-                sale.
-              </p>
+                    {formData.termsAccepted && <CheckIcon />}
+                  </div>
+                </div>
+                <p className="text-[12px] text-[#9e9890] leading-relaxed">
+                  I agree to Yog's seller terms and conditions. I understand my
+                  application will be reviewed and I may be contacted for
+                  additional information.{" "}
+                  <span className="text-red-400">*</span>
+                </p>
+              </label>
+              <ErrMsg msg={errors.termsAccepted} />
             </div>
 
-            <div className="text-center p-8 bg-white rounded-2xl border-2 border-gray-100 hover:shadow-xl transition-all hover:border-green-200 group">
-              <div className="w-16 h-16 bg-gradient-to-br from-green-100 to-green-200 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                <Zap className="text-green-600" size={28} />
-              </div>
-              <h3
-                className="font-bold text-gray-900 mb-2 text-lg"
-                style={{ fontFamily: "'Poppins', sans-serif" }}
-              >
-                Fast Payments
-              </h3>
-              <p
-                className="text-sm text-gray-600 leading-relaxed"
-                style={{ fontFamily: "'Poppins', sans-serif" }}
-              >
-                Get paid within 24 hours of successful delivery confirmation.
-              </p>
-            </div>
-
-            <div className="text-center p-8 bg-white rounded-2xl border-2 border-gray-100 hover:shadow-xl transition-all hover:border-blue-200 group">
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-blue-200 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                <ShoppingBag className="text-blue-600" size={28} />
-              </div>
-              <h3
-                className="font-bold text-gray-900 mb-2 text-lg"
-                style={{ fontFamily: "'Poppins', sans-serif" }}
-              >
-                Marketing Support
-              </h3>
-              <p
-                className="text-sm text-gray-600 leading-relaxed"
-                style={{ fontFamily: "'Poppins', sans-serif" }}
-              >
-                Featured placements and promotion for top-performing sellers.
-              </p>
-            </div>
-          </motion.div>
+            {/* ─ Submit ─ */}
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full bg-[#1a1714] text-white py-4 rounded-[12px] text-[13px] font-bold flex items-center justify-center gap-2 hover:bg-[#333] transition-all cursor-pointer hover:-translate-y-px hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+            >
+              {isSubmitting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />{" "}
+                  Submitting…
+                </>
+              ) : (
+                <>
+                  Apply to Sell on Yog <ArrowIcon />
+                </>
+              )}
+            </button>
+          </form>
         </div>
       </main>
     </>

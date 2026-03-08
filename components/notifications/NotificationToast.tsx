@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Package, Bell } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
+import Image from "next/image";
 
 interface Notification {
   id: string;
@@ -21,111 +20,178 @@ interface NotificationToastProps {
   onClose: () => void;
 }
 
+const XIcon = () => (
+  <svg
+    width="14"
+    height="14"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <line x1="18" y1="6" x2="6" y2="18" />
+    <line x1="6" y1="6" x2="18" y2="18" />
+  </svg>
+);
+const PackageIcon = () => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <line x1="16.5" y1="9.4" x2="7.5" y2="4.21" />
+    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+    <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+    <line x1="12" y1="22.08" x2="12" y2="12" />
+  </svg>
+);
+
+const TYPE_LABEL: Record<string, string> = {
+  ORDER_UPDATE: "Order Update",
+  NEW_PRODUCT: "New Product",
+  FOLLOW: "New Follower",
+  SYSTEM: "System",
+};
+
+const DURATION = 5000;
+
 export default function NotificationToast({
   notification,
   onClose,
 }: NotificationToastProps) {
-  const [isVisible, setIsVisible] = useState(true);
+  const [visible, setVisible] = useState(true);
+  const [progress, setProgress] = useState(100);
+  const [paused, setPaused] = useState(false);
 
+  // progress bar countdown
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsVisible(false);
-      setTimeout(onClose, 300);
-    }, 5000);
+    if (paused) return;
+    const start = Date.now();
+    const iv = setInterval(() => {
+      const elapsed = Date.now() - start;
+      const pct = Math.max(0, 100 - (elapsed / DURATION) * 100);
+      setProgress(pct);
+      if (pct === 0) clearInterval(iv);
+    }, 30);
+    return () => clearInterval(iv);
+  }, [paused]);
 
-    return () => clearTimeout(timer);
-  }, [onClose]);
+  // auto-dismiss
+  useEffect(() => {
+    if (paused) return;
+    const t = setTimeout(() => {
+      setVisible(false);
+      setTimeout(onClose, 400);
+    }, DURATION);
+    return () => clearTimeout(t);
+  }, [paused, onClose]);
 
-  const handleClose = () => {
-    setIsVisible(false);
-    setTimeout(onClose, 300);
+  const dismiss = () => {
+    setVisible(false);
+    setTimeout(onClose, 400);
   };
 
-  // ✅ FIXED: Check notification type first
   const getLink = () => {
-    // Order notifications → Seller dashboard orders
-    if (notification.type === "ORDER_UPDATE") {
+    if (notification.type === "ORDER_UPDATE")
       return "/seller/dashboard?tab=orders";
-    }
-
-    // Product notifications → Product page
-    if (notification.type === "NEW_PRODUCT" && notification.productId) {
+    if (notification.type === "NEW_PRODUCT" && notification.productId)
       return `/product/${notification.productId}`;
-    }
-
-    // Follow notifications → Store page
-    if (notification.type === "FOLLOW" && notification.sellerId) {
+    if (notification.type === "FOLLOW" && notification.sellerId)
       return `/store/${notification.sellerId}`;
-    }
-
-    // System notifications → Stay on current page
-    if (notification.type === "SYSTEM") {
-      return "#";
-    }
-
-    // Fallback
     return "#";
   };
 
+  const label = TYPE_LABEL[notification.type] ?? "Notification";
+
   return (
     <AnimatePresence>
-      {isVisible && (
+      {visible && (
         <motion.div
-          initial={{ y: -100, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: -100, opacity: 0 }}
-          transition={{ type: "spring", damping: 20, stiffness: 300 }}
-          className="fixed top-24 right-4 z-[60] w-96 max-w-[calc(100vw-2rem)]"
+          initial={{ y: -80, opacity: 0, scale: 0.95 }}
+          animate={{ y: 0, opacity: 1, scale: 1 }}
+          exit={{ y: -80, opacity: 0, scale: 0.95 }}
+          transition={{ type: "spring", damping: 22, stiffness: 340 }}
+          className="fixed top-5 right-5 z-[60] w-[360px] max-w-[calc(100vw-2rem)]"
+          style={{ fontFamily: "'Sora', sans-serif" }}
+          onMouseEnter={() => setPaused(true)}
+          onMouseLeave={() => setPaused(false)}
         >
-          <Link href={getLink()} onClick={handleClose}>
-            <div className="bg-white rounded-2xl shadow-2xl border-2 border-gray-200 p-4 hover:shadow-3xl transition-shadow cursor-pointer">
-              <div className="flex items-start gap-3">
-                {/* Icon or Image */}
-                <div className="flex-shrink-0">
+          <div
+            className="bg-white rounded-2xl overflow-hidden"
+            style={{
+              border: "1px solid #e8e4de",
+              boxShadow:
+                "0 8px 40px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)",
+            }}
+          >
+            {/* Progress bar at the top */}
+            <div className="h-[3px] bg-[#f0ede9] w-full">
+              <motion.div
+                className="h-full bg-[#1a1714]"
+                initial={{ width: "100%" }}
+                animate={{ width: `${progress}%` }}
+                transition={{ duration: 0.05, ease: "linear" }}
+              />
+            </div>
+
+            <Link href={getLink()} onClick={dismiss} className="no-underline">
+              <div className="flex items-start gap-3 p-4">
+                {/* Icon / Image */}
+                <div className="shrink-0">
                   {notification.imageUrl ? (
-                    <div className="w-14 h-14 rounded-lg overflow-hidden bg-gray-100">
+                    <div className="w-12 h-12 rounded-xl overflow-hidden bg-[#f6f5f3]">
                       <Image
                         src={notification.imageUrl}
-                        alt="Notification"
-                        width={56}
-                        height={56}
-                        className="object-cover w-full h-full"
+                        alt=""
+                        width={48}
+                        height={48}
+                        className="w-full h-full object-cover"
                       />
                     </div>
                   ) : (
-                    <div className="w-14 h-14 rounded-lg bg-gradient-to-br from-black to-gray-700 flex items-center justify-center">
-                      <Package size={24} className="text-white" />
+                    <div className="w-12 h-12 rounded-xl bg-[#1a1714] flex items-center justify-center text-white">
+                      <PackageIcon />
                     </div>
                   )}
                 </div>
 
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2">
-                    <h4 className="font-bold text-sm line-clamp-1">
-                      {notification.title}
-                    </h4>
+                {/* Text */}
+                <div className="flex-1 min-w-0 pt-0.5">
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <span className="text-[10px] font-bold uppercase tracking-[0.9px] text-[#9e9890]">
+                      {label}
+                    </span>
                     <button
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        handleClose();
+                        dismiss();
                       }}
-                      className="flex-shrink-0 p-1 hover:bg-gray-100 rounded-full transition-colors"
+                      className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-[#f6f5f3] transition-colors text-[#9e9890] hover:text-[#1a1714] shrink-0"
                     >
-                      <X size={16} />
+                      <XIcon />
                     </button>
                   </div>
-                  <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                  <p className="text-[13px] font-semibold text-[#1a1714] leading-snug truncate">
+                    {notification.title}
+                  </p>
+                  <p className="text-[12px] text-[#9e9890] leading-relaxed mt-0.5 line-clamp-2">
                     {notification.message}
                   </p>
-                  <p className="text-xs text-blue-600 mt-2 font-medium">
-                    Click to view →
+                  <p className="text-[11px] text-[#b8b4ae] mt-2 font-medium">
+                    Tap to view →
                   </p>
                 </div>
               </div>
-            </div>
-          </Link>
+            </Link>
+          </div>
         </motion.div>
       )}
     </AnimatePresence>

@@ -24,7 +24,6 @@ const CACHE_KEY = "yog_products_cache";
 const CACHE_DURATION = 1 * 60 * 1000;
 const AUTO_REFRESH_INTERVAL = 3 * 1000;
 
-// ─── CSS ─────────────────────────────────────────────────────────────────────
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&display=swap');
 
@@ -33,215 +32,233 @@ const CSS = `
   --border:#e8e4de; --hover:#f5f3f0;
 }
 
-/* ── Page wrapper ── */
-.pg2-section {
+.pg-section {
   width:100%; min-height:100vh;
   background:var(--bg); font-family:'Sora',sans-serif;
-  padding:32px 24px 80px;
+  padding:28px 24px 80px;
 }
-.pg2-inner { max-width:1440px; margin:0 auto; }
-.pg2-layout { display:flex; gap:22px; align-items:flex-start; }
-.pg2-main   { flex:1; min-width:0; }
+.pg-inner { max-width:1440px; margin:0 auto; }
+
+/* ── Layout — sidebar sticky fix ── */
+.pg-layout {
+  display:flex; gap:22px;
+  align-items:flex-start;   /* critical: lets sticky work */
+}
+.pg-sidebar-col {
+  flex-shrink:0;
+  align-self:flex-start;    /* critical: don't stretch to full height */
+  position:sticky;
+  top:24px;                 /* distance from viewport top */
+  width:232px;
+}
+.pg-main { flex:1; min-width:0; }
 
 /* ── Toolbar ── */
-.pg2-toolbar {
+.pg-toolbar {
   display:flex; align-items:center; justify-content:space-between;
   margin-bottom:18px; flex-wrap:wrap; gap:10px;
 }
-.pg2-count { font-size:13px; color:var(--muted); font-weight:500; line-height:1; }
-.pg2-count strong { color:var(--text); font-weight:700; }
-.pg2-filter-tag {
+.pg-count { font-size:13px; color:var(--muted); font-weight:500; }
+.pg-count strong { color:var(--text); font-weight:700; }
+.pg-filter-chip {
   display:inline-flex; align-items:center; gap:5px;
-  padding:4px 10px; background:var(--text); color:#fff;
-  border-radius:20px; font-size:11px; font-weight:700; cursor:pointer;
+  padding:4px 11px; background:var(--text); color:#fff;
+  border-radius:20px; font-size:11px; font-weight:700;
+  cursor:pointer; border:none; font-family:'Sora',sans-serif;
   transition:background 0.15s;
 }
-.pg2-filter-tag:hover { background:#333; }
-.pg2-toolbar-right { display:flex; align-items:center; gap:10px; }
-.pg2-sort {
+.pg-filter-chip:hover { background:#333; }
+.pg-sort {
   padding:9px 36px 9px 14px; border:1.5px solid var(--border);
   border-radius:10px; background:var(--card);
   font-family:'Sora',sans-serif; font-size:12px; font-weight:600;
-  color:var(--text); outline:none; cursor:pointer; transition:border-color 0.15s;
-  appearance:none;
+  color:var(--text); outline:none; cursor:pointer;
+  transition:border-color 0.15s; appearance:none;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%239e9890' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
   background-repeat:no-repeat; background-position:right 12px center;
 }
-.pg2-sort:focus { border-color:var(--text); }
+.pg-sort:focus { border-color:var(--text); }
 
-/* ── Grid ── */
-.pg2-grid {
+/* ── Grid — 4 cols feels wider ── */
+.pg-grid {
   display:grid;
-  grid-template-columns:repeat(5,1fr);
-  gap:14px;
+  grid-template-columns:repeat(4,1fr);
+  gap:16px;
 }
-@media(max-width:1400px){ .pg2-grid { grid-template-columns:repeat(4,1fr); } }
-@media(max-width:1100px){ .pg2-grid { grid-template-columns:repeat(3,1fr); } }
-@media(max-width:760px)  { .pg2-grid { grid-template-columns:repeat(2,1fr); gap:10px; } }
+@media(max-width:1300px){ .pg-grid { grid-template-columns:repeat(3,1fr); } }
+@media(max-width:900px) { .pg-grid { grid-template-columns:repeat(2,1fr); } }
+@media(max-width:500px) { .pg-grid { grid-template-columns:1fr 1fr; gap:10px; } }
 
-/* ── Product card ── */
-.pg2-card {
+/* ── Card ── */
+.pg-card {
   background:var(--card); border-radius:14px; overflow:hidden;
   border:1px solid var(--border); display:block; text-decoration:none;
-  transition:box-shadow 0.22s, transform 0.22s, border-color 0.22s;
-  will-change:transform; cursor:pointer;
-  position:relative;
+  cursor:pointer; transition:box-shadow 0.22s, transform 0.22s, border-color 0.22s;
+  will-change:transform;
 }
-.pg2-card:not(.oos):hover {
+.pg-card:not(.oos):hover {
   box-shadow:0 12px 36px rgba(0,0,0,0.10);
-  transform:translateY(-4px);
+  transform:translateY(-3px);
   border-color:rgba(0,0,0,0.1);
 }
 
 /* ── Image ── */
-.pg2-img-wrap {
-  position:relative; aspect-ratio:3/4; overflow:hidden;
-  background:var(--hover);
+.pg-img-wrap {
+  position:relative;
+  aspect-ratio:4/5;          /* less tall than 3/4 */
+  overflow:hidden; background:var(--hover);
 }
-.pg2-img {
+.pg-img {
   position:absolute; inset:0; width:100%; height:100%;
-  object-fit:cover; transition:opacity 0.45s ease, transform 0.45s ease;
+  object-fit:cover;
+  transition:opacity 0.45s ease, transform 0.45s ease;
 }
-.pg2-img.pri { opacity:1; }
-.pg2-img.sec { opacity:0; }
-.pg2-card:not(.oos):hover .pg2-img.pri.alt { opacity:0; }
-.pg2-card:not(.oos):hover .pg2-img.sec    { opacity:1; }
-.pg2-card:not(.oos):hover .pg2-img.pri    { transform:scale(1.05); }
-.pg2-card:not(.oos):hover .pg2-img.sec    { transform:scale(1.05); }
-.pg2-img.dim { opacity:0.5; filter:grayscale(0.3); }
+.pg-img.pri { opacity:1; }
+.pg-img.sec { opacity:0; }
+.pg-card:not(.oos):hover .pg-img.pri.alt { opacity:0; }
+.pg-card:not(.oos):hover .pg-img.sec    { opacity:1; }
+.pg-card:not(.oos):hover .pg-img.pri    { transform:scale(1.04); }
+.pg-card:not(.oos):hover .pg-img.sec    { transform:scale(1.04); }
+.pg-img.dim { opacity:0.45; filter:grayscale(0.4); }
 
-/* ── Hover gradient + actions ── */
-.pg2-hover-layer {
+/* Hover gradient + slide-up button */
+.pg-hover-layer {
   position:absolute; inset:0; z-index:4;
-  background:linear-gradient(to top, rgba(0,0,0,0.42) 0%, rgba(0,0,0,0.08) 45%, transparent 70%);
-  opacity:0; transition:opacity 0.22s; pointer-events:none;
+  background:linear-gradient(to top, rgba(0,0,0,0.48) 0%, rgba(0,0,0,0.06) 50%, transparent 72%);
+  opacity:0; transition:opacity 0.22s;
 }
-.pg2-card:not(.oos):hover .pg2-hover-layer { opacity:1; }
+.pg-card:not(.oos):hover .pg-hover-layer { opacity:1; }
 
-.pg2-cart-btn {
+.pg-cart-btn {
   position:absolute; bottom:12px; left:12px; right:12px; z-index:5;
-  padding:9px 0; border-radius:9px; border:none;
+  padding:10px 0; border-radius:9px; border:none;
   background:#fff; color:var(--text);
   font-size:12px; font-weight:700; font-family:'Sora',sans-serif;
   cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;
   transform:translateY(10px); opacity:0;
-  transition:opacity 0.22s, transform 0.22s, background 0.15s;
+  transition:opacity 0.2s, transform 0.2s, background 0.15s;
 }
-.pg2-card:not(.oos):hover .pg2-cart-btn { opacity:1; transform:translateY(0); }
-.pg2-cart-btn:hover { background:#f0ede8; }
+.pg-card:not(.oos):hover .pg-cart-btn { opacity:1; transform:translateY(0); }
+.pg-cart-btn:hover { background:#f0ede8; }
 
-.pg2-wish-btn {
+.pg-wish-btn {
   position:absolute; top:10px; right:10px; z-index:5;
   width:30px; height:30px; border-radius:8px; border:none;
   background:rgba(255,255,255,0.9); backdrop-filter:blur(6px);
   cursor:pointer; display:flex; align-items:center; justify-content:center;
   color:var(--text); transition:all 0.18s;
-  opacity:0; transform:scale(0.8) translateX(4px);
+  opacity:0; transform:translateX(6px);
 }
-.pg2-card:not(.oos):hover .pg2-wish-btn { opacity:1; transform:scale(1) translateX(0); }
-.pg2-wish-btn:hover { background:#fff; color:#ef4444; }
+.pg-card:not(.oos):hover .pg-wish-btn { opacity:1; transform:translateX(0); }
+.pg-wish-btn:hover { background:#fff; color:#ef4444; }
 
 /* ── Badges ── */
-.pg2-badge-tl, .pg2-badge-tr {
-  position:absolute; top:10px; z-index:6;
-  padding:3px 9px; border-radius:20px;
-  font-size:10px; font-weight:800; letter-spacing:0.2px;
-  pointer-events:none;
-}
-.pg2-badge-tl { left:10px; }
-.pg2-badge-tr { right:10px; }
-.pg2-badge-sale { background:#dc2626; color:#fff; }
-.pg2-badge-new  { background:#16a34a; color:#fff; }
-.pg2-badge-oos  {
-  background:rgba(26,23,20,0.75); color:#fff;
-  backdrop-filter:blur(4px);
-  padding:4px 10px; font-size:11px; font-weight:700;
-  /* center horizontally */
-  left:50%; top:50%; transform:translate(-50%,-50%);
-  border-radius:10px; letter-spacing:0.3px;
+.pg-badge {
   position:absolute; z-index:6;
+  padding:3px 9px; border-radius:20px; pointer-events:none;
+  font-size:10px; font-weight:800; letter-spacing:0.2px;
+}
+.pg-badge.tl { top:10px; left:10px; }
+.pg-badge.sale { background:#dc2626; color:#fff; }
+.pg-badge.new  { background:#16a34a; color:#fff; }
+.pg-badge.oos-center {
+  top:50%; left:50%; transform:translate(-50%,-50%);
+  background:rgba(26,23,20,0.72); color:#fff;
+  backdrop-filter:blur(4px); border-radius:10px;
+  font-size:11px; padding:5px 13px;
 }
 
-/* ── Info ── */
-.pg2-info { padding:11px 13px 14px; }
-.pg2-name {
+/* ── Info panel ── */
+.pg-info { padding:13px 14px 15px; display:flex; flex-direction:column; gap:0; }
+
+/* seller line */
+.pg-seller {
+  font-size:10px; font-weight:600; color:var(--muted);
+  text-transform:uppercase; letter-spacing:0.5px;
+  margin:0 0 4px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+
+/* title */
+.pg-title {
   font-size:13px; font-weight:700; color:var(--text);
-  margin:0 0 3px; letter-spacing:-0.1px;
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  margin:0 0 10px; line-height:1.3;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+  overflow:hidden;
 }
-.pg2-sub {
-  font-size:11px; color:var(--muted); margin:0 0 9px;
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+
+/* color swatches row */
+.pg-colors { display:flex; align-items:center; gap:4px; margin-bottom:10px; flex-wrap:wrap; }
+.pg-color-dot {
+  width:12px; height:12px; border-radius:50%;
+  border:1.5px solid rgba(0,0,0,0.1);
+  flex-shrink:0;
 }
-.pg2-bottom { display:flex; align-items:flex-end; justify-content:space-between; gap:6px; }
-.pg2-price-wrap {}
-.pg2-price {
-  font-size:15px; font-weight:800; color:var(--text);
-  letter-spacing:-0.4px; line-height:1.1;
+.pg-color-more { font-size:10px; color:var(--muted); font-weight:600; }
+
+/* divider */
+.pg-info-divider { height:1px; background:var(--border); margin:0 0 10px; }
+
+/* bottom row */
+.pg-bottom { display:flex; align-items:flex-end; justify-content:space-between; gap:6px; }
+
+.pg-price-block {}
+.pg-price-main {
+  font-size:16px; font-weight:800; color:var(--text);
+  letter-spacing:-0.5px; line-height:1.1;
 }
-.pg2-price span { font-size:11px; font-weight:500; color:var(--muted); margin-left:2px; }
-.pg2-compare { font-size:11px; color:#c4bfb8; text-decoration:line-through; display:block; margin-top:1px; }
-.pg2-sizes { display:flex; gap:4px; flex-wrap:wrap; }
-.pg2-size {
-  width:22px; height:22px; border-radius:5px;
-  border:1px solid var(--border); display:flex; align-items:center;
-  justify-content:center; font-size:9px; font-weight:700; color:var(--muted);
-  transition:border-color 0.15s, color 0.15s;
+.pg-price-etb { font-size:11px; font-weight:500; color:var(--muted); margin-left:2px; }
+.pg-compare { font-size:11px; color:#c4bfb8; text-decoration:line-through; display:block; margin-top:1px; }
+
+/* size chips */
+.pg-sizes { display:flex; gap:4px; flex-wrap:wrap; justify-content:flex-end; }
+.pg-size {
+  padding:3px 7px; border-radius:5px; border:1px solid var(--border);
+  font-size:9px; font-weight:700; color:var(--muted);
+  letter-spacing:0.2px; transition:border-color 0.15s;
 }
-.pg2-card:hover .pg2-size { border-color:#c4bfb8; }
+.pg-card:hover .pg-size { border-color:#c4bfb8; }
 
 /* ── Skeleton ── */
-@keyframes pg2-shimmer {
+@keyframes pg-shimmer {
   0%   { background-position:-600px 0; }
   100% { background-position: 600px 0; }
 }
-.pg2-skel-card {
+.pg-skel {
   border-radius:14px; overflow:hidden; border:1px solid var(--border);
-}
-.pg2-skel-img {
-  aspect-ratio:3/4; width:100%;
-  background:linear-gradient(90deg,#ede9e4 25%,#e2ded8 50%,#ede9e4 75%);
+  background:linear-gradient(90deg,#ede9e4 25%,#e4ded8 50%,#ede9e4 75%);
   background-size:1200px 100%;
-  animation:pg2-shimmer 1.8s ease-in-out infinite;
+  animation:pg-shimmer 1.8s ease-in-out infinite;
 }
-.pg2-skel-body { padding:11px 13px 14px; display:flex; flex-direction:column; gap:7px; }
-.pg2-skel-line {
+.pg-skel-img { aspect-ratio:4/5; width:100%; }
+.pg-skel-body { padding:13px 14px 15px; display:flex; flex-direction:column; gap:8px; }
+.pg-skel-line {
   border-radius:5px;
-  background:linear-gradient(90deg,#ede9e4 25%,#e2ded8 50%,#ede9e4 75%);
-  background-size:1200px 100%;
-  animation:pg2-shimmer 1.8s ease-in-out infinite;
+  background:rgba(0,0,0,0.07);
 }
 
 /* ── Empty ── */
-.pg2-empty {
+.pg-empty {
   display:flex; flex-direction:column; align-items:center;
   padding:80px 24px; background:var(--card); border-radius:18px;
   border:1.5px dashed var(--border); text-align:center;
 }
-.pg2-empty-ico {
-  width:60px; height:60px; border-radius:16px;
-  background:var(--hover); display:flex; align-items:center;
-  justify-content:center; color:var(--muted); margin-bottom:14px;
-}
-.pg2-empty-title { font-size:16px; font-weight:700; color:var(--text); margin:0 0 6px; }
-.pg2-empty-sub   { font-size:13px; color:var(--muted); margin:0 0 20px; }
-.pg2-empty-btn {
-  padding:10px 22px; background:var(--text); color:#fff;
-  border:none; border-radius:10px; font-size:13px; font-weight:700;
-  cursor:pointer; font-family:'Sora',sans-serif; transition:background 0.15s;
-}
-.pg2-empty-btn:hover { background:#333; }
+.pg-empty-ico { width:60px;height:60px;border-radius:16px;background:var(--hover);display:flex;align-items:center;justify-content:center;color:var(--muted);margin-bottom:14px; }
+.pg-empty-title { font-size:16px;font-weight:700;color:var(--text);margin:0 0 6px; }
+.pg-empty-sub   { font-size:13px;color:var(--muted);margin:0 0 20px; }
+.pg-empty-btn   { padding:10px 22px;background:var(--text);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Sora',sans-serif;transition:background 0.15s; }
+.pg-empty-btn:hover { background:#333; }
 `;
 
-// ─── Icons ───────────────────────────────────────────────────────────────────
+// ─── Icons ────────────────────────────────────────────────────────────────────
 const CartIco = () => (
   <svg
-    width="12"
-    height="12"
+    width="13"
+    height="13"
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth="2"
+    strokeWidth="1.75"
     strokeLinecap="round"
     strokeLinejoin="round"
   >
@@ -252,12 +269,12 @@ const CartIco = () => (
 );
 const HeartIco = () => (
   <svg
-    width="12"
-    height="12"
+    width="13"
+    height="13"
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth="2"
+    strokeWidth="1.75"
     strokeLinecap="round"
     strokeLinejoin="round"
   >
@@ -295,21 +312,48 @@ const SearchIco = () => (
   </svg>
 );
 
-// ─── Skeleton ────────────────────────────────────────────────────────────────
+// ─── Skeleton ─────────────────────────────────────────────────────────────────
 function SkeletonCard() {
   return (
-    <div className="pg2-skel-card">
-      <div className="pg2-skel-img" />
-      <div className="pg2-skel-body">
-        <div className="pg2-skel-line" style={{ height: 12, width: "70%" }} />
-        <div className="pg2-skel-line" style={{ height: 10, width: "50%" }} />
-        <div
-          className="pg2-skel-line"
-          style={{ height: 14, width: "40%", marginTop: 4 }}
-        />
+    <div className="pg-skel">
+      <div className="pg-skel-img" />
+      <div className="pg-skel-body">
+        <div className="pg-skel-line" style={{ height: 9, width: "40%" }} />
+        <div className="pg-skel-line" style={{ height: 13, width: "80%" }} />
+        <div className="pg-skel-line" style={{ height: 11, width: "60%" }} />
+        <div className="pg-skel-line" style={{ height: 1, margin: "2px 0" }} />
+        <div style={{ display: "flex", justifyContent: "space-between" }}>
+          <div className="pg-skel-line" style={{ height: 15, width: "38%" }} />
+          <div className="pg-skel-line" style={{ height: 14, width: "30%" }} />
+        </div>
       </div>
     </div>
   );
+}
+
+// color hex lookup — extend as needed
+const COLOR_HEX: Record<string, string> = {
+  black: "#1a1714",
+  white: "#f8f8f8",
+  gray: "#9ca3af",
+  grey: "#9ca3af",
+  blue: "#3b82f6",
+  red: "#ef4444",
+  green: "#10b981",
+  yellow: "#f59e0b",
+  orange: "#f97316",
+  purple: "#8b5cf6",
+  pink: "#ec4899",
+  brown: "#a16207",
+  khaki: "#c4b5a0",
+  navy: "#1e3a5f",
+  beige: "#e8dcc8",
+  cream: "#fef3c7",
+};
+
+function colorDot(colorStr: string) {
+  const key = colorStr.toLowerCase().split(" ").pop() || "";
+  return COLOR_HEX[key] || COLOR_HEX[colorStr.toLowerCase()] || "#e8e4de";
 }
 
 // ─── Product Card ─────────────────────────────────────────────────────────────
@@ -329,6 +373,10 @@ function ProductCard({ product, index, isVisible }: any) {
         )
       : 0;
 
+  // unique colors from variants or colors array
+  const rawColors: string[] = product.colors || [];
+  const uniqueColors = [...new Set(rawColors)];
+
   const handleCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -344,49 +392,49 @@ function ProductCard({ product, index, isVisible }: any) {
       sellerId: product.seller?.id || "unknown",
       sellerName: product.seller?.name || "Unknown",
     });
-    alert(`✅ Added "${product.title}" to cart!`);
+    alert(`✅ Added to cart!`);
   };
 
   return (
     <a
       href={`/product/${product.id}`}
-      className={`pg2-card${isOOS ? " oos" : ""}`}
+      className={`pg-card${isOOS ? " oos" : ""}`}
       style={{
         opacity: isVisible ? 1 : 0,
-        transform: isVisible ? "translateY(0)" : "translateY(26px)",
+        transform: isVisible ? "translateY(0)" : "translateY(24px)",
         transition: `opacity 0.4s ease ${index * 0.035}s, transform 0.4s ease ${index * 0.035}s`,
       }}
     >
-      {/* ── Image ── */}
-      <div className="pg2-img-wrap">
+      {/* Image */}
+      <div className="pg-img-wrap">
         <img
           src={primary}
           alt={product.title}
           loading="lazy"
-          className={`pg2-img pri${hasAlt ? " alt" : ""}${isOOS ? " dim" : ""}`}
+          className={`pg-img pri${hasAlt ? " alt" : ""}${isOOS ? " dim" : ""}`}
         />
         {hasAlt && (
-          <img src={secondary} alt="" loading="lazy" className="pg2-img sec" />
+          <img src={secondary} alt="" loading="lazy" className="pg-img sec" />
         )}
 
         {/* Badges */}
         {!isOOS && discount > 0 && (
-          <span className="pg2-badge-tl pg2-badge-sale">−{discount}%</span>
+          <span className="pg-badge tl sale">−{discount}%</span>
         )}
         {!isOOS && product.newArrival && !discount && (
-          <span className="pg2-badge-tl pg2-badge-new">New</span>
+          <span className="pg-badge tl new">New</span>
         )}
-        {isOOS && <span className="pg2-badge-oos">Out of stock</span>}
+        {isOOS && <span className="pg-badge oos-center">Out of stock</span>}
 
-        {/* Hover layer + actions */}
+        {/* Actions */}
         {!isOOS && (
           <>
-            <div className="pg2-hover-layer" />
-            <button className="pg2-cart-btn" onClick={handleCart}>
+            <div className="pg-hover-layer" />
+            <button className="pg-cart-btn" onClick={handleCart}>
               <CartIco /> Add to cart
             </button>
             <button
-              className="pg2-wish-btn"
+              className="pg-wish-btn"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -399,29 +447,61 @@ function ProductCard({ product, index, isVisible }: any) {
         )}
       </div>
 
-      {/* ── Info ── */}
-      <div className="pg2-info">
-        <p className="pg2-name">{product.title}</p>
-        <p className="pg2-sub">{product.description}</p>
-        <div className="pg2-bottom">
-          <div className="pg2-price-wrap">
-            <p className="pg2-price">
+      {/* Info */}
+      <div className="pg-info">
+        {/* Seller name */}
+        {product.seller?.name && (
+          <p className="pg-seller">{product.seller.name}</p>
+        )}
+
+        {/* Title — 2 lines max */}
+        <p className="pg-title">{product.title}</p>
+
+        {/* Color swatches */}
+        {uniqueColors.length > 0 && (
+          <div className="pg-colors">
+            {uniqueColors.slice(0, 5).map((c, i) => (
+              <span
+                key={i}
+                className="pg-color-dot"
+                style={{ background: colorDot(c) }}
+                title={c}
+              />
+            ))}
+            {uniqueColors.length > 5 && (
+              <span className="pg-color-more">+{uniqueColors.length - 5}</span>
+            )}
+          </div>
+        )}
+
+        <div className="pg-info-divider" />
+
+        {/* Price + sizes */}
+        <div className="pg-bottom">
+          <div className="pg-price-block">
+            <p className="pg-price-main">
               {product.price.toLocaleString()}
-              <span>ETB</span>
+              <span className="pg-price-etb">ETB</span>
             </p>
             {discount > 0 && (
-              <span className="pg2-compare">
+              <span className="pg-compare">
                 {product.compareAtPrice.toLocaleString()} ETB
               </span>
             )}
           </div>
+
           {!isOOS && product.sizes?.length > 0 && (
-            <div className="pg2-sizes">
-              {product.sizes.slice(0, 3).map((s: string) => (
-                <span key={s} className="pg2-size">
+            <div className="pg-sizes">
+              {product.sizes.slice(0, 4).map((s: string) => (
+                <span key={s} className="pg-size">
                   {s}
                 </span>
               ))}
+              {product.sizes.length > 4 && (
+                <span className="pg-size" style={{ color: "var(--muted)" }}>
+                  …
+                </span>
+              )}
             </div>
           )}
         </div>
@@ -430,7 +510,7 @@ function ProductCard({ product, index, isVisible }: any) {
   );
 }
 
-// ─── Main component ───────────────────────────────────────────────────────────
+// ─── Main ─────────────────────────────────────────────────────────────────────
 export default function ProductGrid({
   initialCategory = "all",
   showTrendingOnly = false,
@@ -493,11 +573,10 @@ export default function ProductGrid({
     return () => obs.disconnect();
   }, [isVisible]);
 
-  // Fetch on mount
+  // Initial fetch
   useEffect(() => {
     if (hasFetchedRef.current) return;
     hasFetchedRef.current = true;
-
     if (typeof window !== "undefined") {
       const cached = localStorage.getItem(CACHE_KEY);
       if (cached) {
@@ -531,7 +610,6 @@ export default function ProductGrid({
     };
   }, []);
 
-  // Re-filter on any dep change
   useEffect(() => {
     filterFromCache();
   }, [
@@ -548,10 +626,10 @@ export default function ProductGrid({
     productsCache,
   ]);
 
-  const checkForNewProducts = async (cachedCount: number) => {
+  const checkForNewProducts = async (count: number) => {
     try {
       const data = await fetch("/api/products/public").then((r) => r.json());
-      if ((data.products?.length || 0) !== cachedCount) {
+      if ((data.products?.length || 0) !== count) {
         localStorage.removeItem(CACHE_KEY);
         await preloadAllCategories(true);
       }
@@ -654,7 +732,10 @@ export default function ProductGrid({
             ] as any[]) || []),
           ]
         : [...productsCache.all];
-    if (selectedCategory !== "all" && searchQuery)
+    if (
+      selectedCategory !== "all" &&
+      (searchQuery || selectedSizes.length || selectedColors.length)
+    )
       f = f.filter(
         (p) => p.category.toLowerCase() === selectedCategory.toLowerCase(),
       );
@@ -733,56 +814,57 @@ export default function ProductGrid({
   return (
     <>
       <style>{CSS}</style>
-      <section ref={sectionRef} className="pg2-section">
-        <div className="pg2-inner">
-          <div className="pg2-layout">
-            {/* Sidebar — unchanged component, just styled via its own CSS */}
-            <FilterSidebar
-              searchQuery={searchQuery}
-              selectedCategory={showTrendingOnly ? "all" : selectedCategory}
-              selectedSizes={selectedSizes}
-              priceRange={priceRange}
-              selectedColors={selectedColors}
-              selectedClothingTypes={selectedClothingTypes}
-              selectedOccasions={selectedOccasions}
-              showNewArrivals={showNewArrivals}
-              showOnSale={showOnSale}
-              onSearchChange={setSearchQuery}
-              onCategoryChange={
-                showTrendingOnly ? () => {} : setSelectedCategory
-              }
-              onSizeToggle={toggleSize}
-              onPriceChange={setPriceRange}
-              onColorToggle={toggleColor}
-              onClothingTypeToggle={toggleClothingType}
-              onOccasionToggle={toggleOccasion}
-              onNewArrivalsChange={setShowNewArrivals}
-              onSaleChange={setShowOnSale}
-              onClearFilters={clearFilters}
-              activeFiltersCount={activeFiltersCount}
-              expandedSections={expandedSections}
-              onToggleSection={toggleSection}
-              hideCategoryFilter={showTrendingOnly}
-            />
+      <section ref={sectionRef} className="pg-section">
+        <div className="pg-inner">
+          <div className="pg-layout">
+            {/* ── Sidebar — sticky wrapper ── */}
+            <div className="pg-sidebar-col">
+              <FilterSidebar
+                searchQuery={searchQuery}
+                selectedCategory={showTrendingOnly ? "all" : selectedCategory}
+                selectedSizes={selectedSizes}
+                priceRange={priceRange}
+                selectedColors={selectedColors}
+                selectedClothingTypes={selectedClothingTypes}
+                selectedOccasions={selectedOccasions}
+                showNewArrivals={showNewArrivals}
+                showOnSale={showOnSale}
+                onSearchChange={setSearchQuery}
+                onCategoryChange={
+                  showTrendingOnly ? () => {} : setSelectedCategory
+                }
+                onSizeToggle={toggleSize}
+                onPriceChange={setPriceRange}
+                onColorToggle={toggleColor}
+                onClothingTypeToggle={toggleClothingType}
+                onOccasionToggle={toggleOccasion}
+                onNewArrivalsChange={setShowNewArrivals}
+                onSaleChange={setShowOnSale}
+                onClearFilters={clearFilters}
+                activeFiltersCount={activeFiltersCount}
+                expandedSections={expandedSections}
+                onToggleSection={toggleSection}
+                hideCategoryFilter={showTrendingOnly}
+              />
+            </div>
 
-            {/* Main */}
-            <div className="pg2-main">
-              {/* Toolbar */}
-              <div className="pg2-toolbar">
+            {/* ── Main ── */}
+            <div className="pg-main">
+              <div className="pg-toolbar">
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <p className="pg2-count">
+                  <p className="pg-count">
                     <strong>{displayedProducts.length}</strong>{" "}
                     {displayedProducts.length === 1 ? "product" : "products"}
                   </p>
                   {activeFiltersCount > 0 && (
-                    <button className="pg2-filter-tag" onClick={clearFilters}>
+                    <button className="pg-filter-chip" onClick={clearFilters}>
                       {activeFiltersCount} filter
                       {activeFiltersCount !== 1 ? "s" : ""} <XIco />
                     </button>
                   )}
                 </div>
                 <select
-                  className="pg2-sort"
+                  className="pg-sort"
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
                 >
@@ -793,15 +875,14 @@ export default function ProductGrid({
                 </select>
               </div>
 
-              {/* Grid */}
               {isLoadingProducts ? (
-                <div className="pg2-grid">
-                  {Array.from({ length: 10 }).map((_, i) => (
+                <div className="pg-grid">
+                  {Array.from({ length: 8 }).map((_, i) => (
                     <SkeletonCard key={i} />
                   ))}
                 </div>
               ) : displayedProducts.length > 0 ? (
-                <div className="pg2-grid">
+                <div className="pg-grid">
                   {displayedProducts.map((p, i) => (
                     <ProductCard
                       key={p.id}
@@ -812,15 +893,15 @@ export default function ProductGrid({
                   ))}
                 </div>
               ) : (
-                <div className="pg2-empty">
-                  <div className="pg2-empty-ico">
+                <div className="pg-empty">
+                  <div className="pg-empty-ico">
                     <SearchIco />
                   </div>
-                  <p className="pg2-empty-title">No products found</p>
-                  <p className="pg2-empty-sub">
+                  <p className="pg-empty-title">No products found</p>
+                  <p className="pg-empty-sub">
                     Try adjusting your filters or search terms
                   </p>
-                  <button className="pg2-empty-btn" onClick={clearFilters}>
+                  <button className="pg-empty-btn" onClick={clearFilters}>
                     Clear Filters
                   </button>
                 </div>
