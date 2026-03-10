@@ -1,14 +1,50 @@
-import { useState, useRef, useEffect } from "react";
+"use client";
+import {
+  useState,
+  useRef,
+  useEffect,
+  ReactNode,
+  ChangeEvent,
+  KeyboardEvent,
+  DragEvent,
+  FocusEvent,
+} from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-// ─── Icons (inline SVG components) ───────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
+interface IconProps {
+  d: string;
+  size?: number;
+  stroke?: string;
+  fill?: string;
+  strokeWidth?: number;
+}
+type IconPropsNoD = Omit<IconProps, "d">;
+
+interface DropdownOption {
+  value: string;
+  label: string;
+  description?: string;
+}
+
+interface Variant {
+  size: string;
+  color: string;
+  quantity: number;
+}
+
+interface FormErrors {
+  [key: string]: string;
+}
+
+// ─── Icons ────────────────────────────────────────────────────────────────────
 const Icon = ({
   d,
   size = 16,
   stroke = "currentColor",
   fill = "none",
   strokeWidth = 1.75,
-}) => (
+}: IconProps) => (
   <svg
     width={size}
     height={size}
@@ -22,36 +58,35 @@ const Icon = ({
     <path d={d} />
   </svg>
 );
-const XIcon = (p) => <Icon {...p} d="M18 6 6 18M6 6l12 12" />;
-const PlusIcon = (p) => <Icon {...p} d="M12 5v14M5 12h14" />;
-const MinusIcon = (p) => <Icon {...p} d="M5 12h14" />;
-const CheckIcon = (p) => <Icon {...p} d="M20 6 9 17l-5-5" strokeWidth={2.5} />;
-const ArrowLeftIcon = (p) => <Icon {...p} d="m15 18-6-6 6-6" />;
-const AlertIcon = (p) => (
+
+const XIcon = (p: IconPropsNoD) => <Icon {...p} d="M18 6 6 18M6 6l12 12" />;
+const PlusIcon = (p: IconPropsNoD) => <Icon {...p} d="M12 5v14M5 12h14" />;
+const MinusIcon = (p: IconPropsNoD) => <Icon {...p} d="M5 12h14" />;
+const CheckIcon = (p: IconPropsNoD) => (
+  <Icon {...p} d="M20 6 9 17l-5-5" strokeWidth={2.5} />
+);
+const ArrowLeftIcon = (p: IconPropsNoD) => <Icon {...p} d="m15 18-6-6 6-6" />;
+const AlertIcon = (p: IconPropsNoD) => (
   <Icon
     {...p}
     d="M12 9v4m0 4h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
   />
 );
-const ImageIcon = (p) => (
-  <Icon
-    {...p}
-    d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7m4-2h6v6m-11 5 9.5-9.5"
-  />
-);
-const UploadIcon = (p) => (
+const UploadIcon = (p: IconPropsNoD) => (
   <Icon
     {...p}
     d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m14-7-5-5-5 5m5-5v12"
   />
 );
-const SparkleIcon = (p) => (
+const SparkleIcon = (p: IconPropsNoD) => (
   <Icon
     {...p}
     d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3z"
   />
 );
-const LoaderIcon = ({ size = 16 }) => (
+const ChevronDown = (p: IconPropsNoD) => <Icon {...p} d="m6 9 6 6 6-6" />;
+
+const LoaderIcon = ({ size = 16 }: { size?: number }) => (
   <svg
     width={size}
     height={size}
@@ -65,20 +100,17 @@ const LoaderIcon = ({ size = 16 }) => (
     <path d="M21 12a9 9 0 1 1-6.219-8.56" />
   </svg>
 );
-const GripIcon = (p) => (
-  <Icon
-    {...p}
-    d="M9 5h.01M9 12h.01M9 19h.01M15 5h.01M15 12h.01M15 19h.01"
-    strokeWidth={2.5}
-  />
-);
-const ChevronDown = (p) => <Icon {...p} d="m6 9 6 6 6-6" />;
 
 // ─── Image compression ────────────────────────────────────────────────────────
-const compressImage = (file, maxW = 1200, maxH = 1200, q = 0.85) =>
+const compressImage = (
+  file: File,
+  maxW = 1200,
+  maxH = 1200,
+  q = 0.85,
+): Promise<Blob> =>
   new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = (e: ProgressEvent<FileReader>) => {
       const img = document.createElement("img");
       img.onload = () => {
         let w = img.width,
@@ -95,33 +127,51 @@ const compressImage = (file, maxW = 1200, maxH = 1200, q = 0.85) =>
         const canvas = document.createElement("canvas");
         canvas.width = w;
         canvas.height = h;
-        canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+        canvas.getContext("2d")!.drawImage(img, 0, 0, w, h);
         canvas.toBlob(
-          (b) => (b ? resolve(b) : reject(new Error("Failed"))),
+          (b) => (b ? resolve(b) : reject(new Error("Compression failed"))),
           "image/jpeg",
           q,
         );
       };
       img.onerror = reject;
-      img.src = e.target.result;
+      img.src = e.target!.result as string;
     };
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
 
-// ─── Dropdown ─────────────────────────────────────────────────────────────────
-function Dropdown({ options, value, onChange, placeholder, error }) {
+// ─── Dropdown ────────────────────────────────────────────────────────────────
+interface DropdownProps {
+  options: DropdownOption[];
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  error?: boolean;
+}
+
+function Dropdown({
+  options,
+  value,
+  onChange,
+  placeholder,
+  error,
+}: DropdownProps) {
   const [open, setOpen] = useState(false);
-  const ref = useRef();
+  const ref = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    const handler = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node))
+        setOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
-  const selected = options.find((o) => (o.value || o) === value);
-  const label = selected ? selected.label || selected : null;
+
+  const selected = options.find((o) => o.value === value);
+  const label = selected?.label ?? null;
+
   return (
     <div ref={ref} style={{ position: "relative" }}>
       <button
@@ -143,7 +193,7 @@ function Dropdown({ options, value, onChange, placeholder, error }) {
           boxShadow: open ? "0 0 0 3px var(--accent-soft)" : "none",
         }}
       >
-        <span>{label || placeholder}</span>
+        <span>{label ?? placeholder}</span>
         <span
           style={{
             transition: "transform 0.2s",
@@ -154,6 +204,7 @@ function Dropdown({ options, value, onChange, placeholder, error }) {
           <ChevronDown size={14} />
         </span>
       </button>
+
       <AnimatePresence>
         {open && (
           <motion.div
@@ -175,21 +226,18 @@ function Dropdown({ options, value, onChange, placeholder, error }) {
             }}
           >
             {options.map((opt) => {
-              const val = opt.value || opt;
-              const lbl = opt.label || opt;
-              const desc = opt.description;
-              const isActive = val === value;
+              const isActive = opt.value === value;
               return (
                 <button
-                  key={val}
+                  key={opt.value}
                   type="button"
                   onClick={() => {
-                    onChange(val);
+                    onChange(opt.value);
                     setOpen(false);
                   }}
                   style={{
                     width: "100%",
-                    padding: desc ? "10px 14px" : "9px 14px",
+                    padding: opt.description ? "10px 14px" : "9px 14px",
                     background: isActive ? "var(--accent-soft)" : "transparent",
                     border: "none",
                     cursor: "pointer",
@@ -215,11 +263,11 @@ function Dropdown({ options, value, onChange, placeholder, error }) {
                       color: isActive ? "var(--accent)" : "var(--text)",
                     }}
                   >
-                    {lbl}
+                    {opt.label}
                   </span>
-                  {desc && (
+                  {opt.description && (
                     <span style={{ fontSize: 11, color: "var(--muted)" }}>
-                      {desc}
+                      {opt.description}
                     </span>
                   )}
                 </button>
@@ -232,8 +280,8 @@ function Dropdown({ options, value, onChange, placeholder, error }) {
   );
 }
 
-// ─── Section Heading ──────────────────────────────────────────────────────────
-function SectionHead({ title, sub }) {
+// ─── SectionHead ─────────────────────────────────────────────────────────────
+function SectionHead({ title, sub }: { title: string; sub?: string }) {
   return (
     <div style={{ marginBottom: 16 }}>
       <h3
@@ -264,7 +312,17 @@ function SectionHead({ title, sub }) {
 }
 
 // ─── Field ────────────────────────────────────────────────────────────────────
-function Field({ label, required, error, children }) {
+function Field({
+  label,
+  required,
+  error,
+  children,
+}: {
+  label?: string;
+  required?: boolean;
+  error?: string;
+  children: ReactNode;
+}) {
   return (
     <div>
       {label && (
@@ -302,7 +360,10 @@ function Field({ label, required, error, children }) {
   );
 }
 
-const inputStyle = (hasError) => ({
+// ─── inputStyle ───────────────────────────────────────────────────────────────
+const inputStyle = (
+  hasError: boolean | string | undefined,
+): React.CSSProperties => ({
   width: "100%",
   padding: "10px 14px",
   fontSize: 14,
@@ -316,8 +377,14 @@ const inputStyle = (hasError) => ({
   fontFamily: "inherit",
 });
 
-// ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
-export default function AddProductForm({ onClose, onSubmit }) {
+// ─── Main Component ───────────────────────────────────────────────────────────
+export default function AddProductForm({
+  onClose,
+  onSubmit,
+}: {
+  onClose: () => void;
+  onSubmit?: (product: unknown) => void;
+}) {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -329,24 +396,24 @@ export default function AddProductForm({ onClose, onSubmit }) {
     material: "",
     status: "PUBLISHED",
   });
-  const [variants, setVariants] = useState([
+  const [variants, setVariants] = useState<Variant[]>([
     { size: "S", color: "Black", quantity: 0 },
   ]);
-  const [images, setImages] = useState([]);
+  const [images, setImages] = useState<string[]>([]);
   const [imageUrl, setImageUrl] = useState("");
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [errors, setErrors] = useState({});
+  const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [dragOver, setDragOver] = useState(false);
-  const fileRef = useRef();
+  const fileRef = useRef<HTMLInputElement>(null);
 
-  const categoryOptions = [
+  const categoryOptions: DropdownOption[] = [
     { value: "MEN", label: "Men's", description: "For men" },
     { value: "WOMEN", label: "Women's", description: "For women" },
     { value: "UNISEX", label: "Unisex", description: "For everyone" },
   ];
-  const clothingTypeOptions = [
+  const clothingTypeOptions: DropdownOption[] = [
     { value: "TOP", label: "Tops", description: "T-shirts, Shirts, Blouses" },
     { value: "BOTTOM", label: "Bottoms", description: "Jeans, Pants, Skirts" },
     { value: "DRESS", label: "Dresses", description: "All dress styles" },
@@ -368,7 +435,7 @@ export default function AddProductForm({ onClose, onSubmit }) {
       description: "Sports & Fitness",
     },
   ];
-  const occasionOptions = [
+  const occasionOptions: DropdownOption[] = [
     { value: "CASUAL", label: "Casual", description: "Everyday wear" },
     { value: "FORMAL", label: "Formal", description: "Business & Events" },
     {
@@ -383,7 +450,7 @@ export default function AddProductForm({ onClose, onSubmit }) {
       description: "Professional attire",
     },
   ];
-  const statusOptions = [
+  const statusOptions: DropdownOption[] = [
     {
       value: "PUBLISHED",
       label: "Published",
@@ -392,32 +459,49 @@ export default function AddProductForm({ onClose, onSubmit }) {
     { value: "DRAFT", label: "Draft", description: "Hidden from store" },
     { value: "ARCHIVED", label: "Archived", description: "No longer sold" },
   ];
-  const sizes = ["XS", "S", "M", "L", "XL", "XXL", "2XL", "3XL"].map((s) => ({
-    value: s,
-    label: s,
-  }));
+  const sizes: DropdownOption[] = [
+    "XS",
+    "S",
+    "M",
+    "L",
+    "XL",
+    "XXL",
+    "2XL",
+    "3XL",
+  ].map((s) => ({ value: s, label: s }));
 
-  const handleInput = (e) => {
+  // ── handlers ────────────────────────────────────────────────────────────────
+  const handleInput = (
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
     const { name, value } = e.target;
     setFormData((p) => ({ ...p, [name]: value }));
     if (errors[name]) setErrors((p) => ({ ...p, [name]: "" }));
   };
 
-  const focusStyle = (e) => {
+  const applyFocus = (
+    e: FocusEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
     e.target.style.borderColor = "var(--accent)";
     e.target.style.boxShadow = "0 0 0 3px var(--accent-soft)";
   };
-  const blurStyle = (e) => {
+  const applyBlur = (e: FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     e.target.style.borderColor = "var(--border)";
     e.target.style.boxShadow = "none";
   };
 
-  const handleFileUpload = async (e) => {
+  const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = "";
-    if (!file.type.startsWith("image/")) return alert("Please upload an image");
-    if (file.size > 10 * 1024 * 1024) return alert("Max 10MB");
+    if (!file.type.startsWith("image/")) {
+      alert("Please upload an image");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      alert("Max file size is 10 MB");
+      return;
+    }
     setUploading(true);
     setUploadProgress(10);
     try {
@@ -430,13 +514,13 @@ export default function AddProductForm({ onClose, onSubmit }) {
       const userStr = localStorage.getItem("yog_user");
       const res = await fetch("/api/upload", {
         method: "POST",
-        headers: { "x-user-data": userStr || "" },
+        headers: { "x-user-data": userStr ?? "" },
         body: fd,
       });
-      const data = await res.json();
+      const data = (await res.json()) as { url?: string; error?: string };
       setUploadProgress(100);
-      if (res.ok && data.url) setImages((p) => [...p, data.url]);
-      else alert(data.error || "Upload failed");
+      if (res.ok && data.url) setImages((p) => [...p, data.url!]);
+      else alert(data.error ?? "Upload failed");
     } catch {
       alert("Upload failed");
     } finally {
@@ -445,11 +529,12 @@ export default function AddProductForm({ onClose, onSubmit }) {
     }
   };
 
-  const handleFiles = (files) => {
+  const handleDropFiles = (files: FileList) => {
     Array.from(files).forEach((file) => {
       const reader = new FileReader();
-      reader.onload = (e) => {
-        if (e.target?.result) setImages((p) => [...p, e.target.result]);
+      reader.onload = (e: ProgressEvent<FileReader>) => {
+        const result = e.target?.result;
+        if (typeof result === "string") setImages((p) => [...p, result]);
       };
       reader.readAsDataURL(file);
     });
@@ -462,8 +547,8 @@ export default function AddProductForm({ onClose, onSubmit }) {
     }
   };
 
-  const validate = () => {
-    const e = {};
+  const validate = (): boolean => {
+    const e: FormErrors = {};
     if (!formData.title.trim()) e.title = "Title is required";
     if (!formData.description.trim()) e.description = "Description is required";
     if (!formData.price || parseFloat(formData.price) <= 0)
@@ -476,7 +561,7 @@ export default function AddProductForm({ onClose, onSubmit }) {
     return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!validate()) return;
     setIsSubmitting(true);
@@ -498,16 +583,16 @@ export default function AddProductForm({ onClose, onSubmit }) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-user-data": userStr || "",
+          "x-user-data": userStr ?? "",
         },
         body: JSON.stringify(payload),
       });
-      const data = await res.json();
+      const data = (await res.json()) as { product?: unknown; error?: string };
       if (res.ok) {
         alert("Product added!");
         onSubmit?.(data.product);
       } else {
-        alert(data.error || "Failed");
+        alert(data.error ?? "Failed to create product");
         setIsSubmitting(false);
       }
     } catch {
@@ -516,25 +601,20 @@ export default function AddProductForm({ onClose, onSubmit }) {
     }
   };
 
-  // ─── CSS vars ───────────────────────────────────────────────────────────────
+  // ── CSS ─────────────────────────────────────────────────────────────────────
   const css = `
     @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&display=swap');
     :root {
-      --bg: #f6f5f3;
-      --card: #ffffff;
-      --sidebar: #fafaf9;
-      --text: #1a1714;
-      --muted: #9e9890;
-      --border: #e8e4de;
-      --input-bg: #fdfcfb;
-      --accent: #2563eb;
-      --accent-soft: rgba(37,99,235,0.08);
-      --error: #dc2626;
-      --hover: #f5f3f0;
-      --divider: rgba(0,0,0,0.06);
+      --bg:#f6f5f3; --card:#ffffff; --sidebar:#fafaf9; --text:#1a1714;
+      --muted:#9e9890; --border:#e8e4de; --input-bg:#fdfcfb;
+      --accent:#2563eb; --accent-soft:rgba(37,99,235,0.08);
+      --error:#dc2626; --hover:#f5f3f0; --divider:rgba(0,0,0,0.06);
     }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    @keyframes fadeSlideIn { from { opacity:0; transform:translateY(16px) scale(0.98); } to { opacity:1; transform:none; } }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    @keyframes fadeSlideIn {
+      from { opacity:0; transform:translateY(16px) scale(0.98); }
+      to   { opacity:1; transform:none; }
+    }
     .apf-overlay {
       position:fixed;inset:0;background:rgba(15,12,9,0.55);backdrop-filter:blur(6px);
       display:flex;align-items:center;justify-content:center;padding:16px;z-index:9999;
@@ -542,8 +622,8 @@ export default function AddProductForm({ onClose, onSubmit }) {
     .apf-modal {
       background:var(--card);border-radius:20px;width:100%;max-width:1100px;
       max-height:92vh;overflow:hidden;display:flex;flex-direction:column;
-      box-shadow:0 32px 80px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.06);
-      animation: fadeSlideIn 0.28s cubic-bezier(0.16,1,0.3,1);
+      box-shadow:0 32px 80px rgba(0,0,0,0.18),0 0 0 1px rgba(0,0,0,0.06);
+      animation:fadeSlideIn 0.28s cubic-bezier(0.16,1,0.3,1);
       font-family:'Sora',sans-serif;
     }
     .apf-header {
@@ -551,7 +631,7 @@ export default function AddProductForm({ onClose, onSubmit }) {
       padding:18px 28px;border-bottom:1px solid var(--divider);
       background:var(--card);position:sticky;top:0;z-index:10;flex-shrink:0;
     }
-    .apf-header-left { display:flex;align-items:center;gap:12px; }
+    .apf-header-left  { display:flex;align-items:center;gap:12px; }
     .apf-header-right { display:flex;align-items:center;gap:10px; }
     .apf-icon-btn {
       width:36px;height:36px;border-radius:10px;border:1px solid var(--border);
@@ -565,25 +645,26 @@ export default function AddProductForm({ onClose, onSubmit }) {
       font-family:'Sora',sans-serif;font-size:13px;font-weight:600;
       cursor:pointer;transition:all 0.15s;letter-spacing:-0.1px;
     }
-    .apf-publish-btn:hover { background:#333;transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,0.18); }
-    .apf-publish-btn:disabled { opacity:0.5;cursor:not-allowed;transform:none;box-shadow:none; }
+    .apf-publish-btn:hover   { background:#333;transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,0.18); }
+    .apf-publish-btn:disabled{ opacity:0.5;cursor:not-allowed;transform:none;box-shadow:none; }
     .apf-body { display:flex;flex:1;overflow:hidden; }
-    .apf-main { flex:1;overflow-y:auto;padding:28px 32px;display:flex;flex-direction:column;gap:32px; }
+    .apf-main {
+      flex:1;overflow-y:auto;padding:28px 32px;
+      display:flex;flex-direction:column;gap:32px;
+    }
     .apf-sidebar {
       width:268px;flex-shrink:0;background:var(--sidebar);overflow-y:auto;
       padding:24px 20px;display:flex;flex-direction:column;gap:24px;
       border-left:1px solid var(--divider);
     }
-    .apf-section { display:flex;flex-direction:column;gap:0; }
+    .apf-section         { display:flex;flex-direction:column;gap:0; }
     .apf-section-divider { border:none;border-top:1px solid var(--divider);margin:0 0 20px; }
-    .apf-grid-2 { display:grid;grid-template-columns:1fr 1fr;gap:16px; }
-    .apf-variant-row {
-      display:grid;grid-template-columns:110px 1fr 90px 36px;gap:10px;align-items:center;
-    }
-    .apf-images-grid { display:grid;grid-template-columns:repeat(5,1fr);gap:10px; }
+    .apf-grid-2          { display:grid;grid-template-columns:1fr 1fr;gap:16px; }
+    .apf-variant-row     { display:grid;grid-template-columns:110px 1fr 90px 36px;gap:10px;align-items:center; }
+    .apf-images-grid     { display:grid;grid-template-columns:repeat(5,1fr);gap:10px; }
     .apf-img-thumb {
       aspect-ratio:1;border-radius:10px;overflow:hidden;position:relative;
-      border:1.5px solid var(--border);background:var(--hover);group:true;
+      border:1.5px solid var(--border);background:var(--hover);
     }
     .apf-img-thumb img { width:100%;height:100%;object-fit:cover; }
     .apf-img-remove {
@@ -602,8 +683,10 @@ export default function AddProductForm({ onClose, onSubmit }) {
       display:flex;flex-direction:column;align-items:center;justify-content:center;
       gap:5px;cursor:pointer;transition:all 0.15s;background:transparent;color:var(--muted);
     }
-    .apf-upload-zone:hover, .apf-upload-zone.drag { border-color:var(--accent);background:var(--accent-soft);color:var(--accent); }
-    .apf-url-row { display:flex;gap:8px;margin-top:10px; }
+    .apf-upload-zone:hover,.apf-upload-zone.drag {
+      border-color:var(--accent);background:var(--accent-soft);color:var(--accent);
+    }
+    .apf-url-row  { display:flex;gap:8px;margin-top:10px; }
     .apf-url-input {
       flex:1;padding:9px 12px;font-size:13px;background:var(--input-bg);
       border:1.5px solid var(--border);border-radius:9px;color:var(--text);
@@ -616,7 +699,7 @@ export default function AddProductForm({ onClose, onSubmit }) {
       font-family:'Sora',sans-serif;transition:all 0.15s;white-space:nowrap;
     }
     .apf-url-add:hover { background:#333; }
-    .apf-progress { width:100%;height:3px;background:var(--border);border-radius:99px;overflow:hidden;margin-top:4px; }
+    .apf-progress     { width:100%;height:3px;background:var(--border);border-radius:99px;overflow:hidden;margin-top:4px; }
     .apf-progress-bar { height:100%;background:var(--accent);transition:width 0.3s; }
     .apf-sidebar-label {
       font-size:11px;font-weight:700;color:var(--muted);letter-spacing:0.8px;
@@ -629,12 +712,28 @@ export default function AddProductForm({ onClose, onSubmit }) {
     .apf-dot { width:6px;height:6px;border-radius:50%; }
   `;
 
+  const statusColor = (s: string) => ({
+    bg: s === "PUBLISHED" ? "#dcfce7" : s === "DRAFT" ? "#fef9c3" : "#f3f4f6",
+    txt: s === "PUBLISHED" ? "#15803d" : s === "DRAFT" ? "#a16207" : "#6b7280",
+    dot: s === "PUBLISHED" ? "#22c55e" : s === "DRAFT" ? "#eab308" : "#9ca3af",
+  });
+
+  const checklist: [string, boolean][] = [
+    ["Title", !!formData.title],
+    ["Description", !!formData.description],
+    ["Price", !!formData.price && parseFloat(formData.price) > 0],
+    ["Category", !!formData.category],
+    ["Type", !!formData.clothingType],
+    ["2+ Images", images.length >= 2],
+    ["Variant", variants.length > 0],
+  ];
+
   return (
     <>
       <style>{css}</style>
       <div className="apf-overlay">
         <div className="apf-modal">
-          {/* Header */}
+          {/* ── Header ─────────────────────────────────────────────────────── */}
           <div className="apf-header">
             <div className="apf-header-left">
               <button className="apf-icon-btn" onClick={onClose} type="button">
@@ -686,12 +785,12 @@ export default function AddProductForm({ onClose, onSubmit }) {
             </div>
           </div>
 
-          {/* Body */}
+          {/* ── Body ───────────────────────────────────────────────────────── */}
           <div className="apf-body">
-            {/* Main */}
+            {/* Main scroll area */}
             <div className="apf-main">
               <form id="apf-form" onSubmit={handleSubmit}>
-                {/* Basic Info */}
+                {/* Product Details */}
                 <div className="apf-section">
                   <SectionHead
                     title="Product Details"
@@ -711,8 +810,8 @@ export default function AddProductForm({ onClose, onSubmit }) {
                         onChange={handleInput}
                         placeholder="e.g. Oversized Vintage Hoodie"
                         style={inputStyle(errors.title)}
-                        onFocus={focusStyle}
-                        onBlur={blurStyle}
+                        onFocus={applyFocus}
+                        onBlur={applyBlur}
                       />
                     </Field>
                     <Field
@@ -730,8 +829,8 @@ export default function AddProductForm({ onClose, onSubmit }) {
                           ...inputStyle(errors.description),
                           resize: "none",
                         }}
-                        onFocus={focusStyle}
-                        onBlur={blurStyle}
+                        onFocus={applyFocus}
+                        onBlur={applyBlur}
                       />
                     </Field>
                   </div>
@@ -773,8 +872,8 @@ export default function AddProductForm({ onClose, onSubmit }) {
                             ...inputStyle(errors.price),
                             paddingLeft: 46,
                           }}
-                          onFocus={focusStyle}
-                          onBlur={blurStyle}
+                          onFocus={applyFocus}
+                          onBlur={applyBlur}
                         />
                       </div>
                     </Field>
@@ -802,8 +901,8 @@ export default function AddProductForm({ onClose, onSubmit }) {
                           min="0"
                           step="0.01"
                           style={{ ...inputStyle(false), paddingLeft: 46 }}
-                          onFocus={focusStyle}
-                          onBlur={blurStyle}
+                          onFocus={applyFocus}
+                          onBlur={applyBlur}
                         />
                       </div>
                       <p
@@ -861,10 +960,10 @@ export default function AddProductForm({ onClose, onSubmit }) {
                       <PlusIcon size={13} /> Add
                     </button>
                   </div>
+
                   <div
                     style={{ display: "flex", flexDirection: "column", gap: 9 }}
                   >
-                    {/* Header row */}
                     <div
                       className="apf-variant-row"
                       style={{ marginBottom: -2 }}
@@ -884,6 +983,7 @@ export default function AddProductForm({ onClose, onSubmit }) {
                         </span>
                       ))}
                     </div>
+
                     {variants.map((v, i) => (
                       <motion.div
                         key={i}
@@ -908,21 +1008,21 @@ export default function AddProductForm({ onClose, onSubmit }) {
                         />
                         <input
                           value={v.color}
-                          onChange={(e) => {
+                          onChange={(e: ChangeEvent<HTMLInputElement>) => {
                             const n = [...variants];
                             n[i].color = e.target.value;
                             setVariants(n);
                           }}
                           placeholder="e.g. Midnight Black"
                           style={{ ...inputStyle(false), fontSize: 13 }}
-                          onFocus={focusStyle}
-                          onBlur={blurStyle}
+                          onFocus={applyFocus}
+                          onBlur={applyBlur}
                         />
                         <input
                           type="number"
                           value={v.quantity}
                           min={0}
-                          onChange={(e) => {
+                          onChange={(e: ChangeEvent<HTMLInputElement>) => {
                             const n = [...variants];
                             n[i].quantity = parseInt(e.target.value) || 0;
                             setVariants(n);
@@ -933,8 +1033,8 @@ export default function AddProductForm({ onClose, onSubmit }) {
                             fontSize: 13,
                             textAlign: "center",
                           }}
-                          onFocus={focusStyle}
-                          onBlur={blurStyle}
+                          onFocus={applyFocus}
+                          onBlur={applyBlur}
                         />
                         {variants.length > 1 ? (
                           <button
@@ -963,6 +1063,7 @@ export default function AddProductForm({ onClose, onSubmit }) {
                       </motion.div>
                     ))}
                   </div>
+
                   {errors.variants && (
                     <p
                       style={{
@@ -1010,19 +1111,20 @@ export default function AddProductForm({ onClose, onSubmit }) {
                         )}
                       </motion.div>
                     ))}
+
                     <button
                       type="button"
                       className={`apf-upload-zone${dragOver ? " drag" : ""}`}
                       onClick={() => fileRef.current?.click()}
-                      onDragOver={(e) => {
+                      onDragOver={(e: DragEvent<HTMLButtonElement>) => {
                         e.preventDefault();
                         setDragOver(true);
                       }}
                       onDragLeave={() => setDragOver(false)}
-                      onDrop={(e) => {
+                      onDrop={(e: DragEvent<HTMLButtonElement>) => {
                         e.preventDefault();
                         setDragOver(false);
-                        handleFiles(e.dataTransfer.files);
+                        handleDropFiles(e.dataTransfer.files);
                       }}
                     >
                       {uploading ? (
@@ -1059,17 +1161,21 @@ export default function AddProductForm({ onClose, onSubmit }) {
                     </button>
                   </div>
 
-                  {/* URL row */}
                   <div className="apf-url-row">
                     <input
                       type="url"
                       value={imageUrl}
-                      onChange={(e) => setImageUrl(e.target.value)}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                        setImageUrl(e.target.value)
+                      }
                       placeholder="Or paste an image URL…"
                       className="apf-url-input"
-                      onKeyDown={(e) =>
-                        e.key === "Enter" && (e.preventDefault(), addImageUrl())
-                      }
+                      onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          addImageUrl();
+                        }
+                      }}
                     />
                     <button
                       type="button"
@@ -1098,7 +1204,7 @@ export default function AddProductForm({ onClose, onSubmit }) {
               </form>
             </div>
 
-            {/* Sidebar */}
+            {/* ── Sidebar ──────────────────────────────────────────────────── */}
             <div className="apf-sidebar">
               {/* Status */}
               <div>
@@ -1109,48 +1215,33 @@ export default function AddProductForm({ onClose, onSubmit }) {
                   onChange={(v) => setFormData((p) => ({ ...p, status: v }))}
                   placeholder="Select status"
                 />
-                {formData.status && (
-                  <div style={{ marginTop: 8 }}>
-                    <span
-                      className="apf-status-badge"
-                      style={{
-                        background:
-                          formData.status === "PUBLISHED"
-                            ? "#dcfce7"
-                            : formData.status === "DRAFT"
-                              ? "#fef9c3"
-                              : "#f3f4f6",
-                        color:
-                          formData.status === "PUBLISHED"
-                            ? "#15803d"
-                            : formData.status === "DRAFT"
-                              ? "#a16207"
-                              : "#6b7280",
-                      }}
-                    >
-                      <span
-                        className="apf-dot"
-                        style={{
-                          background:
-                            formData.status === "PUBLISHED"
-                              ? "#22c55e"
-                              : formData.status === "DRAFT"
-                                ? "#eab308"
-                                : "#9ca3af",
-                        }}
-                      />
-                      {
-                        statusOptions.find((o) => o.value === formData.status)
-                          ?.label
-                      }
-                    </span>
-                  </div>
-                )}
+                {formData.status &&
+                  (() => {
+                    const sc = statusColor(formData.status);
+                    return (
+                      <div style={{ marginTop: 8 }}>
+                        <span
+                          className="apf-status-badge"
+                          style={{ background: sc.bg, color: sc.txt }}
+                        >
+                          <span
+                            className="apf-dot"
+                            style={{ background: sc.dot }}
+                          />
+                          {
+                            statusOptions.find(
+                              (o) => o.value === formData.status,
+                            )?.label
+                          }
+                        </span>
+                      </div>
+                    );
+                  })()}
               </div>
 
               <div style={{ height: 1, background: "var(--divider)" }} />
 
-              {/* Organization */}
+              {/* Organisation */}
               <div>
                 <p className="apf-sidebar-label">Organization</p>
                 <div
@@ -1201,8 +1292,8 @@ export default function AddProductForm({ onClose, onSubmit }) {
                       onChange={handleInput}
                       placeholder="e.g. 100% Cotton"
                       style={inputStyle(false)}
-                      onFocus={focusStyle}
-                      onBlur={blurStyle}
+                      onFocus={applyFocus}
+                      onBlur={applyBlur}
                     />
                   </Field>
                 </div>
@@ -1213,17 +1304,9 @@ export default function AddProductForm({ onClose, onSubmit }) {
               {/* Checklist */}
               <div>
                 <p className="apf-sidebar-label">Checklist</p>
-                {[
-                  ["Title", !!formData.title],
-                  ["Description", !!formData.description],
-                  ["Price", !!formData.price && parseFloat(formData.price) > 0],
-                  ["Category", !!formData.category],
-                  ["Type", !!formData.clothingType],
-                  ["2+ Images", images.length >= 2],
-                  ["Variant", variants.length > 0],
-                ].map(([label, done]) => (
+                {checklist.map(([lbl, done]) => (
                   <div
-                    key={label}
+                    key={lbl}
                     style={{
                       display: "flex",
                       alignItems: "center",
@@ -1236,11 +1319,11 @@ export default function AddProductForm({ onClose, onSubmit }) {
                         width: 18,
                         height: 18,
                         borderRadius: 5,
+                        flexShrink: 0,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
                         background: done ? "var(--text)" : "var(--border)",
-                        flexShrink: 0,
                         transition: "background 0.2s",
                       }}
                     >
@@ -1255,7 +1338,7 @@ export default function AddProductForm({ onClose, onSubmit }) {
                         fontWeight: done ? 600 : 400,
                       }}
                     >
-                      {label}
+                      {lbl}
                     </span>
                   </div>
                 ))}
@@ -1263,11 +1346,11 @@ export default function AddProductForm({ onClose, onSubmit }) {
             </div>
           </div>
         </div>
+
         <input
           ref={fileRef}
           type="file"
           accept="image/*"
-          className="hidden"
           style={{ display: "none" }}
           onChange={handleFileUpload}
         />

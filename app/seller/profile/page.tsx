@@ -7,8 +7,16 @@ import Navbar from "@/components/Navbar";
 import Image from "next/image";
 import Link from "next/link";
 
+// ─── Types ────────────────────────────────────────────────────────────────────
+interface IconProps {
+  size?: number;
+  d?: string;
+  sw?: number;
+  fill?: string;
+}
+
 // ─── Icons ────────────────────────────────────────────────────────────────────
-const Ico = ({ d, size = 16, sw = 1.75, fill = "none" }) => (
+const Ico = ({ d, size = 16, sw = 1.75, fill = "none" }: IconProps) => (
   <svg
     width={size}
     height={size}
@@ -22,65 +30,78 @@ const Ico = ({ d, size = 16, sw = 1.75, fill = "none" }) => (
     <path d={d} />
   </svg>
 );
-const ArrowLeftIco = (p) => <Ico {...p} d="m15 18-6-6 6-6" />;
-const CameraIco = (p) => (
+
+const ArrowLeftIco = (p: IconProps) => <Ico {...p} d="m15 18-6-6 6-6" />;
+const CameraIco = (p: IconProps) => (
   <Ico
     {...p}
     d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2zM12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"
   />
 );
-const SaveIco = (p) => (
+const SaveIco = (p: IconProps) => (
   <Ico
     {...p}
     d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2zM17 21v-8H7v8M7 3v5h8"
   />
 );
-const EyeIco = (p) => (
+const EyeIco = (p: IconProps) => (
   <Ico
     {...p}
     d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"
   />
 );
-const MapPinIco = (p) => (
+const MapPinIco = (p: IconProps) => (
   <Ico
     {...p}
     d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z M12 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"
   />
 );
-const InstaIco = (p) => (
-  <Ico
-    {...p}
-    d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z M2 9h4v12H2z M4 6a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"
-  />
+
+const InstaIco = (p: IconProps) => (
+  <svg
+    width={p.size || 16}
+    height={p.size || 16}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.75}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+    <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+  </svg>
 );
-const LinkIco = (p) => (
+
+const LinkIco = (p: IconProps) => (
   <Ico
     {...p}
     d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71 M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"
   />
 );
-const StoreIco = (p) => (
+const StoreIco = (p: IconProps) => (
   <Ico
     {...p}
     d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10"
   />
 );
-const FileIco = (p) => (
+const FileIco = (p: IconProps) => (
   <Ico
     {...p}
-    d="M14 2H6a2 2 0 0 1-2 2v16a2 2 0 0 1 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6M16 13H8m8 4H8m2-8H8"
+    d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6M16 13H8m8 4H8m2-8H8"
   />
 );
-const CheckIco = (p) => (
+const CheckIco = (p: IconProps) => (
   <Ico {...p} d="M22 11.08V12a10 10 0 1 1-5.93-9.14M22 4 12 14.01l-3-3" />
 );
-const AlertIco = (p) => (
+const AlertIco = (p: IconProps) => (
   <Ico
     {...p}
     d="M12 9v4m0 4h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
   />
 );
-const LoaderIcon = ({ size = 16 }) => (
+const LoaderIcon = ({ size = 16 }: { size?: number }) => (
   <svg
     width={size}
     height={size}
@@ -96,7 +117,12 @@ const LoaderIcon = ({ size = 16 }) => (
 );
 
 // ─── Compression ──────────────────────────────────────────────────────────────
-const compressImage = (file, maxW, maxH, q = 0.85) =>
+const compressImage = (
+  file: File,
+  maxW: number,
+  maxH: number,
+  q: number = 0.85,
+): Promise<Blob> =>
   new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -116,7 +142,10 @@ const compressImage = (file, maxW, maxH, q = 0.85) =>
         const canvas = document.createElement("canvas");
         canvas.width = w;
         canvas.height = h;
-        canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, w, h);
+        }
         canvas.toBlob(
           (b) => (b ? resolve(b) : reject(new Error("Failed"))),
           "image/jpeg",
@@ -124,7 +153,7 @@ const compressImage = (file, maxW, maxH, q = 0.85) =>
         );
       };
       img.onerror = reject;
-      img.src = e.target.result;
+      img.src = e.target?.result as string;
     };
     reader.onerror = reject;
     reader.readAsDataURL(file);
@@ -175,13 +204,13 @@ const CSS = `
   .sp-cover-placeholder span { font-size:12px; font-weight:600; }
   .sp-cover-hover { position:absolute; inset:0; background:rgba(0,0,0,0.5);
     display:flex; align-items:center; justify-content:center; opacity:0;
-    transition:opacity 0.2s; cursor:pointer; backdrop-filter:blur(2px); }
+    transition:opacity 0.2s; cursor:pointer; backdrop-filter:blur(2px); z-index:2; }
   .sp-cover:hover .sp-cover-hover { opacity:1; }
   .sp-cover-btn { display:flex; align-items:center; gap:8px; padding:10px 20px; background:#fff;
     color:#1a1714; border-radius:10px; font-size:13px; font-weight:700; border:none; cursor:pointer;
     font-family:'Sora',sans-serif; }
   .sp-progress-overlay { position:absolute; inset:0; background:rgba(0,0,0,0.88);
-    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; }
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; z-index:3; }
   .sp-progress-bar-wrap { width:180px; height:4px; background:rgba(255,255,255,0.15); border-radius:99px; overflow:hidden; }
   .sp-progress-bar { height:100%; background:#3b82f6; border-radius:99px; transition:width 0.3s; }
   .sp-progress-label { font-size:11px; color:rgba(255,255,255,0.6); font-family:'Sora',sans-serif; }
@@ -190,11 +219,11 @@ const CSS = `
   .sp-logo-wrap { margin:-56px 0 0 28px; position:relative; z-index:5; display:inline-block; }
   .sp-logo { width:112px; height:112px; border-radius:20px; border:4px solid #fff;
     box-shadow:0 8px 24px rgba(0,0,0,0.14); overflow:hidden; background:#1a1714;
-    display:flex; align-items:center; justify-content:center; }
+    display:flex; align-items:center; justify-content:center; position:relative; }
   .sp-logo-placeholder { color:rgba(255,255,255,0.5); display:flex; flex-direction:column;
     align-items:center; justify-content:center; gap:4px; }
   .sp-logo-hover { position:absolute; inset:0; background:rgba(0,0,0,0.7); border-radius:16px;
-    display:flex; align-items:center; justify-content:center; opacity:0; transition:opacity 0.2s; cursor:pointer; }
+    display:flex; align-items:center; justify-content:center; opacity:0; transition:opacity 0.2s; cursor:pointer; z-index:10; }
   .sp-logo-wrap:hover .sp-logo-hover { opacity:1; }
   .sp-logo-cam { width:36px; height:36px; background:#fff; border-radius:50%;
     display:flex; align-items:center; justify-content:center; }
@@ -240,7 +269,13 @@ const CSS = `
 `;
 
 // ─── Field component ──────────────────────────────────────────────────────────
-function Field({ label, icon: Icon, children }) {
+interface FieldProps {
+  label: string;
+  icon: React.ComponentType<IconProps>;
+  children: React.ReactNode;
+}
+
+function Field({ label, icon: Icon, children }: FieldProps) {
   return (
     <div className="sp-field">
       <label className="sp-label">
@@ -285,6 +320,7 @@ export default function SellerProfilePage() {
 
   useEffect(() => {
     loadSettings();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadSettings = async () => {
@@ -499,7 +535,7 @@ export default function SellerProfilePage() {
 
               {uploadingCover ? (
                 <div className="sp-progress-overlay">
-                  <LoaderIcon size={28} stroke="#fff" />
+                  <LoaderIcon size={28} />
                   <div className="sp-progress-bar-wrap">
                     <div
                       className="sp-progress-bar"
@@ -560,6 +596,7 @@ export default function SellerProfilePage() {
                         justifyContent: "center",
                         gap: 8,
                         borderRadius: 16,
+                        zIndex: 5,
                       }}
                     >
                       <LoaderIcon size={22} />

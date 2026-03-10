@@ -1,5 +1,62 @@
-import { useState, useEffect, useRef } from "react";
+"use client";
+import {
+  useState,
+  useEffect,
+  useRef,
+  ReactNode,
+  ChangeEvent,
+  KeyboardEvent,
+  DragEvent,
+  FocusEvent,
+} from "react";
 import { motion, AnimatePresence } from "framer-motion";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+interface IconProps {
+  d: string;
+  size?: number;
+  stroke?: string;
+  fill?: string;
+  strokeWidth?: number;
+}
+type IconPropsNoD = Omit<IconProps, "d">;
+
+interface DropdownOption {
+  value: string;
+  label: string;
+  description?: string;
+}
+
+interface Variant {
+  id?: string;
+  size: string;
+  color: string;
+  quantity: number;
+}
+
+interface ProductImage {
+  url: string;
+  position: number;
+}
+
+interface Product {
+  id: string;
+  title: string;
+  description: string;
+  price: number;
+  compareAtPrice?: number | null;
+  category: string;
+  clothingType?: string | null;
+  occasion?: string | null;
+  material?: string | null;
+  status: string;
+  variants: Variant[];
+  images: ProductImage[];
+}
+
+interface FormErrors {
+  [key: string]: string;
+}
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 const Icon = ({
@@ -8,7 +65,7 @@ const Icon = ({
   stroke = "currentColor",
   fill = "none",
   strokeWidth = 1.75,
-}) => (
+}: IconProps) => (
   <svg
     width={size}
     height={size}
@@ -22,31 +79,35 @@ const Icon = ({
     <path d={d} />
   </svg>
 );
-const XIcon = (p) => <Icon {...p} d="M18 6 6 18M6 6l12 12" />;
-const PlusIcon = (p) => <Icon {...p} d="M12 5v14M5 12h14" />;
-const MinusIcon = (p) => <Icon {...p} d="M5 12h14" />;
-const CheckIcon = (p) => <Icon {...p} d="M20 6 9 17l-5-5" strokeWidth={2.5} />;
-const ArrowLeftIcon = (p) => <Icon {...p} d="m15 18-6-6 6-6" />;
-const AlertIcon = (p) => (
+
+const XIcon = (p: IconPropsNoD) => <Icon {...p} d="M18 6 6 18M6 6l12 12" />;
+const PlusIcon = (p: IconPropsNoD) => <Icon {...p} d="M12 5v14M5 12h14" />;
+const MinusIcon = (p: IconPropsNoD) => <Icon {...p} d="M5 12h14" />;
+const CheckIcon = (p: IconPropsNoD) => (
+  <Icon {...p} d="M20 6 9 17l-5-5" strokeWidth={2.5} />
+);
+const ArrowLeftIcon = (p: IconPropsNoD) => <Icon {...p} d="m15 18-6-6 6-6" />;
+const AlertIcon = (p: IconPropsNoD) => (
   <Icon
     {...p}
     d="M12 9v4m0 4h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
   />
 );
-const ImageIcon = (p) => (
+const ImageIcon = (p: IconPropsNoD) => (
   <Icon
     {...p}
     d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7m4-2h6v6m-11 5 9.5-9.5"
   />
 );
-const EditIcon = (p) => (
+const EditIcon = (p: IconPropsNoD) => (
   <Icon
     {...p}
     d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7m-1.414-9.414a2 2 0 1 1 2.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
   />
 );
-const ChevronDown = (p) => <Icon {...p} d="m6 9 6 6 6-6" />;
-const LoaderIcon = ({ size = 16 }) => (
+const ChevronDown = (p: IconPropsNoD) => <Icon {...p} d="m6 9 6 6 6-6" />;
+
+const LoaderIcon = ({ size = 16 }: { size?: number }) => (
   <svg
     width={size}
     height={size}
@@ -62,18 +123,36 @@ const LoaderIcon = ({ size = 16 }) => (
 );
 
 // ─── Dropdown ─────────────────────────────────────────────────────────────────
-function Dropdown({ options, value, onChange, placeholder, error }) {
+interface DropdownProps {
+  options: DropdownOption[];
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  error?: boolean;
+}
+
+function Dropdown({
+  options,
+  value,
+  onChange,
+  placeholder,
+  error,
+}: DropdownProps) {
   const [open, setOpen] = useState(false);
-  const ref = useRef();
+  const ref = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    const h = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    const h = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node))
+        setOpen(false);
     };
     document.addEventListener("mousedown", h);
     return () => document.removeEventListener("mousedown", h);
   }, []);
-  const selected = options.find((o) => (o.value || o) === value);
-  const label = selected ? selected.label || selected : null;
+
+  const selected = options.find((o) => o.value === value);
+  const label = selected?.label ?? null;
+
   return (
     <div ref={ref} style={{ position: "relative" }}>
       <button
@@ -96,7 +175,7 @@ function Dropdown({ options, value, onChange, placeholder, error }) {
           boxShadow: open ? "0 0 0 3px var(--accent-soft)" : "none",
         }}
       >
-        <span>{label || placeholder}</span>
+        <span>{label ?? placeholder}</span>
         <span
           style={{
             transition: "transform 0.2s",
@@ -128,21 +207,18 @@ function Dropdown({ options, value, onChange, placeholder, error }) {
             }}
           >
             {options.map((opt) => {
-              const val = opt.value || opt;
-              const lbl = opt.label || opt;
-              const desc = opt.description;
-              const isActive = val === value;
+              const isActive = opt.value === value;
               return (
                 <button
-                  key={val}
+                  key={opt.value}
                   type="button"
                   onClick={() => {
-                    onChange(val);
+                    onChange(opt.value);
                     setOpen(false);
                   }}
                   style={{
                     width: "100%",
-                    padding: desc ? "10px 14px" : "9px 14px",
+                    padding: opt.description ? "10px 14px" : "9px 14px",
                     background: isActive ? "var(--accent-soft)" : "transparent",
                     border: "none",
                     cursor: "pointer",
@@ -168,11 +244,11 @@ function Dropdown({ options, value, onChange, placeholder, error }) {
                       color: isActive ? "var(--accent)" : "var(--text)",
                     }}
                   >
-                    {lbl}
+                    {opt.label}
                   </span>
-                  {desc && (
+                  {opt.description && (
                     <span style={{ fontSize: 11, color: "var(--muted)" }}>
-                      {desc}
+                      {opt.description}
                     </span>
                   )}
                 </button>
@@ -185,7 +261,8 @@ function Dropdown({ options, value, onChange, placeholder, error }) {
   );
 }
 
-function SectionHead({ title, sub }) {
+// ─── SectionHead ──────────────────────────────────────────────────────────────
+function SectionHead({ title, sub }: { title: string; sub?: string }) {
   return (
     <div style={{ marginBottom: 16 }}>
       <h3
@@ -208,7 +285,18 @@ function SectionHead({ title, sub }) {
   );
 }
 
-function Field({ label, required, error, children }) {
+// ─── Field ────────────────────────────────────────────────────────────────────
+function Field({
+  label,
+  required,
+  error,
+  children,
+}: {
+  label?: string;
+  required?: boolean;
+  error?: string;
+  children: ReactNode;
+}) {
   return (
     <div>
       {label && (
@@ -246,7 +334,10 @@ function Field({ label, required, error, children }) {
   );
 }
 
-const inputStyle = (hasError) => ({
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+const inputStyle = (
+  hasError: boolean | string | undefined,
+): React.CSSProperties => ({
   width: "100%",
   padding: "10px 14px",
   fontSize: 14,
@@ -260,30 +351,38 @@ const inputStyle = (hasError) => ({
   fontFamily: "inherit",
 });
 
-const focusStyle = (e) => {
+const applyFocus = (e: FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
   e.target.style.borderColor = "var(--accent)";
   e.target.style.boxShadow = "0 0 0 3px var(--accent-soft)";
 };
-const blurStyle = (e) => {
+const applyBlur = (e: FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
   e.target.style.borderColor = "var(--border)";
   e.target.style.boxShadow = "none";
 };
 
-// ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
-export default function EditProductForm({ product, onClose, onSubmit }) {
+// ─── Main Component ───────────────────────────────────────────────────────────
+export default function EditProductForm({
+  product,
+  onClose,
+  onSubmit,
+}: {
+  product: Product;
+  onClose: () => void;
+  onSubmit: () => void;
+}) {
   const [formData, setFormData] = useState({
     title: product.title,
     description: product.description,
     price: product.price.toString(),
-    compareAtPrice: product.compareAtPrice?.toString() || "",
+    compareAtPrice: product.compareAtPrice?.toString() ?? "",
     category: product.category,
-    clothingType: product.clothingType || "",
-    occasion: product.occasion || "",
-    material: product.material || "",
+    clothingType: product.clothingType ?? "",
+    occasion: product.occasion ?? "",
+    material: product.material ?? "",
     status: product.status,
   });
 
-  const [variants, setVariants] = useState(
+  const [variants, setVariants] = useState<Variant[]>(
     product.variants.map((v) => ({
       id: v.id,
       size: v.size,
@@ -292,25 +391,28 @@ export default function EditProductForm({ product, onClose, onSubmit }) {
     })),
   );
 
-  const [images, setImages] = useState(
+  const [images, setImages] = useState<string[]>(
     product.images
       .sort((a, b) => a.position - b.position)
       .map((img) => img.url),
   );
 
   const [imageUrl, setImageUrl] = useState("");
-  const [errors, setErrors] = useState({});
+  const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [currentUser, setCurrentUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState<Record<
+    string,
+    unknown
+  > | null>(null);
   const [dragOver, setDragOver] = useState(false);
-  const fileRef = useRef();
+  const fileRef = useRef<HTMLInputElement>(null);
 
-  const categoryOptions = [
+  const categoryOptions: DropdownOption[] = [
     { value: "MEN", label: "Men's", description: "For men" },
     { value: "WOMEN", label: "Women's", description: "For women" },
     { value: "UNISEX", label: "Unisex", description: "For everyone" },
   ];
-  const clothingTypeOptions = [
+  const clothingTypeOptions: DropdownOption[] = [
     { value: "TOP", label: "Tops", description: "T-shirts, Shirts, Blouses" },
     { value: "BOTTOM", label: "Bottoms", description: "Jeans, Pants, Skirts" },
     { value: "DRESS", label: "Dresses", description: "All dress styles" },
@@ -332,7 +434,7 @@ export default function EditProductForm({ product, onClose, onSubmit }) {
       description: "Sports & Fitness",
     },
   ];
-  const occasionOptions = [
+  const occasionOptions: DropdownOption[] = [
     { value: "CASUAL", label: "Casual", description: "Everyday wear" },
     { value: "FORMAL", label: "Formal", description: "Business & Events" },
     {
@@ -349,7 +451,7 @@ export default function EditProductForm({ product, onClose, onSubmit }) {
     },
     { value: "LOUNGEWEAR", label: "Loungewear", description: "Relaxed & cozy" },
   ];
-  const statusOptions = [
+  const statusOptions: DropdownOption[] = [
     {
       value: "PUBLISHED",
       label: "Published",
@@ -357,27 +459,42 @@ export default function EditProductForm({ product, onClose, onSubmit }) {
     },
     { value: "DRAFT", label: "Draft", description: "Hidden from store" },
   ];
-  const sizes = ["XS", "S", "M", "L", "XL", "XXL", "2XL", "3XL"].map((s) => ({
-    value: s,
-    label: s,
-  }));
+  const sizes: DropdownOption[] = [
+    "XS",
+    "S",
+    "M",
+    "L",
+    "XL",
+    "XXL",
+    "2XL",
+    "3XL",
+  ].map((s) => ({ value: s, label: s }));
 
   useEffect(() => {
     const userStr = localStorage.getItem("yog_user");
-    if (userStr) setCurrentUser(JSON.parse(userStr));
+    if (userStr) {
+      try {
+        setCurrentUser(JSON.parse(userStr) as Record<string, unknown>);
+      } catch {
+        /* ignore */
+      }
+    }
   }, []);
 
-  const handleInput = (e) => {
+  const handleInput = (
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
     const { name, value } = e.target;
     setFormData((p) => ({ ...p, [name]: value }));
     if (errors[name]) setErrors((p) => ({ ...p, [name]: "" }));
   };
 
-  const handleFiles = (files) => {
+  const handleFiles = (files: FileList) => {
     Array.from(files).forEach((file) => {
       const reader = new FileReader();
-      reader.onload = (e) => {
-        if (e.target?.result) setImages((p) => [...p, e.target.result]);
+      reader.onload = (e: ProgressEvent<FileReader>) => {
+        const result = e.target?.result;
+        if (typeof result === "string") setImages((p) => [...p, result]);
       };
       reader.readAsDataURL(file);
     });
@@ -390,8 +507,8 @@ export default function EditProductForm({ product, onClose, onSubmit }) {
     }
   };
 
-  const validate = () => {
-    const e = {};
+  const validate = (): boolean => {
+    const e: FormErrors = {};
     if (!formData.title.trim()) e.title = "Title is required";
     if (!formData.description.trim()) e.description = "Description is required";
     if (!formData.price || parseFloat(formData.price) <= 0)
@@ -404,7 +521,7 @@ export default function EditProductForm({ product, onClose, onSubmit }) {
     return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!validate()) return;
     if (!currentUser) {
@@ -437,12 +554,12 @@ export default function EditProductForm({ product, onClose, onSubmit }) {
         },
         body: JSON.stringify(payload),
       });
-      const data = await res.json();
+      const data = (await res.json()) as { error?: string };
       if (res.ok) {
         alert("Product updated!");
         onSubmit();
       } else {
-        alert(data.error || "Failed to update");
+        alert(data.error ?? "Failed to update");
         setIsSubmitting(false);
       }
     } catch {
@@ -451,17 +568,30 @@ export default function EditProductForm({ product, onClose, onSubmit }) {
     }
   };
 
+  const checklist: [string, boolean][] = [
+    ["Title", !!formData.title],
+    ["Description", !!formData.description],
+    ["Price", !!formData.price && parseFloat(formData.price) > 0],
+    ["Category", !!formData.category],
+    ["Type", !!formData.clothingType],
+    ["2+ Images", images.length >= 2],
+    ["Variant", variants.length > 0],
+  ];
+
   const css = `
     @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&display=swap');
     :root {
-      --bg: #f6f5f3; --card: #ffffff; --sidebar: #fafaf9;
-      --text: #1a1714; --muted: #9e9890; --border: #e8e4de;
-      --input-bg: #fdfcfb; --accent: #2563eb; --accent-soft: rgba(37,99,235,0.08);
-      --error: #dc2626; --hover: #f5f3f0; --divider: rgba(0,0,0,0.06);
-      --warn: #f59e0b; --warn-soft: rgba(245,158,11,0.1);
+      --bg:#f6f5f3; --card:#ffffff; --sidebar:#fafaf9;
+      --text:#1a1714; --muted:#9e9890; --border:#e8e4de;
+      --input-bg:#fdfcfb; --accent:#2563eb; --accent-soft:rgba(37,99,235,0.08);
+      --error:#dc2626; --hover:#f5f3f0; --divider:rgba(0,0,0,0.06);
+      --warn:#f59e0b; --warn-soft:rgba(245,158,11,0.1);
     }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    @keyframes fadeSlideIn { from { opacity:0; transform:translateY(16px) scale(0.98); } to { opacity:1; transform:none; } }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    @keyframes fadeSlideIn {
+      from { opacity:0; transform:translateY(16px) scale(0.98); }
+      to   { opacity:1; transform:none; }
+    }
     .epf-overlay {
       position:fixed;inset:0;background:rgba(15,12,9,0.55);backdrop-filter:blur(6px);
       display:flex;align-items:center;justify-content:center;padding:16px;z-index:9999;
@@ -469,8 +599,8 @@ export default function EditProductForm({ product, onClose, onSubmit }) {
     .epf-modal {
       background:var(--card);border-radius:20px;width:100%;max-width:1100px;
       max-height:92vh;overflow:hidden;display:flex;flex-direction:column;
-      box-shadow:0 32px 80px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.06);
-      animation: fadeSlideIn 0.28s cubic-bezier(0.16,1,0.3,1);
+      box-shadow:0 32px 80px rgba(0,0,0,0.18),0 0 0 1px rgba(0,0,0,0.06);
+      animation:fadeSlideIn 0.28s cubic-bezier(0.16,1,0.3,1);
       font-family:'Sora',sans-serif;
     }
     .epf-header {
@@ -478,7 +608,7 @@ export default function EditProductForm({ product, onClose, onSubmit }) {
       padding:18px 28px;border-bottom:1px solid var(--divider);
       background:var(--card);position:sticky;top:0;z-index:10;flex-shrink:0;
     }
-    .epf-header-left { display:flex;align-items:center;gap:12px; }
+    .epf-header-left  { display:flex;align-items:center;gap:12px; }
     .epf-header-right { display:flex;align-items:center;gap:10px; }
     .epf-icon-btn {
       width:36px;height:36px;border-radius:10px;border:1px solid var(--border);
@@ -492,20 +622,21 @@ export default function EditProductForm({ product, onClose, onSubmit }) {
       font-family:'Sora',sans-serif;font-size:13px;font-weight:600;
       cursor:pointer;transition:all 0.15s;letter-spacing:-0.1px;
     }
-    .epf-save-btn:hover { background:#1d4ed8;transform:translateY(-1px);box-shadow:0 4px 14px rgba(37,99,235,0.28); }
+    .epf-save-btn:hover    { background:#1d4ed8;transform:translateY(-1px);box-shadow:0 4px 14px rgba(37,99,235,0.28); }
     .epf-save-btn:disabled { opacity:0.5;cursor:not-allowed;transform:none;box-shadow:none; }
     .epf-body { display:flex;flex:1;overflow:hidden; }
-    .epf-main { flex:1;overflow-y:auto;padding:28px 32px;display:flex;flex-direction:column;gap:32px; }
+    .epf-main {
+      flex:1;overflow-y:auto;padding:28px 32px;
+      display:flex;flex-direction:column;gap:32px;
+    }
     .epf-sidebar {
       width:268px;flex-shrink:0;background:var(--sidebar);overflow-y:auto;
       padding:24px 20px;display:flex;flex-direction:column;gap:24px;
       border-left:1px solid var(--divider);
     }
-    .epf-divider { border:none;border-top:1px solid var(--divider);margin:0 0 20px; }
-    .epf-grid-2 { display:grid;grid-template-columns:1fr 1fr;gap:16px; }
-    .epf-variant-row {
-      display:grid;grid-template-columns:110px 1fr 90px 36px;gap:10px;align-items:center;
-    }
+    .epf-divider     { border:none;border-top:1px solid var(--divider);margin:0 0 20px; }
+    .epf-grid-2      { display:grid;grid-template-columns:1fr 1fr;gap:16px; }
+    .epf-variant-row { display:grid;grid-template-columns:110px 1fr 90px 36px;gap:10px;align-items:center; }
     .epf-images-grid { display:grid;grid-template-columns:repeat(5,1fr);gap:10px; }
     .epf-img-thumb {
       aspect-ratio:1;border-radius:10px;overflow:hidden;position:relative;
@@ -528,7 +659,9 @@ export default function EditProductForm({ product, onClose, onSubmit }) {
       display:flex;flex-direction:column;align-items:center;justify-content:center;
       gap:5px;cursor:pointer;transition:all 0.15s;background:transparent;color:var(--muted);
     }
-    .epf-upload-zone:hover, .epf-upload-zone.drag { border-color:var(--accent);background:var(--accent-soft);color:var(--accent); }
+    .epf-upload-zone:hover,.epf-upload-zone.drag {
+      border-color:var(--accent);background:var(--accent-soft);color:var(--accent);
+    }
     .epf-url-row { display:flex;gap:8px;margin-top:10px; }
     .epf-url-input {
       flex:1;padding:9px 12px;font-size:13px;background:var(--input-bg);
@@ -558,23 +691,12 @@ export default function EditProductForm({ product, onClose, onSubmit }) {
     }
   `;
 
-  // Checklist derived from current state
-  const checklist = [
-    ["Title", !!formData.title],
-    ["Description", !!formData.description],
-    ["Price", !!formData.price && parseFloat(formData.price) > 0],
-    ["Category", !!formData.category],
-    ["Type", !!formData.clothingType],
-    ["2+ Images", images.length >= 2],
-    ["Variant", variants.length > 0],
-  ];
-
   return (
     <>
       <style>{css}</style>
       <div className="epf-overlay">
         <div className="epf-modal">
-          {/* Header */}
+          {/* ── Header ─────────────────────────────────────────────────────── */}
           <div className="epf-header">
             <div className="epf-header-left">
               <button className="epf-icon-btn" onClick={onClose} type="button">
@@ -629,12 +751,11 @@ export default function EditProductForm({ product, onClose, onSubmit }) {
             </div>
           </div>
 
-          {/* Body */}
+          {/* ── Body ───────────────────────────────────────────────────────── */}
           <div className="epf-body">
-            {/* Main */}
             <div className="epf-main">
               <form id="epf-form" onSubmit={handleSubmit}>
-                {/* Basic Info */}
+                {/* Product Details */}
                 <div>
                   <SectionHead
                     title="Product Details"
@@ -654,8 +775,8 @@ export default function EditProductForm({ product, onClose, onSubmit }) {
                         onChange={handleInput}
                         placeholder="e.g. Oversized Vintage Hoodie"
                         style={inputStyle(errors.title)}
-                        onFocus={focusStyle}
-                        onBlur={blurStyle}
+                        onFocus={applyFocus}
+                        onBlur={applyBlur}
                       />
                     </Field>
                     <Field
@@ -673,8 +794,8 @@ export default function EditProductForm({ product, onClose, onSubmit }) {
                           ...inputStyle(errors.description),
                           resize: "none",
                         }}
-                        onFocus={focusStyle}
-                        onBlur={blurStyle}
+                        onFocus={applyFocus}
+                        onBlur={applyBlur}
                       />
                     </Field>
                   </div>
@@ -716,8 +837,8 @@ export default function EditProductForm({ product, onClose, onSubmit }) {
                             ...inputStyle(errors.price),
                             paddingLeft: 46,
                           }}
-                          onFocus={focusStyle}
-                          onBlur={blurStyle}
+                          onFocus={applyFocus}
+                          onBlur={applyBlur}
                         />
                       </div>
                     </Field>
@@ -745,8 +866,8 @@ export default function EditProductForm({ product, onClose, onSubmit }) {
                           min="0"
                           step="0.01"
                           style={{ ...inputStyle(false), paddingLeft: 46 }}
-                          onFocus={focusStyle}
-                          onBlur={blurStyle}
+                          onFocus={applyFocus}
+                          onBlur={applyBlur}
                         />
                       </div>
                       <p
@@ -804,6 +925,7 @@ export default function EditProductForm({ product, onClose, onSubmit }) {
                       <PlusIcon size={13} /> Add
                     </button>
                   </div>
+
                   <div
                     style={{ display: "flex", flexDirection: "column", gap: 9 }}
                   >
@@ -850,21 +972,21 @@ export default function EditProductForm({ product, onClose, onSubmit }) {
                         />
                         <input
                           value={v.color}
-                          onChange={(e) => {
+                          onChange={(e: ChangeEvent<HTMLInputElement>) => {
                             const n = [...variants];
                             n[i].color = e.target.value;
                             setVariants(n);
                           }}
                           placeholder="e.g. Midnight Black"
                           style={{ ...inputStyle(false), fontSize: 13 }}
-                          onFocus={focusStyle}
-                          onBlur={blurStyle}
+                          onFocus={applyFocus}
+                          onBlur={applyBlur}
                         />
                         <input
                           type="number"
                           value={v.quantity}
                           min={0}
-                          onChange={(e) => {
+                          onChange={(e: ChangeEvent<HTMLInputElement>) => {
                             const n = [...variants];
                             n[i].quantity = parseInt(e.target.value) || 0;
                             setVariants(n);
@@ -875,8 +997,8 @@ export default function EditProductForm({ product, onClose, onSubmit }) {
                             fontSize: 13,
                             textAlign: "center",
                           }}
-                          onFocus={focusStyle}
-                          onBlur={blurStyle}
+                          onFocus={applyFocus}
+                          onBlur={applyBlur}
                         />
                         {variants.length > 1 ? (
                           <button
@@ -905,6 +1027,7 @@ export default function EditProductForm({ product, onClose, onSubmit }) {
                       </motion.div>
                     ))}
                   </div>
+
                   {errors.variants && (
                     <p
                       style={{
@@ -956,12 +1079,12 @@ export default function EditProductForm({ product, onClose, onSubmit }) {
                       type="button"
                       className={`epf-upload-zone${dragOver ? " drag" : ""}`}
                       onClick={() => fileRef.current?.click()}
-                      onDragOver={(e) => {
+                      onDragOver={(e: DragEvent<HTMLButtonElement>) => {
                         e.preventDefault();
                         setDragOver(true);
                       }}
                       onDragLeave={() => setDragOver(false)}
-                      onDrop={(e) => {
+                      onDrop={(e: DragEvent<HTMLButtonElement>) => {
                         e.preventDefault();
                         setDragOver(false);
                         handleFiles(e.dataTransfer.files);
@@ -976,16 +1099,22 @@ export default function EditProductForm({ product, onClose, onSubmit }) {
                       </span>
                     </button>
                   </div>
+
                   <div className="epf-url-row">
                     <input
                       type="url"
                       value={imageUrl}
-                      onChange={(e) => setImageUrl(e.target.value)}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                        setImageUrl(e.target.value)
+                      }
                       placeholder="Or paste an image URL…"
                       className="epf-url-input"
-                      onKeyDown={(e) =>
-                        e.key === "Enter" && (e.preventDefault(), addImageUrl())
-                      }
+                      onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          addImageUrl();
+                        }
+                      }}
                     />
                     <button
                       type="button"
@@ -995,6 +1124,7 @@ export default function EditProductForm({ product, onClose, onSubmit }) {
                       Add URL
                     </button>
                   </div>
+
                   {errors.images && (
                     <p
                       style={{
@@ -1013,15 +1143,15 @@ export default function EditProductForm({ product, onClose, onSubmit }) {
               </form>
             </div>
 
-            {/* Sidebar */}
+            {/* ── Sidebar ──────────────────────────────────────────────────── */}
             <div className="epf-sidebar">
-              {/* Edit notice */}
+              {/* Edit banner */}
               <div className="epf-edit-banner">
                 <EditIcon size={13} stroke="var(--warn)" />
                 <span
                   style={{ fontSize: 11, color: "#92400e", fontWeight: 600 }}
                 >
-                  You're editing an existing product
+                  You&apos;re editing an existing product
                 </span>
               </div>
 
@@ -1069,7 +1199,7 @@ export default function EditProductForm({ product, onClose, onSubmit }) {
 
               <div style={{ height: 1, background: "var(--divider)" }} />
 
-              {/* Organization */}
+              {/* Organisation */}
               <div>
                 <p className="epf-sidebar-label">Organization</p>
                 <div
@@ -1120,8 +1250,8 @@ export default function EditProductForm({ product, onClose, onSubmit }) {
                       onChange={handleInput}
                       placeholder="e.g. 100% Cotton"
                       style={inputStyle(false)}
-                      onFocus={focusStyle}
-                      onBlur={blurStyle}
+                      onFocus={applyFocus}
+                      onBlur={applyBlur}
                     />
                   </Field>
                 </div>
@@ -1129,12 +1259,12 @@ export default function EditProductForm({ product, onClose, onSubmit }) {
 
               <div style={{ height: 1, background: "var(--divider)" }} />
 
-              {/* Live checklist */}
+              {/* Checklist */}
               <div>
                 <p className="epf-sidebar-label">Checklist</p>
-                {checklist.map(([label, done]) => (
+                {checklist.map(([lbl, done]) => (
                   <div
-                    key={label}
+                    key={lbl}
                     style={{
                       display: "flex",
                       alignItems: "center",
@@ -1147,11 +1277,11 @@ export default function EditProductForm({ product, onClose, onSubmit }) {
                         width: 18,
                         height: 18,
                         borderRadius: 5,
+                        flexShrink: 0,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
                         background: done ? "var(--accent)" : "var(--border)",
-                        flexShrink: 0,
                         transition: "background 0.2s",
                       }}
                     >
@@ -1166,7 +1296,7 @@ export default function EditProductForm({ product, onClose, onSubmit }) {
                         fontWeight: done ? 600 : 400,
                       }}
                     >
-                      {label}
+                      {lbl}
                     </span>
                   </div>
                 ))}
@@ -1180,11 +1310,13 @@ export default function EditProductForm({ product, onClose, onSubmit }) {
                 <div
                   style={{ display: "flex", flexDirection: "column", gap: 8 }}
                 >
-                  {[
-                    ["ID", product.id.slice(0, 12) + "…"],
-                    ["Images", `${images.length} uploaded`],
-                    ["Variants", `${variants.length} total`],
-                  ].map(([k, val]) => (
+                  {(
+                    [
+                      ["ID", product.id.slice(0, 12) + "…"],
+                      ["Images", `${images.length} uploaded`],
+                      ["Variants", `${variants.length} total`],
+                    ] as [string, string][]
+                  ).map(([k, val]) => (
                     <div
                       key={k}
                       style={{
@@ -1219,13 +1351,16 @@ export default function EditProductForm({ product, onClose, onSubmit }) {
             </div>
           </div>
         </div>
+
         <input
           ref={fileRef}
           type="file"
           accept="image/*"
           multiple
           style={{ display: "none" }}
-          onChange={(e) => e.target.files && handleFiles(e.target.files)}
+          onChange={(e: ChangeEvent<HTMLInputElement>) => {
+            if (e.target.files) handleFiles(e.target.files);
+          }}
         />
       </div>
     </>

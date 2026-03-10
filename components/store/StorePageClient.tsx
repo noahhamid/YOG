@@ -288,22 +288,95 @@ const CSS = `
   .st-tab:hover{color:var(--text);}
   .st-tab.active{color:var(--text);}
   .st-tab.active::after{content:'';position:absolute;bottom:-1.5px;left:0;right:0;height:2px;background:var(--text);border-radius:2px 2px 0 0;}
-  .st-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;}
+  .st-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
   @media(max-width:1100px){.st-grid{grid-template-columns:repeat(3,1fr);}}
-  @media(max-width:760px) {.st-grid{grid-template-columns:repeat(2,1fr);}}
-  @media(max-width:420px) {.st-grid{grid-template-columns:1fr;}}
-  .st-product-card{background:var(--card);border-radius:16px;overflow:hidden;border:1px solid var(--border);transition:all 0.2s;cursor:pointer;text-decoration:none;display:block;animation:st-fadeUp 0.35s ease both;}
-  .st-product-card:hover{box-shadow:0 8px 28px rgba(0,0,0,0.09);transform:translateY(-2px);}
-  .st-product-img{position:relative;aspect-ratio:1;overflow:hidden;background:var(--hover);}
-  .st-product-img img{width:100%;height:100%;object-fit:cover;transition:transform 0.4s;}
-  .st-product-card:hover .st-product-img img{transform:scale(1.05);}
-  .st-discount-badge{position:absolute;top:10px;left:10px;background:#dc2626;color:#fff;padding:3px 8px;border-radius:7px;font-size:10px;font-weight:700;}
-  .st-product-body{padding:14px 16px;}
-  .st-product-name{font-size:13px;font-weight:700;color:var(--text);margin:0 0 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-0.2px;}
-  .st-product-price-row{display:flex;align-items:flex-end;justify-content:space-between;}
-  .st-product-price{font-size:16px;font-weight:800;color:var(--text);letter-spacing:-0.4px;}
-  .st-product-compare{font-size:11px;color:var(--muted);text-decoration:line-through;margin-top:2px;}
-  .st-product-sold{font-size:11px;color:var(--muted);font-weight:600;}
+  @media(max-width:760px) {.st-grid{grid-template-columns:repeat(2,1fr);gap:10px;}}
+
+  /* ── Product card — matches ProductGrid exactly ── */
+  .st-product-card{
+    background:var(--card);border-radius:14px;overflow:hidden;
+    border:1px solid var(--border);text-decoration:none;display:block;
+    cursor:pointer;transition:box-shadow 0.22s,transform 0.22s,border-color 0.22s;
+    will-change:transform;animation:st-fadeUp 0.35s ease both;
+  }
+  .st-product-card:hover{box-shadow:0 12px 36px rgba(0,0,0,0.10);transform:translateY(-3px);border-color:rgba(0,0,0,0.1);}
+
+  /* Image */
+  .st-product-img{position:relative;aspect-ratio:3/4;overflow:hidden;background:var(--hover);}
+  .st-product-img img{
+    position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+    transition:transform 0.45s ease;
+  }
+  .st-product-card:hover .st-product-img img{transform:scale(1.04);}
+
+  /* Hover overlay */
+  .st-img-overlay{
+    position:absolute;inset:0;z-index:4;
+    background:linear-gradient(to top,rgba(0,0,0,0.46) 0%,rgba(0,0,0,0.04) 50%,transparent 72%);
+    opacity:0;transition:opacity 0.22s;
+  }
+  .st-product-card:hover .st-img-overlay{opacity:1;}
+
+  /* Slide-up cart button */
+  .st-add-btn{
+    position:absolute;bottom:10px;left:10px;right:10px;z-index:5;
+    padding:9px 0;border-radius:9px;border:none;
+    background:#fff;color:var(--text);
+    font-size:11px;font-weight:700;font-family:'Sora',sans-serif;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;
+    transform:translateY(10px);opacity:0;
+    transition:opacity 0.2s,transform 0.2s,background 0.15s;
+  }
+  .st-product-card:hover .st-add-btn{opacity:1;transform:translateY(0);}
+  .st-add-btn:hover{background:#f0ede8;}
+
+  /* Badges */
+  .st-badge-img{
+    position:absolute;z-index:6;top:8px;left:8px;
+    padding:3px 9px;border-radius:20px;pointer-events:none;
+    font-size:10px;font-weight:800;letter-spacing:0.2px;
+  }
+  .st-badge-img.sale{background:#dc2626;color:#fff;}
+  .st-badge-img.new {background:#16a34a;color:#fff;}
+  .st-badge-img.oos {background:rgba(26,23,20,0.75);color:#fff;backdrop-filter:blur(4px);}
+
+  /* Info panel */
+  .st-product-body{padding:12px 13px 14px;display:flex;flex-direction:column;}
+
+  .st-product-seller-row{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:3px;}
+  .st-product-seller-name{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;}
+  .st-product-verified{
+    display:inline-flex;align-items:center;gap:3px;flex-shrink:0;
+    padding:2px 6px;border-radius:20px;
+    font-size:9px;font-weight:700;letter-spacing:0.2px;
+    background:#e0f2fe;color:#0284c7;border:1px solid #bae6fd;
+  }
+  .st-product-name{font-size:13px;font-weight:700;color:var(--text);margin:0 0 7px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+
+  .st-product-meta{display:flex;align-items:center;gap:5px;margin-bottom:7px;flex-wrap:wrap;}
+  .st-product-cat{padding:2px 7px;border-radius:20px;font-size:9px;font-weight:600;color:var(--muted);background:var(--hover);border:1px solid var(--border);}
+  .st-product-stock{font-size:9px;font-weight:600;}
+  .st-product-stock.low {color:#d97706;}
+  .st-product-stock.ok  {color:#16a34a;}
+  .st-product-stock.none{color:#dc2626;}
+
+  .st-product-colors{display:flex;align-items:center;gap:3px;margin-bottom:9px;}
+  .st-color-dot{width:10px;height:10px;border-radius:50%;border:1.5px solid rgba(0,0,0,0.1);flex-shrink:0;}
+  .st-color-more{font-size:9px;color:var(--muted);font-weight:600;}
+
+  .st-product-divider{height:1px;background:var(--border);margin:0 0 9px;}
+
+  .st-product-bottom{display:flex;align-items:flex-end;justify-content:space-between;gap:4px;}
+  .st-product-price{font-size:15px;font-weight:800;color:var(--text);letter-spacing:-0.4px;line-height:1.1;}
+  .st-product-etb{font-size:10px;font-weight:500;color:var(--muted);margin-left:2px;}
+  .st-product-compare{font-size:10px;color:#c4bfb8;text-decoration:line-through;display:block;margin-top:1px;}
+  .st-product-sizes{display:flex;gap:3px;flex-wrap:wrap;justify-content:flex-end;}
+  .st-product-size{
+    padding:2px 5px;border-radius:4px;border:1px solid var(--border);
+    font-size:8px;font-weight:700;color:var(--muted);letter-spacing:0.2px;
+    transition:border-color 0.15s;
+  }
+  .st-product-card:hover .st-product-size{border-color:#c4bfb8;}
   .st-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 24px;background:var(--card);border-radius:18px;border:1.5px dashed var(--border);text-align:center;}
   .st-empty-icon{width:64px;height:64px;background:var(--hover);border-radius:18px;display:flex;align-items:center;justify-content:center;color:var(--muted);margin-bottom:18px;}
   .st-empty-title{font-size:17px;font-weight:700;color:var(--text);margin:0 0 8px;}
@@ -360,7 +433,13 @@ interface SellerStoreClientProps {
     price: number;
     compareAtPrice: number | null;
     image: string;
+    image2?: string;
     sold: number;
+    sizes?: string[];
+    colors?: string[];
+    stock?: number;
+    category?: string;
+    isNew?: boolean;
   }>;
 }
 
@@ -631,7 +710,48 @@ export default function StorePageClient({
                                 product.compareAtPrice) *
                                 100,
                             )
-                          : null;
+                          : 0;
+                      const isOOS = product.stock === 0;
+                      const stockLabel = isOOS
+                        ? { text: "Out of stock", cls: "none" }
+                        : (product.stock ?? 99) <= 5
+                          ? { text: `Only ${product.stock} left`, cls: "low" }
+                          : { text: "In stock", cls: "ok" };
+                      const uniqueColors = [
+                        ...new Set<string>(product.colors || []),
+                      ];
+                      const categoryLabel = product.category
+                        ? product.category.charAt(0).toUpperCase() +
+                          product.category.slice(1).toLowerCase()
+                        : null;
+
+                      const COLOR_HEX: Record<string, string> = {
+                        black: "#1a1714",
+                        white: "#f8f8f8",
+                        gray: "#9ca3af",
+                        grey: "#9ca3af",
+                        blue: "#3b82f6",
+                        red: "#ef4444",
+                        green: "#10b981",
+                        yellow: "#f59e0b",
+                        orange: "#f97316",
+                        purple: "#8b5cf6",
+                        pink: "#ec4899",
+                        brown: "#a16207",
+                        khaki: "#c4b5a0",
+                        navy: "#1e3a5f",
+                        beige: "#e8dcc8",
+                        cream: "#fef3c7",
+                      };
+                      const dot = (c: string) => {
+                        const k = c.toLowerCase().split(" ").pop() || "";
+                        return (
+                          COLOR_HEX[k] ||
+                          COLOR_HEX[c.toLowerCase()] ||
+                          "#e8e4de"
+                        );
+                      };
+
                       return (
                         <Link
                           key={product.id}
@@ -639,33 +759,141 @@ export default function StorePageClient({
                           className="st-product-card"
                           style={{ animationDelay: `${i * 40}ms` }}
                         >
+                          {/* Image */}
                           <div className="st-product-img">
                             <img src={product.image} alt={product.title} />
-                            {discount && (
-                              <span className="st-discount-badge">
-                                -{discount}%
+                            <div className="st-img-overlay" />
+
+                            {/* Badges */}
+                            {isOOS && (
+                              <span className="st-badge-img oos">
+                                Out of stock
                               </span>
                             )}
+                            {!isOOS && discount > 0 && (
+                              <span className="st-badge-img sale">
+                                −{discount}%
+                              </span>
+                            )}
+                            {!isOOS && product.isNew && !discount && (
+                              <span className="st-badge-img new">New</span>
+                            )}
+
+                            {/* Slide-up CTA */}
+                            <button
+                              className="st-add-btn"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                              }}
+                            >
+                              <svg
+                                width="11"
+                                height="11"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="1.75"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <circle cx="9" cy="21" r="1" />
+                                <circle cx="20" cy="21" r="1" />
+                                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+                              </svg>
+                              {isOOS ? "Out of stock" : "Add to cart"}
+                            </button>
                           </div>
+
+                          {/* Info */}
                           <div className="st-product-body">
+                            {/* Seller + verified */}
+                            <div className="st-product-seller-row">
+                              <span className="st-product-seller-name">
+                                {seller.name}
+                              </span>
+                              {seller.verified && (
+                                <span className="st-product-verified">
+                                  <svg
+                                    width="8"
+                                    height="8"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="3"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  >
+                                    <polyline points="20 6 9 17 4 12" />
+                                  </svg>
+                                  Verified
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Title */}
                             <p className="st-product-name">{product.title}</p>
-                            <div className="st-product-price-row">
+
+                            {/* Category + stock */}
+                            <div className="st-product-meta">
+                              {categoryLabel && (
+                                <span className="st-product-cat">
+                                  {categoryLabel}
+                                </span>
+                              )}
+                              <span
+                                className={`st-product-stock ${stockLabel.cls}`}
+                              >
+                                {stockLabel.text}
+                              </span>
+                            </div>
+
+                            {/* Colors */}
+                            {uniqueColors.length > 0 && (
+                              <div className="st-product-colors">
+                                {uniqueColors.slice(0, 5).map((c, ci) => (
+                                  <span
+                                    key={ci}
+                                    className="st-color-dot"
+                                    style={{ background: dot(c) }}
+                                    title={c}
+                                  />
+                                ))}
+                                {uniqueColors.length > 5 && (
+                                  <span className="st-color-more">
+                                    +{uniqueColors.length - 5}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+
+                            <div className="st-product-divider" />
+
+                            {/* Price + sizes */}
+                            <div className="st-product-bottom">
                               <div>
                                 <p className="st-product-price">
-                                  {product.price.toLocaleString()} ETB
+                                  {product.price.toLocaleString()}
+                                  <span className="st-product-etb">ETB</span>
                                 </p>
-                                {product.compareAtPrice &&
-                                  product.compareAtPrice > product.price && (
-                                    <p className="st-product-compare">
-                                      {product.compareAtPrice.toLocaleString()}{" "}
-                                      ETB
-                                    </p>
-                                  )}
+                                {discount > 0 && (
+                                  <span className="st-product-compare">
+                                    {product.compareAtPrice?.toLocaleString()}{" "}
+                                    ETB
+                                  </span>
+                                )}
                               </div>
-                              {product.sold > 0 && (
-                                <span className="st-product-sold">
-                                  {product.sold} sold
-                                </span>
+                              {(product.sizes?.length ?? 0) > 0 && (
+                                <div className="st-product-sizes">
+                                  {product.sizes!.slice(0, 3).map((s) => (
+                                    <span key={s} className="st-product-size">
+                                      {s}
+                                    </span>
+                                  ))}
+                                  {product.sizes!.length > 3 && (
+                                    <span className="st-product-size">…</span>
+                                  )}
+                                </div>
                               )}
                             </div>
                           </div>

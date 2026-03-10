@@ -2,52 +2,50 @@
 
 import { useEffect, useState } from "react";
 
-// Only keyframes stay here — Tailwind can't generate these
 const KEYFRAMES = `
   @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&display=swap');
-
   * { font-family: 'Sora', sans-serif; }
-
   @keyframes hm-grain {
     0%,100%{transform:translate(0,0)} 20%{transform:translate(-1px,2px)}
     40%{transform:translate(2px,-1px)} 60%{transform:translate(-2px,1px)} 80%{transform:translate(1px,-2px)}
   }
   @keyframes hm-marquee { from{transform:translateX(0)} to{transform:translateX(-50%)} }
   @keyframes hm-word-in { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
-
-  .anim-grain    { animation: hm-grain 0.5s steps(1) infinite; }
-  .anim-marquee  { animation: hm-marquee 28s linear infinite; }
-  .anim-word     { animation: hm-word-in 0.5s cubic-bezier(0.16,1,0.3,1) forwards; }
-
+  .anim-grain   { animation: hm-grain 0.5s steps(1) infinite; }
+  .anim-marquee { animation: hm-marquee 28s linear infinite; }
+  .anim-word    { animation: hm-word-in 0.5s cubic-bezier(0.16,1,0.3,1) forwards; }
   .frame-transition { transition: all 0.72s cubic-bezier(0.4,0,0.2,1); }
 `;
 
-const ChevLeft = () => (
+// ── Arrow icons ───────────────────────────────────────────────────────────────
+const ArrowLeft = () => (
   <svg
-    width="20"
-    height="20"
+    width="16"
+    height="16"
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth="2.5"
+    strokeWidth="2"
     strokeLinecap="round"
     strokeLinejoin="round"
   >
-    <polyline points="15 18 9 12 15 6" />
+    <line x1="19" y1="12" x2="5" y2="12" />
+    <polyline points="12 19 5 12 12 5" />
   </svg>
 );
-const ChevRight = () => (
+const ArrowRight = () => (
   <svg
-    width="20"
-    height="20"
+    width="16"
+    height="16"
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth="2.5"
+    strokeWidth="2"
     strokeLinecap="round"
     strokeLinejoin="round"
   >
-    <polyline points="9 18 15 12 9 6" />
+    <line x1="5" y1="12" x2="19" y2="12" />
+    <polyline points="12 5 19 12 12 19" />
   </svg>
 );
 const ArrowIco = () => (
@@ -92,9 +90,18 @@ const HEADLINE = ["Dress", "for every", "moment."];
 export default function Home() {
   const [stage, setStage] = useState(0);
   const [center, setCenter] = useState(2);
+  // ── Safe viewport height: 0 on server, real value after hydration ────────
+  const [vh, setVh] = useState(0);
 
   useEffect(() => {
-    const t1 = setTimeout(() => setStage(1), 500);
+    const update = () => setVh(window.innerHeight);
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+
+  useEffect(() => {
+    const t1 = setTimeout(() => setStage(1), 120);
     const t2 = setTimeout(() => setStage(2), 1400);
     return () => {
       clearTimeout(t1);
@@ -111,8 +118,8 @@ export default function Home() {
     return () => clearInterval(iv);
   }, [stage, center]);
 
-  const prev = () => setCenter((p) => (p === 0 ? IMAGES.length - 1 : p - 1));
-  const next = () => setCenter((p) => (p === IMAGES.length - 1 ? 0 : p + 1));
+  const goPrev = () => setCenter((p) => (p === 0 ? IMAGES.length - 1 : p - 1));
+  const goNext = () => setCenter((p) => (p === IMAGES.length - 1 ? 0 : p + 1));
 
   const getPos = (idx: number) => {
     let d = idx - center;
@@ -127,13 +134,15 @@ export default function Home() {
     transition: `all 0.5s ease ${delay}s`,
   });
 
+  // Use 800 as SSR fallback — real value applied after mount
+  const safeVh = vh || 800;
+
   return (
     <>
       <style>{KEYFRAMES}</style>
 
-      {/* Page — locked to viewport */}
       <div className="flex flex-col items-center h-screen max-h-screen overflow-hidden bg-[#f6f5f3] pt-10">
-        {/* Grain overlay */}
+        {/* Grain */}
         <div
           className="fixed inset-0 pointer-events-none z-0 opacity-35 anim-grain"
           style={{
@@ -159,7 +168,6 @@ export default function Home() {
 
         {/* Text block */}
         <div className="flex flex-col items-center text-center pt-10 pb-[5px] px-6 relative z-10 w-full max-w-[900px] shrink-0 border-b border-[#e8e4de]">
-          {/* Eyebrow */}
           <div
             className="flex items-center gap-2.5 mb-2.5"
             style={fadeUp(0.05)}
@@ -171,7 +179,6 @@ export default function Home() {
             <div className="w-7 h-[1.5px] bg-[#9e9890]" />
           </div>
 
-          {/* Headline */}
           <h1 className="text-[clamp(44px,5.5vw,80px)] font-extrabold text-[#1a1714] leading-none tracking-[-3px] mb-2.5 whitespace-nowrap">
             {HEADLINE.map((line, li) => (
               <span
@@ -209,7 +216,6 @@ export default function Home() {
             ))}
           </h1>
 
-          {/* Sub */}
           <p
             className="text-[13px] text-[#9e9890] font-normal leading-relaxed max-w-[400px] mb-2.5"
             style={fadeUp(0.55)}
@@ -218,7 +224,6 @@ export default function Home() {
             activewear and more, delivered to your door.
           </p>
 
-          {/* Buttons */}
           <div
             className="flex gap-2.5 flex-wrap justify-center"
             style={fadeUp(0.68)}
@@ -238,90 +243,105 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Arc carousel — takes remaining height */}
+        {/* Arc carousel */}
         <div className="w-full flex-1 min-h-0 overflow-visible relative z-10">
           <div className="max-w-[1280px] mx-auto px-4 h-full">
             <div className="relative h-full">
-              {/* Images */}
-              <div className="absolute inset-0 flex justify-center items-end">
-                {IMAGES.map((url, idx) => {
-                  const pos = getPos(idx);
-                  const absDist = Math.abs(pos);
-                  const isCenter = pos === 0;
-                  const visible = absDist <= 2;
+              {/* Images — gated on vh > 0 so window is never accessed on the server */}
+              {vh > 0 && (
+                <div className="absolute inset-0 flex justify-center items-end">
+                  {IMAGES.map((url, idx) => {
+                    const pos = getPos(idx);
+                    const absDist = Math.abs(pos);
+                    const isCenter = pos === 0;
+                    const visible = absDist <= 2;
 
-                  const H = Math.round(window.innerHeight * 0.52);
-                  const imgH = H * (1 - absDist * 0.05);
-                  const W = isCenter
-                    ? Math.round(window.innerHeight * 0.38)
-                    : Math.round(window.innerHeight * 0.34);
-                  const rot = pos * 4;
-                  const pushDn =
-                    Math.abs(rot) *
-                    (W / 10) *
-                    Math.sin((Math.abs(rot) * Math.PI) / 180);
-                  const gapX = 270;
+                    const H = Math.round(safeVh * 0.52);
+                    const imgH = H * (1 - absDist * 0.05);
+                    const W = isCenter
+                      ? Math.round(safeVh * 0.38)
+                      : Math.round(safeVh * 0.34);
+                    const rot = pos * 4;
+                    const pushDn =
+                      Math.abs(rot) *
+                      (W / 10) *
+                      Math.sin((Math.abs(rot) * Math.PI) / 180);
+                    const gapX = 270;
 
-                  let tX = `${pos * gapX}px`;
-                  let tY = `${pushDn}px`;
-                  let imgW = `${W}px`;
-                  let imgHstr = `${imgH}px`;
-                  let opacity = visible ? 1 : 0;
+                    let tX: string = `${pos * gapX}px`;
+                    let tY: string = `${pushDn}px`;
+                    let imgW: string = `${W}px`;
+                    let imgHstr: string = `${imgH}px`;
+                    let opacity: number = visible ? 1 : 0;
 
-                  if (isCenter && stage === 0) {
-                    imgW = `${Math.round(window.innerHeight * 0.56)}px`;
-                    imgHstr = `${Math.round(window.innerHeight * 0.7)}px`;
-                    tY = `${-Math.round(window.innerHeight * 0.42)}px`;
-                  } else if (!isCenter && stage < 1) {
-                    opacity = 0;
-                    tX = pos < 0 ? "-900px" : "900px";
-                  }
+                    if (isCenter && stage === 0) {
+                      opacity = 0;
+                      imgW = `${Math.round(safeVh * 0.56)}px`;
+                      imgHstr = `${Math.round(safeVh * 0.7)}px`;
+                      tY = `${-Math.round(safeVh * 0.42)}px`;
+                    } else if (!isCenter && stage < 1) {
+                      opacity = 0;
+                      tX = pos < 0 ? "-900px" : "900px";
+                    }
 
-                  return (
-                    <div
-                      key={idx}
-                      className="shrink-0 overflow-hidden absolute left-1/2 shadow-[0_10px_36px_rgba(0,0,0,0.13)] frame-transition"
-                      style={{
-                        width: imgW,
-                        height: imgHstr,
-                        borderRadius: "9999px 9999px 0 0",
-                        transform: `translateX(calc(-50% + ${tX})) translateY(${tY}) rotate(${rot}deg)`,
-                        transformOrigin: "bottom center",
-                        opacity,
-                        pointerEvents: visible ? "auto" : "none",
-                        cursor: isCenter ? "default" : "pointer",
-                      }}
-                      onClick={() => !isCenter && setCenter(idx)}
-                    >
-                      <img
-                        src={url}
-                        alt={`Look ${idx + 1}`}
-                        className="w-full h-full object-cover object-top block"
-                      />
-                    </div>
-                  );
-                })}
-              </div>
+                    return (
+                      <div
+                        key={idx}
+                        className="shrink-0 overflow-hidden absolute left-1/2 shadow-[0_10px_36px_rgba(0,0,0,0.13)] frame-transition"
+                        style={{
+                          width: imgW,
+                          height: imgHstr,
+                          borderRadius: "9999px 9999px 0 0",
+                          transform: `translateX(calc(-50% + ${tX})) translateY(${tY}) rotate(${rot}deg)`,
+                          transformOrigin: "bottom center",
+                          opacity,
+                          pointerEvents: visible ? "auto" : "none",
+                          cursor: isCenter ? "default" : "pointer",
+                        }}
+                        onClick={() => !isCenter && setCenter(idx)}
+                      >
+                        <img
+                          src={url}
+                          alt={`Look ${idx + 1}`}
+                          className="w-full h-full object-cover object-top block"
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
 
               {/* Arrows */}
               {(["prev", "next"] as const).map((dir) => (
                 <button
                   key={dir}
-                  onClick={dir === "prev" ? prev : next}
-                  aria-label={dir}
-                  className={`absolute bottom-4 z-30 w-[46px] h-[46px] rounded-full flex items-center justify-center text-[#d7d4d4] border border-white/10 backdrop-blur-md cursor-pointer hover:text-white ${dir === "prev" ? "left-[100px]" : "right-[100px]"}`}
+                  onClick={dir === "prev" ? goPrev : goNext}
+                  aria-label={dir === "prev" ? "Previous" : "Next"}
+                  className={`absolute bottom-4 z-30 cursor-pointer group ${dir === "prev" ? "left-[100px]" : "right-[100px]"}`}
                   style={{
-                    background: "rgba(26,23,20,0.82)",
                     transform:
                       stage >= 2
                         ? `rotate(${dir === "prev" ? -8 : 8}deg) translateY(0)`
                         : `rotate(${dir === "prev" ? -8 : 8}deg) translateY(100px)`,
                     opacity: stage >= 2 ? 1 : 0,
                     transition:
-                      "transform 0.4s ease 0.6s, opacity 0.4s ease 0.6s, background 0.2s, color 0.2s",
+                      "transform 0.4s ease 0.6s, opacity 0.4s ease 0.6s",
                   }}
                 >
-                  {dir === "prev" ? <ChevLeft /> : <ChevRight />}
+                  <div
+                    className="flex items-center justify-center transition-all duration-200 group-hover:scale-105 group-hover:shadow-[0_6px_24px_rgba(0,0,0,0.22)]"
+                    style={{
+                      width: 48,
+                      height: 28,
+                      borderRadius: 999,
+                      background: "rgba(26,23,20,0.78)",
+                      border: "1px solid rgba(255,255,255,0.14)",
+                      backdropFilter: "blur(10px)",
+                      color: "rgba(255,255,255,0.8)",
+                    }}
+                  >
+                    {dir === "prev" ? <ArrowLeft /> : <ArrowRight />}
+                  </div>
                 </button>
               ))}
 
