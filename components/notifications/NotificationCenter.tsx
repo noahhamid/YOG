@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
@@ -20,8 +20,16 @@ interface Notification {
 interface NotificationCenterProps {
   isOpen: boolean;
   onClose: () => void;
+  /** Called when unread count changes — use to update the bell badge */
+  onUnreadChange?: (count: number) => void;
+  /** Called when a brand-new notification arrives — use to show a toast */
+  onNewNotification?: (n: Notification) => void;
 }
 
+// ─── Poll interval (ms) ───────────────────────────────────────────────────────
+const POLL_INTERVAL = 20_000; // 20 seconds
+
+// ─── Icons ────────────────────────────────────────────────────────────────────
 const BellIcon = () => (
   <svg
     width="18"
@@ -102,45 +110,151 @@ const PackageIcon = () => (
   </svg>
 );
 
+// Icon per notification type so SYSTEM looks distinct
+const TYPE_ICON: Record<string, () => JSX.Element> = {
+  SYSTEM: () => (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="12" cy="12" r="10" />
+      <line x1="12" y1="8" x2="12" y2="12" />
+      <line x1="12" y1="16" x2="12.01" y2="16" />
+    </svg>
+  ),
+  ORDER_UPDATE: PackageIcon,
+  NEW_PRODUCT: PackageIcon,
+  FOLLOW: () => (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </svg>
+  ),
+};
+
 const TYPE_CONFIG: Record<
   string,
-  { label: string; color: string; bg: string }
+  { label: string; color: string; bg: string; accent: string }
 > = {
-  ORDER_UPDATE: { label: "Order", color: "#1a1714", bg: "#f0ede9" },
-  NEW_PRODUCT: { label: "Product", color: "#1a1714", bg: "#f0ede9" },
-  FOLLOW: { label: "Follow", color: "#1a1714", bg: "#f0ede9" },
-  SYSTEM: { label: "System", color: "#9e9890", bg: "#f6f5f3" },
+  ORDER_UPDATE: {
+    label: "Order",
+    color: "#1a1714",
+    bg: "#f0ede9",
+    accent: "#1a1714",
+  },
+  NEW_PRODUCT: {
+    label: "Product",
+    color: "#1a1714",
+    bg: "#f0ede9",
+    accent: "#1a1714",
+  },
+  FOLLOW: {
+    label: "Follow",
+    color: "#1a1714",
+    bg: "#f0ede9",
+    accent: "#1a1714",
+  },
+  SYSTEM: {
+    label: "System",
+    color: "#c2410c",
+    bg: "#fff7ed",
+    accent: "#ea580c",
+  },
 };
 
 export default function NotificationCenter({
   isOpen,
   onClose,
+  onUnreadChange,
+  onNewNotification,
 }: NotificationCenterProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "unread">("all");
 
+  // Track the IDs we've already seen so we can detect truly new ones
+  const seenIds = useRef<Set<string>>(new Set());
+  // Track whether the initial load is done (so we don't toast stale notifications)
+  const initialLoadDone = useRef(false);
+
+  // ─── Core fetch ────────────────────────────────────────────────────────────
+  const fetchNotifications = useCallback(
+    async (silent = false) => {
+      const userStr = localStorage.getItem("yog_user");
+      if (!userStr) return;
+
+      if (!silent) setIsLoading(true);
+
+      try {
+        const res = await fetch("/api/notifications", {
+          headers: { "x-user-data": userStr },
+        });
+        const data = await res.json();
+        if (!data.notifications) return;
+
+        const incoming: Notification[] = data.notifications;
+
+        // Detect brand-new notifications (not seen before AND unread)
+        if (initialLoadDone.current) {
+          const brandNew = incoming.filter(
+            (n) => !seenIds.current.has(n.id) && !n.read,
+          );
+          // Fire toast for each new one (most recent first, cap at 1 toast at a time)
+          if (brandNew.length > 0 && onNewNotification) {
+            onNewNotification(brandNew[0]);
+          }
+        }
+
+        // Update seen set
+        incoming.forEach((n) => seenIds.current.add(n.id));
+        initialLoadDone.current = true;
+
+        setNotifications(incoming);
+
+        // Bubble unread count up to Navbar bell badge
+        const unread = incoming.filter((n) => !n.read).length;
+        onUnreadChange?.(unread);
+      } catch (e) {
+        console.error("Notification fetch error:", e);
+      } finally {
+        if (!silent) setIsLoading(false);
+      }
+    },
+    [onUnreadChange, onNewNotification],
+  );
+
+  // ─── Initial load when panel opens ────────────────────────────────────────
   useEffect(() => {
-    if (isOpen) loadNotifications();
-  }, [isOpen]);
+    if (isOpen) fetchNotifications(false);
+  }, [isOpen, fetchNotifications]);
 
-  const loadNotifications = async () => {
-    setIsLoading(true);
-    const userStr = localStorage.getItem("yog_user");
-    if (!userStr) return;
-    try {
-      const res = await fetch("/api/notifications", {
-        headers: { "x-user-data": userStr },
-      });
-      const data = await res.json();
-      if (data.notifications) setNotifications(data.notifications);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // ─── Background poll (runs regardless of panel state) ─────────────────────
+  useEffect(() => {
+    // First silent poll after a short delay so we don't double-fetch on mount
+    const firstPoll = setTimeout(() => fetchNotifications(true), 3000);
+    const interval = setInterval(() => fetchNotifications(true), POLL_INTERVAL);
+    return () => {
+      clearTimeout(firstPoll);
+      clearInterval(interval);
+    };
+  }, [fetchNotifications]);
 
+  // ─── Actions ───────────────────────────────────────────────────────────────
   const markAsRead = async (id: string) => {
     const userStr = localStorage.getItem("yog_user");
     if (!userStr) return;
@@ -152,6 +266,8 @@ export default function NotificationCenter({
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
     );
+    const unread = notifications.filter((n) => n.id !== id && !n.read).length;
+    onUnreadChange?.(unread);
   };
 
   const markAllAsRead = async () => {
@@ -163,6 +279,7 @@ export default function NotificationCenter({
       body: JSON.stringify({ markAllRead: true }),
     });
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    onUnreadChange?.(0);
   };
 
   const deleteNotification = async (id: string) => {
@@ -172,14 +289,18 @@ export default function NotificationCenter({
       method: "DELETE",
       headers: { "x-user-data": userStr },
     });
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
+    const remaining = notifications.filter((n) => n.id !== id);
+    setNotifications(remaining);
+    onUnreadChange?.(remaining.filter((n) => !n.read).length);
   };
 
+  // ─── Helpers ───────────────────────────────────────────────────────────────
   const getLink = (n: Notification) => {
     if (n.type === "ORDER_UPDATE") return "/seller/dashboard?tab=orders";
     if (n.type === "NEW_PRODUCT" && n.productId)
       return `/product/${n.productId}`;
     if (n.type === "FOLLOW" && n.sellerId) return `/store/${n.sellerId}`;
+    if (n.type === "SYSTEM") return "/seller/dashboard";
     return "#";
   };
 
@@ -317,6 +438,9 @@ export default function NotificationCenter({
                   <AnimatePresence initial={false}>
                     {filtered.map((n, i) => {
                       const cfg = TYPE_CONFIG[n.type] ?? TYPE_CONFIG.SYSTEM;
+                      const Icon = TYPE_ICON[n.type] ?? PackageIcon;
+                      const isSystem = n.type === "SYSTEM";
+
                       return (
                         <motion.div
                           key={n.id}
@@ -333,12 +457,26 @@ export default function NotificationCenter({
                           style={{
                             border: n.read
                               ? "1px solid #e8e4de"
-                              : "1px solid #d4cfc9",
+                              : isSystem
+                                ? `1px solid ${cfg.accent}40`
+                                : "1px solid #d4cfc9",
                             boxShadow: n.read
                               ? "none"
-                              : "0 2px 12px rgba(0,0,0,0.06)",
+                              : isSystem
+                                ? `0 2px 16px ${cfg.accent}18`
+                                : "0 2px 12px rgba(0,0,0,0.06)",
                           }}
                         >
+                          {/* Orange left bar for unread SYSTEM notifications */}
+                          {isSystem && !n.read && (
+                            <div
+                              style={{
+                                height: 3,
+                                background: `linear-gradient(90deg, ${cfg.accent}, transparent)`,
+                              }}
+                            />
+                          )}
+
                           <Link
                             href={getLink(n)}
                             onClick={() => {
@@ -361,10 +499,13 @@ export default function NotificationCenter({
                                 </div>
                               ) : (
                                 <div
-                                  className="w-11 h-11 rounded-xl flex items-center justify-center text-[#9e9890]"
-                                  style={{ background: cfg.bg }}
+                                  className="w-11 h-11 rounded-xl flex items-center justify-center"
+                                  style={{
+                                    background: cfg.bg,
+                                    color: cfg.accent,
+                                  }}
                                 >
-                                  <PackageIcon />
+                                  <Icon />
                                 </div>
                               )}
                             </div>
@@ -372,11 +513,21 @@ export default function NotificationCenter({
                             {/* Content */}
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-0.5">
-                                <span className="text-[10px] font-bold uppercase tracking-[0.8px] text-[#9e9890]">
+                                <span
+                                  className="text-[10px] font-bold uppercase tracking-[0.8px]"
+                                  style={{ color: cfg.accent }}
+                                >
                                   {cfg.label}
                                 </span>
                                 {!n.read && (
-                                  <span className="w-1.5 h-1.5 rounded-full bg-[#1a1714] shrink-0" />
+                                  <span
+                                    className="w-1.5 h-1.5 rounded-full shrink-0"
+                                    style={{
+                                      background: isSystem
+                                        ? cfg.accent
+                                        : "#1a1714",
+                                    }}
+                                  />
                                 )}
                               </div>
                               <p className="text-[13px] font-semibold text-[#1a1714] leading-snug mb-0.5 truncate">
@@ -391,7 +542,7 @@ export default function NotificationCenter({
                             </div>
                           </Link>
 
-                          {/* Actions — slide in on hover */}
+                          {/* Hover actions */}
                           <div className="flex items-center gap-1 px-4 pb-3 -mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             {!n.read && (
                               <button

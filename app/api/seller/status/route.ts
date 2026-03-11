@@ -1,59 +1,57 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   try {
     const userStr = req.headers.get("x-user-data");
-    
-    if (!userStr) {
-      return NextResponse.json(
-        { error: "Please sign in first" },
-        { status: 401 }
-      );
-    }
+    if (!userStr)
+      return NextResponse.json({ error: "Please sign in first" }, { status: 401 });
 
     const user = JSON.parse(userStr);
 
-    // Find seller record
     const seller = await prisma.seller.findUnique({
       where: { userId: user.id },
+      select: {
+        id: true,
+        brandName: true,
+        approved: true,
+        status: true,
+        rejectionReason: true,
+        pausedAt: true,
+        pausedReason: true,
+        suspendedAt: true,
+        suspendedReason: true,
+        deletedAt: true,
+      },
     });
 
     if (!seller) {
-      return NextResponse.json({
-        status: "none",
-        approved: false,
-        rejectionReason: null,
-      });
+      return NextResponse.json({ status: "none", approved: false });
     }
 
-    // Determine status
-    let status = "pending";
-    if (seller.approved) {
-      status = "approved";
-    } else if (seller.rejectionReason) {
-      status = "rejected";
-    }
-
-    console.log(`✅ Seller status check: ${user.email} - ${status} (approved: ${seller.approved})`);
+    // Use the new status field as source of truth
+    const status = seller.status.toLowerCase(); // "pending","approved","rejected","paused","suspended","deleted"
 
     return NextResponse.json({
       status,
       approved: seller.approved,
-      rejectionReason: seller.rejectionReason,
       seller: {
         id: seller.id,
         brandName: seller.brandName,
         approved: seller.approved,
+        status: seller.status,
+        rejectionReason: seller.rejectionReason,
+        pausedReason: seller.pausedReason,
+        pausedAt: seller.pausedAt,
+        suspendedReason: seller.suspendedReason,
+        suspendedAt: seller.suspendedAt,
+        deletedAt: seller.deletedAt,
       },
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("❌ Error checking seller status:", error);
-    return NextResponse.json(
-      { error: "Failed to check status" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to check status" }, { status: 500 });
   }
 }
