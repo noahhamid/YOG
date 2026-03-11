@@ -12,6 +12,7 @@ interface UserData {
   email: string;
   name: string;
   role: "USER" | "SELLER" | "ADMIN";
+  image?: string;
 }
 
 // ── Icons ──────────────────────────────────────────────────────────────────
@@ -122,21 +123,6 @@ const SettingsIcon = () => (
     <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
   </svg>
 );
-const RefreshIcon = () => (
-  <svg
-    width="14"
-    height="14"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <polyline points="23 4 23 10 17 10" />
-    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
-  </svg>
-);
 const LogOutIcon = () => (
   <svg
     width="14"
@@ -151,20 +137,6 @@ const LogOutIcon = () => (
     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
     <polyline points="16 17 21 12 16 7" />
     <line x1="21" y1="12" x2="9" y2="12" />
-  </svg>
-);
-const HeartIcon = () => (
-  <svg
-    width="14"
-    height="14"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
   </svg>
 );
 
@@ -212,9 +184,28 @@ export default function Navbar() {
     return () => window.removeEventListener("userLoggedIn", loadUser);
   }, []);
 
-  const loadUser = () => {
+  const loadUser = async () => {
     const s = localStorage.getItem("yog_user");
-    if (s) setUser(JSON.parse(s));
+    if (s) {
+      const storedUser = JSON.parse(s);
+      setUser(storedUser);
+
+      // Auto-refresh session on load
+      try {
+        const res = await fetch("/api/auth/refresh", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: storedUser.email }),
+        });
+        const data = await res.json();
+        if (res.ok && data.user) {
+          localStorage.setItem("yog_user", JSON.stringify(data.user));
+          setUser(data.user);
+        }
+      } catch (err) {
+        console.error("Session refresh failed:", err);
+      }
+    }
   };
 
   // notification polling
@@ -272,24 +263,6 @@ export default function Navbar() {
     window.location.href = "/";
   };
 
-  const handleRefreshSession = async () => {
-    if (!user) return;
-    try {
-      const res = await fetch("/api/auth/refresh", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: user.email }),
-      });
-      const data = await res.json();
-      if (res.ok && data.user) {
-        localStorage.setItem("yog_user", JSON.stringify(data.user));
-        setUser(data.user);
-        window.location.reload();
-      }
-    } catch {}
-  };
-
-  // scrolled nav bg
   const scrolledBg = "rgba(255,255,255,0.97)";
   const scrolledBorder = "1px solid #e8e4de";
 
@@ -431,9 +404,17 @@ export default function Navbar() {
                     e.stopPropagation();
                     setShowProfileMenu((p) => !p);
                   }}
-                  className="w-8 h-8 rounded-full bg-[#1a1714] text-white text-[12px] font-bold flex items-center justify-center hover:opacity-70 transition-opacity cursor-pointer"
+                  className="w-8 h-8 rounded-full bg-[#1a1714] text-white text-[12px] font-bold flex items-center justify-center hover:opacity-70 transition-opacity cursor-pointer overflow-hidden"
                 >
-                  {user.name[0].toUpperCase()}
+                  {user.image ? (
+                    <img
+                      src={user.image}
+                      alt={user.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    user.name[0].toUpperCase()
+                  )}
                 </button>
 
                 <AnimatePresence>
@@ -492,9 +473,9 @@ export default function Navbar() {
                         {(
                           [
                             {
-                              href: "/profile",
+                              href: "/account",
                               icon: <UserIcon />,
-                              label: "My Profile",
+                              label: "Account Settings",
                               show: true,
                             },
                             {
@@ -525,21 +506,6 @@ export default function Navbar() {
                               </span>
                             </Link>
                           ))}
-
-                        <button
-                          onClick={() => {
-                            setShowProfileMenu(false);
-                            handleRefreshSession();
-                          }}
-                          className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-[#f6f5f3] transition-colors w-full cursor-pointer"
-                        >
-                          <span className="text-[#9e9890]">
-                            <RefreshIcon />
-                          </span>
-                          <span className="text-[12px] font-semibold text-[#1a1714]">
-                            Refresh Session
-                          </span>
-                        </button>
 
                         <div
                           style={{

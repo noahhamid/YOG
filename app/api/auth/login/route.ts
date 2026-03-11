@@ -28,7 +28,9 @@ export async function POST(req: NextRequest) {
     // Check if user signed up with OAuth
     if (user.provider && user.provider !== "credentials") {
       return NextResponse.json(
-        { error: `Please sign in with ${user.provider.charAt(0).toUpperCase() + user.provider.slice(1)}` },
+        {
+          error: `Please sign in with ${user.provider.charAt(0).toUpperCase() + user.provider.slice(1)}`,
+        },
         { status: 400 }
       );
     }
@@ -47,6 +49,30 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: "Invalid email or password" },
         { status: 401 }
+      );
+    }
+
+    // ✅ Check if account is scheduled for deletion
+    if (user.deletedAt) {
+      const daysRemaining = Math.ceil(
+        (new Date(user.deletedAt).getTime() - new Date().getTime()) /
+          (1000 * 60 * 60 * 24)
+      );
+
+      return NextResponse.json(
+        {
+          scheduledForDeletion: true,
+          deletionDate: user.deletedAt,
+          daysRemaining,
+          user: {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role,
+            image: user.image,
+          },
+        },
+        { status: 200 }
       );
     }
 

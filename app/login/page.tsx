@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
 
 const MailIcon = () => (
   <svg
@@ -79,6 +80,20 @@ const EyeOffIcon = () => (
     <line x1="1" y1="1" x2="23" y2="23" />
   </svg>
 );
+const AlertIcon = () => (
+  <svg
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M12 9v4m0 4h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+  </svg>
+);
 
 const GoogleLogo = () => (
   <svg width="16" height="16" viewBox="0 0 24 24">
@@ -108,10 +123,15 @@ export default function LoginPage() {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
 
+  const [showDeletionModal, setShowDeletionModal] = useState(false);
+  const [deletionData, setDeletionData] = useState<any>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
+
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
@@ -119,10 +139,20 @@ export default function LoginPage() {
         body: JSON.stringify(formData),
       });
       const data = await res.json();
-      if (res.ok && data.user) {
-        localStorage.setItem("yog_user", JSON.stringify(data.user));
-        window.dispatchEvent(new Event("userLoggedIn"));
-        router.push("/");
+
+      if (res.ok) {
+        if (data.scheduledForDeletion) {
+          setDeletionData(data);
+          setShowDeletionModal(true);
+          setIsLoading(false);
+          return;
+        }
+
+        if (data.user) {
+          localStorage.setItem("yog_user", JSON.stringify(data.user));
+          window.dispatchEvent(new Event("userLoggedIn"));
+          router.push("/");
+        }
       } else {
         setError(data.error || "Invalid email or password");
       }
@@ -133,152 +163,276 @@ export default function LoginPage() {
     }
   };
 
+  const handleCancelDeletion = async () => {
+    if (!deletionData) return;
+
+    setIsCancelling(true);
+    setError("");
+
+    try {
+      const res = await fetch("/api/user/cancel-deletion", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: deletionData.user.id }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.user) {
+        localStorage.setItem("yog_user", JSON.stringify(data.user));
+        window.dispatchEvent(new Event("userLoggedIn"));
+        router.push("/");
+      } else {
+        setError(data.error || "Failed to cancel deletion");
+        setShowDeletionModal(false);
+      }
+    } catch {
+      setError("An error occurred. Please try again.");
+      setShowDeletionModal(false);
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
   const inputBase =
     "w-full pl-10 pr-4 py-3 rounded-[11px] text-[13px] font-medium text-[#1a1714] bg-[#f6f5f3] placeholder:text-[#c4c0bb] focus:outline-none focus:bg-white transition-all";
 
   return (
-    <div
-      className="min-h-screen bg-[#f6f5f3] flex items-center justify-center px-4 py-12"
-      style={{ fontFamily: "'Sora',sans-serif" }}
-    >
-      <div className="w-full max-w-sm">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <Link href="/">
-            <span
-              className="text-[42px] font-black tracking-[6px] text-[#1a1714] cursor-pointer hover:opacity-70 transition-opacity"
-              style={{
-                fontFamily: "'Bebas Neue',sans-serif",
-                letterSpacing: "0.18em",
-              }}
-            >
-              YOG
-            </span>
-          </Link>
-          <p className="text-[12px] text-[#9e9890] mt-1 font-medium">
-            Welcome back
-          </p>
-        </div>
-
-        {/* Card */}
-        <div
-          className="bg-white rounded-2xl p-6"
-          style={{ border: "1px solid #e8e4de" }}
-        >
-          {/* Google */}
-          <button
-            onClick={() => alert("Google Sign In coming soon!")}
-            className="w-full flex items-center justify-center gap-2.5 py-3 rounded-[11px] text-[13px] font-semibold text-[#1a1714] bg-[#f6f5f3] hover:bg-[#edeae6] transition-colors cursor-pointer mb-5"
-            style={{ border: "1px solid #e8e4de" }}
-          >
-            <GoogleLogo /> Continue with Google
-          </button>
-
-          {/* Divider */}
-          <div className="flex items-center gap-3 mb-5">
-            <div className="flex-1 h-px bg-[#e8e4de]" />
-            <span className="text-[11px] text-[#b8b4ae] font-medium">
-              or with email
-            </span>
-            <div className="flex-1 h-px bg-[#e8e4de]" />
+    <>
+      <div
+        className="min-h-screen bg-[#f6f5f3] flex items-center justify-center px-4 py-12"
+        style={{ fontFamily: "'Sora',sans-serif" }}
+      >
+        <div className="w-full max-w-sm">
+          <div className="text-center mb-8">
+            <Link href="/">
+              <span
+                className="text-[42px] font-black tracking-[6px] text-[#1a1714] cursor-pointer hover:opacity-70 transition-opacity"
+                style={{
+                  fontFamily: "'Bebas Neue',sans-serif",
+                  letterSpacing: "0.18em",
+                }}
+              >
+                YOG
+              </span>
+            </Link>
+            <p className="text-[12px] text-[#9e9890] mt-1 font-medium">
+              Welcome back
+            </p>
           </div>
 
-          {/* Error */}
-          {error && (
-            <div
-              className="mb-4 px-3 py-2.5 rounded-[10px] text-[12px] text-red-600 bg-red-50"
-              style={{ border: "1px solid #fecaca" }}
-            >
-              {error}
-            </div>
-          )}
-
-          {/* Form */}
-          <form onSubmit={handleLogin} className="flex flex-col gap-3">
-            {/* Email */}
-            <div>
-              <label className="block text-[11px] font-bold text-[#9e9890] uppercase tracking-[0.9px] mb-1.5">
-                Email
-              </label>
-              <div className="relative">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#b8b4ae]">
-                  <MailIcon />
-                </span>
-                <input
-                  type="email"
-                  required
-                  value={formData.email}
-                  onChange={(e) =>
-                    setFormData({ ...formData, email: e.target.value })
-                  }
-                  placeholder="you@example.com"
-                  className={inputBase}
-                  style={{ border: "1px solid #e8e4de" }}
-                />
-              </div>
-            </div>
-
-            {/* Password */}
-            <div>
-              <label className="block text-[11px] font-bold text-[#9e9890] uppercase tracking-[0.9px] mb-1.5">
-                Password
-              </label>
-              <div className="relative">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#b8b4ae]">
-                  <LockIcon />
-                </span>
-                <input
-                  type={showPassword ? "text" : "password"}
-                  required
-                  value={formData.password}
-                  onChange={(e) =>
-                    setFormData({ ...formData, password: e.target.value })
-                  }
-                  placeholder="Enter your password"
-                  className={`${inputBase} pr-10`}
-                  style={{ border: "1px solid #e8e4de" }}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((p) => !p)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#b8b4ae] hover:text-[#9e9890] transition-colors cursor-pointer"
-                >
-                  {showPassword ? <EyeOffIcon /> : <EyeIcon />}
-                </button>
-              </div>
-            </div>
-
-            {/* Submit */}
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full mt-1 bg-[#1a1714] text-white py-3.5 rounded-[12px] text-[13px] font-bold flex items-center justify-center gap-2 hover:bg-[#333] transition-all cursor-pointer hover:-translate-y-px hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-            >
-              {isLoading ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Logging in…
-                </>
-              ) : (
-                <>
-                  Log In <ArrowIcon />
-                </>
-              )}
-            </button>
-          </form>
-        </div>
-
-        {/* Footer */}
-        <p className="text-center text-[12px] text-[#9e9890] mt-5">
-          Don't have an account?{" "}
-          <Link
-            href="/signup"
-            className="font-bold text-[#1a1714] hover:underline"
+          <div
+            className="bg-white rounded-2xl p-6"
+            style={{ border: "1px solid #e8e4de" }}
           >
-            Sign up
-          </Link>
-        </p>
+            <button
+              onClick={() => alert("Google Sign In coming soon!")}
+              className="w-full flex items-center justify-center gap-2.5 py-3 rounded-[11px] text-[13px] font-semibold text-[#1a1714] bg-[#f6f5f3] hover:bg-[#edeae6] transition-colors cursor-pointer mb-5"
+              style={{ border: "1px solid #e8e4de" }}
+            >
+              <GoogleLogo /> Continue with Google
+            </button>
+
+            <div className="flex items-center gap-3 mb-5">
+              <div className="flex-1 h-px bg-[#e8e4de]" />
+              <span className="text-[11px] text-[#b8b4ae] font-medium">
+                or with email
+              </span>
+              <div className="flex-1 h-px bg-[#e8e4de]" />
+            </div>
+
+            {error && (
+              <div
+                className="mb-4 px-3 py-2.5 rounded-[10px] text-[12px] text-red-600 bg-red-50"
+                style={{ border: "1px solid #fecaca" }}
+              >
+                {error}
+              </div>
+            )}
+
+            <form onSubmit={handleLogin} className="flex flex-col gap-3">
+              <div>
+                <label className="block text-[11px] font-bold text-[#9e9890] uppercase tracking-[0.9px] mb-1.5">
+                  Email
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#b8b4ae]">
+                    <MailIcon />
+                  </span>
+                  <input
+                    type="email"
+                    required
+                    value={formData.email}
+                    onChange={(e) =>
+                      setFormData({ ...formData, email: e.target.value })
+                    }
+                    placeholder="you@example.com"
+                    className={inputBase}
+                    style={{ border: "1px solid #e8e4de" }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-[11px] font-bold text-[#9e9890] uppercase tracking-[0.9px]">
+                    Password
+                  </label>
+                  <Link
+                    href="/forgot-password"
+                    className="text-[11px] font-bold text-[#1a1714] hover:underline"
+                  >
+                    Forgot?
+                  </Link>
+                </div>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#b8b4ae]">
+                    <LockIcon />
+                  </span>
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    required
+                    value={formData.password}
+                    onChange={(e) =>
+                      setFormData({ ...formData, password: e.target.value })
+                    }
+                    placeholder="Enter your password"
+                    className={`${inputBase} pr-10`}
+                    style={{ border: "1px solid #e8e4de" }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((p) => !p)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#b8b4ae] hover:text-[#9e9890] transition-colors cursor-pointer"
+                  >
+                    {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+                  </button>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full mt-1 bg-[#1a1714] text-white py-3.5 rounded-[12px] text-[13px] font-bold flex items-center justify-center gap-2 hover:bg-[#333] transition-all cursor-pointer hover:-translate-y-px hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+              >
+                {isLoading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Logging in…
+                  </>
+                ) : (
+                  <>
+                    Log In <ArrowIcon />
+                  </>
+                )}
+              </button>
+            </form>
+          </div>
+
+          <p className="text-center text-[12px] text-[#9e9890] mt-5">
+            Don't have an account?{" "}
+            <Link
+              href="/signup"
+              className="font-bold text-[#1a1714] hover:underline"
+            >
+              Sign up
+            </Link>
+          </p>
+        </div>
       </div>
-    </div>
+
+      <AnimatePresence>
+        {showDeletionModal && deletionData && (
+          <motion.div
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => !isCancelling && setShowDeletionModal(false)}
+          >
+            <motion.div
+              className="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden"
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              style={{ fontFamily: "'Sora', sans-serif" }}
+            >
+              <div
+                className="p-6 bg-gradient-to-br from-red-50 to-orange-50"
+                style={{ borderBottom: "1px solid #fecaca" }}
+              >
+                <div className="w-14 h-14 rounded-full bg-white flex items-center justify-center mb-4 shadow-sm">
+                  <AlertIcon />
+                </div>
+                <h3
+                  className="text-xl font-bold text-[#1a1714] mb-2"
+                  style={{ letterSpacing: "-0.02em" }}
+                >
+                  Account Scheduled for Deletion
+                </h3>
+                <p className="text-sm text-[#991b1b] leading-relaxed font-medium">
+                  Your account will be permanently deleted in{" "}
+                  <span className="font-bold">
+                    {deletionData.daysRemaining} day
+                    {deletionData.daysRemaining !== 1 ? "s" : ""}
+                  </span>
+                </p>
+              </div>
+
+              <div className="p-6">
+                <div
+                  className="bg-red-50 rounded-xl p-4 mb-5"
+                  style={{ border: "1px solid #fecaca" }}
+                >
+                  <p className="text-xs text-[#991b1b] leading-relaxed">
+                    <span className="font-bold block mb-1">Deletion Date:</span>
+                    {new Date(deletionData.deletionDate).toLocaleDateString(
+                      "en-US",
+                      {
+                        weekday: "long",
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      },
+                    )}
+                  </p>
+                </div>
+
+                <p className="text-sm text-[#1a1714] leading-relaxed mb-6">
+                  Would you like to <strong>cancel the deletion</strong> and
+                  keep your account? All your data, orders, and reviews will be
+                  preserved.
+                </p>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowDeletionModal(false)}
+                    disabled={isCancelling}
+                    className="flex-1 px-4 py-3 border-2 border-[#e8e4de] rounded-xl text-sm font-bold text-[#1a1714] hover:bg-[#f6f5f3] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Go Back
+                  </button>
+                  <button
+                    onClick={handleCancelDeletion}
+                    disabled={isCancelling}
+                    className="flex-1 px-4 py-3 bg-[#1a1714] text-white rounded-xl text-sm font-bold hover:bg-[#333] transition-all hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {isCancelling ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Cancelling...
+                      </>
+                    ) : (
+                      "Cancel Deletion"
+                    )}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }

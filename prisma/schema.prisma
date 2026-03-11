@@ -60,28 +60,44 @@ model Order {
 }
 
 model User {
-  id         String   @id @default(cuid())
-  name       String
-  email      String   @unique
-  phone      String?  @unique
-  password   String?
-  role       UserRole @default(USER)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  image      String?
-  provider   String?
-  providerId String?
-  reviews    Review[]
-  seller     Seller?
+  id             String    @id @default(cuid())
+  name           String
+  email          String    @unique
+  phone          String?   @unique
+  password       String?
+  role           UserRole  @default(USER)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  image          String?
+  provider       String?
+  providerId     String?
+  deletedAt      DateTime?
+  lastNameChange DateTime?
+  reviews        Review[]
+  seller         Seller?
 
   @@index([email])
   @@index([phone])
   @@index([provider])
+  @@index([deletedAt])
+}
+
+model PasswordReset {
+  id        String   @id @default(cuid())
+  email     String
+  otp       String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  used      Boolean  @default(false)
+
+  @@index([email])
+  @@index([otp])
+  @@index([expiresAt])
 }
 
 model Seller {
-  id               String    @id @default(cuid())
-  userId           String    @unique
+  id               String        @id @default(cuid())
+  userId           String        @unique
   brandName        String
   ownerName        String
   phone            String
@@ -92,26 +108,37 @@ model Seller {
   businessType     String
   experience       String?
   description      String?
-  approved         Boolean   @default(false)
+  // ✅ KEEP OLD FIELD FOR BACKWARD COMPATIBILITY
+  approved         Boolean       @default(false)
   rejectionReason  String?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
-  followers        Int       @default(0)
+  // ✅ NEW STATUS FIELDS
+  status           SellerStatus  @default(PENDING)
+  pausedAt         DateTime?
+  pausedReason     String?
+  suspendedAt      DateTime?
+  suspendedReason  String?
+  deletedAt        DateTime?
+  // EXISTING FIELDS
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  followers        Int           @default(0)
   storeCover       String?
   storeDescription String?
   storeLogo        String?
-  storeSlug        String?   @unique
-  totalSales       Int       @default(0)
-  totalViews       Int       @default(0)
-  followersList    Follow[]  @relation("SellerFollowers")
+  storeSlug        String?       @unique
+  totalSales       Int           @default(0)
+  totalViews       Int           @default(0)
+  followersList    Follow[]      @relation("SellerFollowers")
   orders           Order[]
   products         Product[]
-  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([storeSlug])
   @@index([approved])
   @@index([userId])
   @@index([approved, storeSlug])
+  @@index([status])
+  @@index([deletedAt])
 }
 
 model Follow {
@@ -141,7 +168,7 @@ model Product {
   status         ProductStatus    @default(DRAFT)
   isFeatured     Boolean          @default(false)
   isTrending     Boolean          @default(false)
-  views          Int              @default(0)  // ✅ ADD THIS
+  views          Int              @default(0)
   tags           String[]
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
@@ -156,12 +183,13 @@ model Product {
   @@index([occasion])
   @@index([isFeatured])
   @@index([isTrending])
-  @@index([views])  // ✅ ADD INDEX
+  @@index([views])
   @@index([sellerId])
   @@index([status])
   @@index([sellerId, status])
   @@index([sellerId, status, createdAt])
 }
+
 model ProductVariant {
   id        String  @id @default(cuid())
   productId String
@@ -199,6 +227,16 @@ model Notification {
 
   @@index([userId, read])
   @@index([userId, createdAt])
+}
+
+// ✅ NEW ENUM
+enum SellerStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PAUSED
+  SUSPENDED
+  DELETED
 }
 
 enum UserRole {
@@ -239,6 +277,7 @@ enum NotificationType {
   FOLLOW
   SYSTEM
 }
+
 enum ClothingType {
   TOP
   BOTTOM

@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-
 export async function GET(req: NextRequest) {
   try {
-    // In production, verify admin authentication here
-    // For now, we'll trust the frontend check
+    const userDataHeader = req.headers.get("x-user-data");
+    if (!userDataHeader) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const userData = JSON.parse(userDataHeader);
+    if (userData.role !== "ADMIN") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
     const sellers = await prisma.seller.findMany({
       include: {
@@ -13,7 +19,12 @@ export async function GET(req: NextRequest) {
           select: {
             name: true,
             email: true,
-            role: true,
+          },
+        },
+        _count: {
+          select: {
+            products: true,
+            orders: true,
           },
         },
       },
@@ -22,16 +33,11 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    console.log(`📊 Fetched ${sellers.length} sellers for admin`);
-
-    return NextResponse.json({
-      success: true,
-      sellers,
-    });
-  } catch (error: any) {
-    console.error("❌ Error fetching sellers:", error);
+    return NextResponse.json({ sellers });
+  } catch (error) {
+    console.error("Get sellers error:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to fetch sellers" },
+      { error: "Failed to get sellers" },
       { status: 500 }
     );
   }
