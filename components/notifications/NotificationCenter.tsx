@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
@@ -109,42 +109,44 @@ const PackageIcon = () => (
     <line x1="12" y1="22.08" x2="12" y2="12" />
   </svg>
 );
+const SystemIcon = () => (
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="12" cy="12" r="10" />
+    <line x1="12" y1="8" x2="12" y2="12" />
+    <line x1="12" y1="16" x2="12.01" y2="16" />
+  </svg>
+);
+const FollowIcon = () => (
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+    <circle cx="12" cy="7" r="4" />
+  </svg>
+);
 
-// Icon per notification type so SYSTEM looks distinct
-const TYPE_ICON: Record<string, () => JSX.Element> = {
-  SYSTEM: () => (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <circle cx="12" cy="12" r="10" />
-      <line x1="12" y1="8" x2="12" y2="12" />
-      <line x1="12" y1="16" x2="12.01" y2="16" />
-    </svg>
-  ),
+// ── Use React.ReactElement instead of JSX.Element (works without global JSX namespace) ──
+const TYPE_ICON: Record<string, () => React.ReactElement> = {
+  SYSTEM: SystemIcon,
   ORDER_UPDATE: PackageIcon,
   NEW_PRODUCT: PackageIcon,
-  FOLLOW: () => (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-      <circle cx="12" cy="7" r="4" />
-    </svg>
-  ),
+  FOLLOW: FollowIcon,
 };
 
 const TYPE_CONFIG: Record<
@@ -187,9 +189,7 @@ export default function NotificationCenter({
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "unread">("all");
 
-  // Track the IDs we've already seen so we can detect truly new ones
   const seenIds = useRef<Set<string>>(new Set());
-  // Track whether the initial load is done (so we don't toast stale notifications)
   const initialLoadDone = useRef(false);
 
   // ─── Core fetch ────────────────────────────────────────────────────────────
@@ -209,24 +209,20 @@ export default function NotificationCenter({
 
         const incoming: Notification[] = data.notifications;
 
-        // Detect brand-new notifications (not seen before AND unread)
         if (initialLoadDone.current) {
           const brandNew = incoming.filter(
             (n) => !seenIds.current.has(n.id) && !n.read,
           );
-          // Fire toast for each new one (most recent first, cap at 1 toast at a time)
           if (brandNew.length > 0 && onNewNotification) {
             onNewNotification(brandNew[0]);
           }
         }
 
-        // Update seen set
         incoming.forEach((n) => seenIds.current.add(n.id));
         initialLoadDone.current = true;
 
         setNotifications(incoming);
 
-        // Bubble unread count up to Navbar bell badge
         const unread = incoming.filter((n) => !n.read).length;
         onUnreadChange?.(unread);
       } catch (e) {
@@ -243,9 +239,8 @@ export default function NotificationCenter({
     if (isOpen) fetchNotifications(false);
   }, [isOpen, fetchNotifications]);
 
-  // ─── Background poll (runs regardless of panel state) ─────────────────────
+  // ─── Background poll ───────────────────────────────────────────────────────
   useEffect(() => {
-    // First silent poll after a short delay so we don't double-fetch on mount
     const firstPoll = setTimeout(() => fetchNotifications(true), 3000);
     const interval = setInterval(() => fetchNotifications(true), POLL_INTERVAL);
     return () => {
@@ -467,7 +462,7 @@ export default function NotificationCenter({
                                 : "0 2px 12px rgba(0,0,0,0.06)",
                           }}
                         >
-                          {/* Orange left bar for unread SYSTEM notifications */}
+                          {/* Orange top bar for unread SYSTEM notifications */}
                           {isSystem && !n.read && (
                             <div
                               style={{
@@ -485,7 +480,6 @@ export default function NotificationCenter({
                             }}
                             className="flex items-start gap-3 p-4 no-underline"
                           >
-                            {/* Avatar */}
                             <div className="shrink-0">
                               {n.imageUrl ? (
                                 <div className="w-11 h-11 rounded-xl overflow-hidden">
@@ -499,10 +493,13 @@ export default function NotificationCenter({
                                 </div>
                               ) : (
                                 <div
-                                  className="w-11 h-11 rounded-xl flex items-center justify-center"
+                                  className="w-11 h-11 rounded-xl flex items-center justify-content"
                                   style={{
                                     background: cfg.bg,
                                     color: cfg.accent,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
                                   }}
                                 >
                                   <Icon />
@@ -510,7 +507,6 @@ export default function NotificationCenter({
                               )}
                             </div>
 
-                            {/* Content */}
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-0.5">
                                 <span
