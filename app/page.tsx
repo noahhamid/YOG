@@ -69,8 +69,9 @@ export default function HomePage() {
         </div>
       </main>
 
-      {/* Shop By Style Section - Outside the gradient background */}
-      <ProductGrid />
+      <section id="shop">
+        <ProductGrid />
+      </section>
     </>
   );
 }

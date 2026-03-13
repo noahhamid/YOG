@@ -29,6 +29,25 @@ model Review {
   @@index([rating])
 }
 
+// ✅ NEW — store-level reviews (separate from product reviews)
+model StoreReview {
+  id        String   @id @default(cuid())
+  sellerId  String
+  userId    String
+  userName  String
+  rating    Int
+  comment   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  seller    Seller   @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([sellerId, userId])   // one review per user per store
+  @@index([sellerId])
+  @@index([userId])
+  @@index([rating])
+}
+
 model Order {
   id              String         @id @default(cuid())
   orderNumber     String         @unique
@@ -60,20 +79,21 @@ model Order {
 }
 
 model User {
-  id             String    @id @default(cuid())
+  id             String        @id @default(cuid())
   name           String
-  email          String    @unique
-  phone          String?   @unique
+  email          String        @unique
+  phone          String?       @unique
   password       String?
-  role           UserRole  @default(USER)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  role           UserRole      @default(USER)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
   image          String?
   provider       String?
   providerId     String?
   deletedAt      DateTime?
   lastNameChange DateTime?
   reviews        Review[]
+  storeReviews   StoreReview[] // ✅ NEW
   seller         Seller?
 
   @@index([email])
@@ -131,6 +151,7 @@ model Seller {
   followersList    Follow[]      @relation("SellerFollowers")
   orders           Order[]
   products         Product[]
+  storeReviews     StoreReview[] // ✅ NEW
   user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([storeSlug])
@@ -229,7 +250,6 @@ model Notification {
   @@index([userId, createdAt])
 }
 
-// ✅ NEW ENUM
 enum SellerStatus {
   PENDING
   APPROVED

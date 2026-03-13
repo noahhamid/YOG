@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import Link from "next/link";
@@ -32,12 +32,6 @@ const CalendarIco = (p: any) => (
   />
 );
 const CheckIco = (p: any) => <Ico {...p} d="M20 6 9 17l-5-5" sw={2.5} />;
-const StarIco = (p: any) => (
-  <Ico
-    {...p}
-    d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
-  />
-);
 const ShareIco = (p: any) => (
   <Ico
     {...p}
@@ -76,9 +70,69 @@ const PkgStatIco = (p: any) => (
   />
 );
 
-// ── Animated icons (hover parent = .st-stat) ──────────────────────────────────
+function StarIcon({
+  filled,
+  half,
+  size = 16,
+}: {
+  filled?: boolean;
+  half?: boolean;
+  size?: number;
+}) {
+  const id = `hg-${Math.random().toString(36).slice(2, 7)}`;
+  if (half) {
+    return (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+        <defs>
+          <linearGradient id={id}>
+            <stop offset="50%" stopColor="#eab308" />
+            <stop offset="50%" stopColor="transparent" />
+          </linearGradient>
+        </defs>
+        <path
+          d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
+          fill={`url(#${id})`}
+          stroke="#eab308"
+          strokeWidth="1.75"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    );
+  }
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill={filled ? "#eab308" : "none"}
+      stroke="#eab308"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+    </svg>
+  );
+}
 
-// 👁  Eye — iris scans left→right on load, loops on hover
+function StarDisplay({ rating, size = 14 }: { rating: number; size?: number }) {
+  return (
+    <div style={{ display: "flex", gap: 2 }}>
+      {[1, 2, 3, 4, 5].map((s) => (
+        <StarIcon
+          key={s}
+          size={size}
+          filled={s <= Math.floor(rating)}
+          half={
+            s === Math.ceil(rating) && rating % 1 >= 0.25 && rating % 1 < 0.75
+          }
+        />
+      ))}
+    </div>
+  );
+}
+
 function AnimEye({ size = 22, color = "currentColor" }: any) {
   return (
     <svg
@@ -111,8 +165,6 @@ function AnimEye({ size = 22, color = "currentColor" }: any) {
     </svg>
   );
 }
-
-// 🛍  Bag — bounces up on load, rocks on hover
 function AnimBag({ size = 22, color = "currentColor" }: any) {
   return (
     <svg
@@ -132,8 +184,6 @@ function AnimBag({ size = 22, color = "currentColor" }: any) {
     </svg>
   );
 }
-
-// 👥  Users — slide in from sides, bob on hover
 function AnimUsers({ size = 22, color = "currentColor" }: any) {
   return (
     <svg
@@ -156,8 +206,6 @@ function AnimUsers({ size = 22, color = "currentColor" }: any) {
     </svg>
   );
 }
-
-// 📦  Package — drops from above, shakes on hover
 function AnimPackage({ size = 22, color = "currentColor" }: any) {
   return (
     <svg
@@ -182,68 +230,32 @@ const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&display=swap');
   :root{--bg:#f6f5f3;--card:#fff;--text:#1a1714;--muted:#9e9890;--border:#e8e4de;--hover:#f5f3f0;--divider:rgba(0,0,0,0.06);}
   @keyframes st-fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  @keyframes st-star-pop{0%{transform:scale(1)}40%{transform:scale(1.45)}70%{transform:scale(0.9)}100%{transform:scale(1)}}
 
-  /* ── ANIMATED ICONS: pure transforms only, no opacity ──
-     framer-motion controls card opacity; icons just move.  */
-
-  /* 👁 Eye iris scan */
-  @keyframes st-eye-load {
-    0%  {transform:translateX(-5px);}
-    50% {transform:translateX(5px); }
-    100%{transform:translateX(0);   }
-  }
-  @keyframes st-eye-loop {
-    0%,100%{transform:translateX(-4px);}
-    50%    {transform:translateX(4px); }
-  }
+  @keyframes st-eye-load{0%{transform:translateX(-5px);}50%{transform:translateX(5px);}100%{transform:translateX(0);}}
+  @keyframes st-eye-loop{0%,100%{transform:translateX(-4px);}50%{transform:translateX(4px);}}
   .st-i-iris{animation:st-eye-load 1.3s ease-in-out both;animation-delay:0.05s;}
   .st-stat:hover .st-i-iris{animation:st-eye-loop 0.95s ease-in-out infinite!important;animation-delay:0s!important;}
 
-  /* 🛍 Bag bounce + rock */
-  @keyframes st-bag-bounce {
-    0%  {transform:translateY(12px) scale(0.82);}
-    50% {transform:translateY(-7px) scale(1.10);}
-    70% {transform:translateY(3px)  scale(0.96);}
-    85% {transform:translateY(-2px) scale(1.02);}
-    100%{transform:translateY(0)    scale(1);   }
-  }
-  @keyframes st-bag-rock {
-    0%,100%{transform:rotate(0deg); }
-    25%    {transform:rotate(-12deg);}
-    75%    {transform:rotate(12deg); }
-  }
+  @keyframes st-bag-bounce{0%{transform:translateY(12px) scale(0.82);}50%{transform:translateY(-7px) scale(1.10);}70%{transform:translateY(3px) scale(0.96);}85%{transform:translateY(-2px) scale(1.02);}100%{transform:translateY(0) scale(1);}}
+  @keyframes st-bag-rock{0%,100%{transform:rotate(0deg);}25%{transform:rotate(-12deg);}75%{transform:rotate(12deg);}}
   .st-i-bag{transform-origin:bottom center;animation:st-bag-bounce 0.7s cubic-bezier(0.34,1.56,0.64,1) both;animation-delay:0.1s;}
   .st-stat:hover .st-i-bag{animation:st-bag-rock 0.46s ease-in-out infinite!important;animation-delay:0s!important;transform-origin:bottom center;}
 
-  /* 👥 Users slide in + bob */
-  @keyframes st-u-left  {from{transform:translateX(-11px);}to{transform:translateX(0);}}
-  @keyframes st-u-right {from{transform:translateX(11px); }to{transform:translateX(0);}}
-  @keyframes st-u-bob   {0%,100%{transform:translateY(0);}50%{transform:translateY(-4px);}}
-  .st-i-ufb,.st-i-ufh{animation:st-u-left  0.38s ease both;animation-delay:0.15s;}
+  @keyframes st-u-left{from{transform:translateX(-11px);}to{transform:translateX(0);}}
+  @keyframes st-u-right{from{transform:translateX(11px);}to{transform:translateX(0);}}
+  @keyframes st-u-bob{0%,100%{transform:translateY(0);}50%{transform:translateY(-4px);}}
+  .st-i-ufb,.st-i-ufh{animation:st-u-left 0.38s ease both;animation-delay:0.15s;}
   .st-i-ubb,.st-i-ubh{animation:st-u-right 0.38s ease both;animation-delay:0.28s;}
   .st-stat:hover .st-i-ufh{animation:st-u-bob 0.5s ease-in-out infinite!important;animation-delay:0s!important;transform-origin:center;}
   .st-stat:hover .st-i-ubh{animation:st-u-bob 0.5s ease-in-out 0.15s infinite!important;animation-delay:0.15s!important;transform-origin:center;}
   .st-stat:hover .st-i-ufb,.st-stat:hover .st-i-ubb{animation:none!important;transform:translateX(0);}
 
-  /* 📦 Package drop from above */
-  @keyframes st-pkg-drop {
-    0%  {transform:translateY(-18px) scale(0.78);}
-    50% {transform:translateY(5px)   scale(1.12);}
-    70% {transform:translateY(-4px)  scale(0.95);}
-    85% {transform:translateY(2px)   scale(1.03);}
-    100%{transform:translateY(0)     scale(1);   }
-  }
-  @keyframes st-pkg-shake {
-    0%,100%{transform:translateX(0) rotate(0deg);}
-    20%    {transform:translateX(-3px) rotate(-8deg);}
-    40%    {transform:translateX(3px)  rotate(7deg); }
-    60%    {transform:translateX(-2px) rotate(-5deg);}
-    80%    {transform:translateX(2px)  rotate(4deg); }
-  }
+  @keyframes st-pkg-drop{0%{transform:translateY(-18px) scale(0.78);}50%{transform:translateY(5px) scale(1.12);}70%{transform:translateY(-4px) scale(0.95);}85%{transform:translateY(2px) scale(1.03);}100%{transform:translateY(0) scale(1);}}
+  @keyframes st-pkg-shake{0%,100%{transform:translateX(0) rotate(0deg);}20%{transform:translateX(-3px) rotate(-8deg);}40%{transform:translateX(3px) rotate(7deg);}60%{transform:translateX(-2px) rotate(-5deg);}80%{transform:translateX(2px) rotate(4deg);}}
   .st-i-pkg{transform-origin:center bottom;animation:st-pkg-drop 0.65s cubic-bezier(0.34,1.56,0.64,1) both;animation-delay:0.05s;}
   .st-stat:hover .st-i-pkg{animation:st-pkg-shake 0.5s ease-in-out infinite!important;animation-delay:0s!important;}
 
-  /* ── PAGE ── */
   .st-page{min-height:100vh;background:var(--bg);padding-top:72px;font-family:'Sora',sans-serif;}
   .st-cover{position:relative;height:260px;background:#1a1714;overflow:hidden;}
   .st-cover img{width:100%;height:100%;object-fit:cover;opacity:0.45;}
@@ -261,11 +273,7 @@ const CSS = `
   .st-meta-item{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);font-weight:500;}
   .st-meta-item a{color:#e4006d;text-decoration:none;display:flex;align-items:center;gap:4px;}
   .st-meta-item a:hover{text-decoration:underline;}
-  .st-rating-row{display:flex;align-items:center;gap:6px;margin-bottom:14px;}
-  .st-stars{display:flex;gap:2px;color:#eab308;}
-  .st-rating-val{font-size:14px;font-weight:700;color:var(--text);}
-  .st-rating-count{font-size:12px;color:var(--muted);}
-  .st-badges{display:flex;gap:7px;flex-wrap:wrap;}
+  .st-badges{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px;}
   .st-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;border:1px solid;}
   .st-actions{display:flex;gap:10px;align-items:flex-start;flex-shrink:0;}
   .st-follow-btn{display:flex;align-items:center;gap:7px;padding:10px 20px;border-radius:11px;font-size:13px;font-weight:700;cursor:pointer;border:none;transition:all 0.15s;font-family:'Sora',sans-serif;}
@@ -275,6 +283,25 @@ const CSS = `
   .st-follow-btn.not-following:hover{background:#333;transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,0.16);}
   .st-share-btn{width:40px;height:40px;border-radius:11px;border:1.5px solid var(--border);background:var(--card);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;}
   .st-share-btn:hover{border-color:var(--text);color:var(--text);}
+
+  /* ── Star rating row ── */
+  .st-rating-row{display:flex;align-items:center;gap:10px;margin-bottom:4px;flex-wrap:wrap;}
+  .st-rating-avg{font-size:13px;font-weight:700;color:var(--text);}
+  .st-rating-count{font-size:11px;color:var(--muted);}
+  .st-rating-divider{width:1px;height:13px;background:var(--border);}
+
+  /* Interactive stars the user taps */
+  .st-rate-area{display:flex;align-items:center;gap:3px;}
+  .st-rate-label{font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap;min-width:68px;transition:color 0.15s;}
+  .st-star-btn{background:none;border:none;padding:2px;cursor:pointer;line-height:0;transition:transform 0.18s cubic-bezier(0.34,1.56,0.64,1),filter 0.15s;will-change:transform;transform-origin:center bottom;}
+  .st-star-btn:hover{transform:translateY(-3px);filter:drop-shadow(0 2px 4px rgba(234,179,8,0.45));}
+  .st-star-btn:active{transform:translateY(0) scale(0.92);}
+  .st-star-btn.popped{animation:st-star-pop 0.38s cubic-bezier(0.34,1.56,0.64,1) both;}
+  .st-star-saving{font-size:10px;color:var(--muted);font-style:italic;transition:opacity 0.2s;}
+  /* X / clear button */
+  .st-clear-btn{background:none;border:none;cursor:pointer;padding:3px 5px;border-radius:6px;font-size:11px;font-weight:700;color:#c4bfb8;line-height:1;transition:color 0.15s,background 0.15s,transform 0.15s;margin-left:1px;}
+  .st-clear-btn:hover{color:#dc2626;background:#fef2f2;transform:rotate(90deg);}
+
   .st-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;}
   @media(max-width:900px){.st-stats{grid-template-columns:repeat(2,1fr);}}
   @media(max-width:500px){.st-stats{grid-template-columns:1fr 1fr;gap:10px;}}
@@ -290,92 +317,42 @@ const CSS = `
   .st-tab.active::after{content:'';position:absolute;bottom:-1.5px;left:0;right:0;height:2px;background:var(--text);border-radius:2px 2px 0 0;}
   .st-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
   @media(max-width:1100px){.st-grid{grid-template-columns:repeat(3,1fr);}}
-  @media(max-width:760px) {.st-grid{grid-template-columns:repeat(2,1fr);gap:10px;}}
-
-  /* ── Product card — matches ProductGrid exactly ── */
-  .st-product-card{
-    background:var(--card);border-radius:14px;overflow:hidden;
-    border:1px solid var(--border);text-decoration:none;display:block;
-    cursor:pointer;transition:box-shadow 0.22s,transform 0.22s,border-color 0.22s;
-    will-change:transform;animation:st-fadeUp 0.35s ease both;
-  }
+  @media(max-width:760px){.st-grid{grid-template-columns:repeat(2,1fr);gap:10px;}}
+  .st-product-card{background:var(--card);border-radius:14px;overflow:hidden;border:1px solid var(--border);text-decoration:none;display:block;cursor:pointer;transition:box-shadow 0.22s,transform 0.22s,border-color 0.22s;will-change:transform;animation:st-fadeUp 0.35s ease both;}
   .st-product-card:hover{box-shadow:0 12px 36px rgba(0,0,0,0.10);transform:translateY(-3px);border-color:rgba(0,0,0,0.1);}
-
-  /* Image */
   .st-product-img{position:relative;aspect-ratio:3/4;overflow:hidden;background:var(--hover);}
-  .st-product-img img{
-    position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
-    transition:transform 0.45s ease;
-  }
+  .st-product-img img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform 0.45s ease;}
   .st-product-card:hover .st-product-img img{transform:scale(1.04);}
-
-  /* Hover overlay */
-  .st-img-overlay{
-    position:absolute;inset:0;z-index:4;
-    background:linear-gradient(to top,rgba(0,0,0,0.46) 0%,rgba(0,0,0,0.04) 50%,transparent 72%);
-    opacity:0;transition:opacity 0.22s;
-  }
+  .st-img-overlay{position:absolute;inset:0;z-index:4;background:linear-gradient(to top,rgba(0,0,0,0.46) 0%,rgba(0,0,0,0.04) 50%,transparent 72%);opacity:0;transition:opacity 0.22s;}
   .st-product-card:hover .st-img-overlay{opacity:1;}
-
-  /* Slide-up cart button */
-  .st-add-btn{
-    position:absolute;bottom:10px;left:10px;right:10px;z-index:5;
-    padding:9px 0;border-radius:9px;border:none;
-    background:#fff;color:var(--text);
-    font-size:11px;font-weight:700;font-family:'Sora',sans-serif;
-    cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;
-    transform:translateY(10px);opacity:0;
-    transition:opacity 0.2s,transform 0.2s,background 0.15s;
-  }
+  .st-add-btn{position:absolute;bottom:10px;left:10px;right:10px;z-index:5;padding:9px 0;border-radius:9px;border:none;background:#fff;color:var(--text);font-size:11px;font-weight:700;font-family:'Sora',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;transform:translateY(10px);opacity:0;transition:opacity 0.2s,transform 0.2s,background 0.15s;}
   .st-product-card:hover .st-add-btn{opacity:1;transform:translateY(0);}
   .st-add-btn:hover{background:#f0ede8;}
-
-  /* Badges */
-  .st-badge-img{
-    position:absolute;z-index:6;top:8px;left:8px;
-    padding:3px 9px;border-radius:20px;pointer-events:none;
-    font-size:10px;font-weight:800;letter-spacing:0.2px;
-  }
+  .st-badge-img{position:absolute;z-index:6;top:8px;left:8px;padding:3px 9px;border-radius:20px;pointer-events:none;font-size:10px;font-weight:800;letter-spacing:0.2px;}
   .st-badge-img.sale{background:#dc2626;color:#fff;}
-  .st-badge-img.new {background:#16a34a;color:#fff;}
-  .st-badge-img.oos {background:rgba(26,23,20,0.75);color:#fff;backdrop-filter:blur(4px);}
-
-  /* Info panel */
+  .st-badge-img.new{background:#16a34a;color:#fff;}
+  .st-badge-img.oos{background:rgba(26,23,20,0.75);color:#fff;backdrop-filter:blur(4px);}
   .st-product-body{padding:12px 13px 14px;display:flex;flex-direction:column;}
-
   .st-product-seller-row{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:3px;}
   .st-product-seller-name{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;}
-  .st-product-verified{
-    display:inline-flex;align-items:center;gap:3px;flex-shrink:0;
-    padding:2px 6px;border-radius:20px;
-    font-size:9px;font-weight:700;letter-spacing:0.2px;
-    background:#e0f2fe;color:#0284c7;border:1px solid #bae6fd;
-  }
+  .st-product-verified{display:inline-flex;align-items:center;gap:3px;flex-shrink:0;padding:2px 6px;border-radius:20px;font-size:9px;font-weight:700;letter-spacing:0.2px;background:#e0f2fe;color:#0284c7;border:1px solid #bae6fd;}
   .st-product-name{font-size:13px;font-weight:700;color:var(--text);margin:0 0 7px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
-
   .st-product-meta{display:flex;align-items:center;gap:5px;margin-bottom:7px;flex-wrap:wrap;}
   .st-product-cat{padding:2px 7px;border-radius:20px;font-size:9px;font-weight:600;color:var(--muted);background:var(--hover);border:1px solid var(--border);}
   .st-product-stock{font-size:9px;font-weight:600;}
-  .st-product-stock.low {color:#d97706;}
-  .st-product-stock.ok  {color:#16a34a;}
+  .st-product-stock.low{color:#d97706;}
+  .st-product-stock.ok{color:#16a34a;}
   .st-product-stock.none{color:#dc2626;}
-
   .st-product-colors{display:flex;align-items:center;gap:3px;margin-bottom:9px;}
   .st-color-dot{width:10px;height:10px;border-radius:50%;border:1.5px solid rgba(0,0,0,0.1);flex-shrink:0;}
   .st-color-more{font-size:9px;color:var(--muted);font-weight:600;}
-
   .st-product-divider{height:1px;background:var(--border);margin:0 0 9px;}
-
   .st-product-bottom{display:flex;align-items:flex-end;justify-content:space-between;gap:4px;}
   .st-product-price{font-size:15px;font-weight:800;color:var(--text);letter-spacing:-0.4px;line-height:1.1;}
   .st-product-etb{font-size:10px;font-weight:500;color:var(--muted);margin-left:2px;}
   .st-product-compare{font-size:10px;color:#c4bfb8;text-decoration:line-through;display:block;margin-top:1px;}
   .st-product-sizes{display:flex;gap:3px;flex-wrap:wrap;justify-content:flex-end;}
-  .st-product-size{
-    padding:2px 5px;border-radius:4px;border:1px solid var(--border);
-    font-size:8px;font-weight:700;color:var(--muted);letter-spacing:0.2px;
-    transition:border-color 0.15s;
-  }
+  .st-product-size{padding:2px 5px;border-radius:4px;border:1px solid var(--border);font-size:8px;font-weight:700;color:var(--muted);letter-spacing:0.2px;transition:border-color 0.15s;}
   .st-product-card:hover .st-product-size{border-color:#c4bfb8;}
   .st-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 24px;background:var(--card);border-radius:18px;border:1.5px dashed var(--border);text-align:center;}
   .st-empty-icon{width:64px;height:64px;background:var(--hover);border-radius:18px;display:flex;align-items:center;justify-content:center;color:var(--muted);margin-bottom:18px;}
@@ -393,19 +370,30 @@ const CSS = `
   .st-perf-val{font-weight:700;color:var(--text);}
 `;
 
-function Stars({ rating }: { rating: number }) {
-  return (
-    <div className="st-stars">
-      {[1, 2, 3, 4, 5].map((s) => (
-        <StarIco
-          key={s}
-          size={13}
-          fill={s <= Math.round(rating) ? "currentColor" : "none"}
-        />
-      ))}
-    </div>
-  );
-}
+const COLOR_HEX: Record<string, string> = {
+  black: "#1a1714",
+  white: "#f8f8f8",
+  gray: "#9ca3af",
+  grey: "#9ca3af",
+  blue: "#3b82f6",
+  red: "#ef4444",
+  green: "#10b981",
+  yellow: "#f59e0b",
+  orange: "#f97316",
+  purple: "#8b5cf6",
+  pink: "#ec4899",
+  brown: "#a16207",
+  khaki: "#c4b5a0",
+  navy: "#1e3a5f",
+  beige: "#e8dcc8",
+  cream: "#fef3c7",
+};
+const dot = (c: string) => {
+  const k = c.toLowerCase().split(" ").pop() || "";
+  return COLOR_HEX[k] || COLOR_HEX[c.toLowerCase()] || "#e8e4de";
+};
+
+const STAR_LABELS = ["", "Terrible", "Poor", "Okay", "Good", "Excellent"];
 
 interface SellerStoreClientProps {
   seller: {
@@ -448,22 +436,91 @@ export default function StorePageClient({
   products,
 }: SellerStoreClientProps) {
   const router = useRouter();
-  const [isFollowing, setIsFollowing] = useState(false);
-  const [activeTab, setActiveTab] = useState<"products" | "about">("products");
-  const [followerCount, setFollowerCount] = useState(seller.followers);
 
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followerCount, setFollowerCount] = useState(seller.followers);
+  const [activeTab, setActiveTab] = useState<"products" | "about">("products");
+
+  // ── Star rating state ──
+  const [avgRating, setAvgRating] = useState(seller.rating);
+  const [totalRatings, setTotalRatings] = useState(seller.totalReviews);
+  const [myRating, setMyRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [saving, setSaving] = useState(false);
+  const [poppedStar, setPoppedStar] = useState(0);
+
+  // ── Load follow + my rating ──
   useEffect(() => {
-    (async () => {
-      const u = localStorage.getItem("yog_user");
-      if (!u) return;
-      try {
-        const r = await fetch(`/api/store/follow?sellerId=${seller.id}`, {
+    const u = localStorage.getItem("yog_user");
+    if (!u) return;
+    // follow status
+    fetch(`/api/stores/follow?sellerId=${seller.id}`, {
+      headers: { "x-user-data": u },
+    })
+      .then((r) => r.json())
+      .then((d) => setIsFollowing(d.isFollowing))
+      .catch(() => {});
+    // my rating
+    fetch(`/api/stores/rating?sellerId=${seller.id}`, {
+      headers: { "x-user-data": u },
+    })
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.avg) setAvgRating(d.avg);
+        if (d.total) setTotalRatings(d.total);
+        if (d.myRating) setMyRating(d.myRating);
+      })
+      .catch(() => {});
+  }, [seller.id]);
+
+  const handleRate = async (star: number) => {
+    const u = localStorage.getItem("yog_user");
+    if (!u) {
+      router.push("/login?redirect=/store/" + seller.slug);
+      return;
+    }
+
+    // If clicking the same star → remove rating
+    const newRating = myRating === star ? 0 : star;
+
+    setPoppedStar(newRating);
+    setSaving(true);
+    const prevMy = myRating;
+    const prevAvg = avgRating;
+    const prevTotal = totalRatings;
+    setMyRating(newRating);
+
+    try {
+      let res: Response;
+      if (newRating === 0) {
+        res = await fetch(`/api/stores/rating?sellerId=${seller.id}`, {
+          method: "DELETE",
           headers: { "x-user-data": u },
         });
-        setIsFollowing((await r.json()).isFollowing);
-      } catch {}
-    })();
-  }, [seller.id]);
+      } else {
+        res = await fetch("/api/stores/rating", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-user-data": u },
+          body: JSON.stringify({ sellerId: seller.id, rating: newRating }),
+        });
+      }
+      const data = (await res.json()) as {
+        avg: number;
+        total: number;
+        myRating: number;
+      };
+      setAvgRating(data.avg);
+      setTotalRatings(data.total);
+      setMyRating(data.myRating);
+    } catch {
+      setMyRating(prevMy);
+      setAvgRating(prevAvg);
+      setTotalRatings(prevTotal);
+    } finally {
+      setSaving(false);
+      setTimeout(() => setPoppedStar(0), 400);
+    }
+  };
 
   const handleFollow = async () => {
     const u = localStorage.getItem("yog_user");
@@ -475,7 +532,7 @@ export default function StorePageClient({
     const was = isFollowing;
     setIsFollowing(!was);
     setFollowerCount((p) => (was ? p - 1 : p + 1));
-    fetch("/api/store/follow", {
+    fetch("/api/stores/follow", {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-user-data": u },
       body: JSON.stringify({
@@ -535,6 +592,9 @@ export default function StorePageClient({
     },
   ];
 
+  const displayRating = hoverRating || myRating || avgRating;
+  const activeStars = hoverRating || myRating;
+
   return (
     <>
       <style>{CSS}</style>
@@ -545,6 +605,7 @@ export default function StorePageClient({
           <div className="st-cover-fade" />
         </div>
         <div className="st-wrap">
+          {/* ── Header card ── */}
           <div className="st-header-card">
             <div className="st-header-inner">
               <div className="st-logo-wrap">
@@ -557,6 +618,7 @@ export default function StorePageClient({
                   </div>
                 )}
               </div>
+
               <div className="st-info">
                 <h1 className="st-name">{seller.name}</h1>
                 <div className="st-meta-row">
@@ -581,15 +643,62 @@ export default function StorePageClient({
                     </span>
                   )}
                 </div>
+
+                {/* ── Rating row ── */}
                 <div className="st-rating-row">
-                  <Stars rating={seller.rating} />
-                  <span className="st-rating-val">
-                    {seller.rating.toFixed(1)}
-                  </span>
+                  {/* Avg display */}
+                  <StarDisplay rating={avgRating} size={14} />
+                  {avgRating > 0 && (
+                    <span className="st-rating-avg">
+                      {avgRating.toFixed(1)}
+                    </span>
+                  )}
                   <span className="st-rating-count">
-                    ({seller.totalReviews} reviews)
+                    {totalRatings > 0
+                      ? `(${totalRatings} ${totalRatings === 1 ? "rating" : "ratings"})`
+                      : "No ratings yet"}
                   </span>
+
+                  {/* Divider */}
+                  <div className="st-rating-divider" />
+
+                  {/* Interactive rate-this-store stars */}
+                  <div
+                    className="st-rate-area"
+                    onMouseLeave={() => setHoverRating(0)}
+                  >
+                    <span className="st-rate-label">
+                      {hoverRating
+                        ? STAR_LABELS[hoverRating]
+                        : myRating
+                          ? `Your rating`
+                          : "Rate store:"}
+                    </span>
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <button
+                        key={s}
+                        className={`st-star-btn${poppedStar === s ? " popped" : ""}`}
+                        onMouseEnter={() => setHoverRating(s)}
+                        onClick={() => handleRate(s)}
+                        disabled={saving}
+                        title={STAR_LABELS[s]}
+                      >
+                        <StarIcon size={20} filled={(activeStars || 0) >= s} />
+                      </button>
+                    ))}
+                    {saving && <span className="st-star-saving">saving…</span>}
+                    {myRating > 0 && !saving && (
+                      <button
+                        className="st-clear-btn"
+                        onClick={() => handleRate(myRating)}
+                        title="Remove your rating"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
                 </div>
+
                 <div className="st-badges">
                   {seller.verified && (
                     <span
@@ -603,7 +712,7 @@ export default function StorePageClient({
                       <AwardIco size={10} /> Verified Seller
                     </span>
                   )}
-                  {seller.rating >= 4.5 && (
+                  {avgRating >= 4.5 && totalRatings >= 3 && (
                     <span
                       className="st-badge"
                       style={{
@@ -612,7 +721,7 @@ export default function StorePageClient({
                         borderColor: "#fde68a",
                       }}
                     >
-                      <StarIco size={10} /> Top Rated
+                      <StarIcon size={10} filled /> Top Rated
                     </span>
                   )}
                   {seller.totalStock > 100 && (
@@ -629,6 +738,7 @@ export default function StorePageClient({
                   )}
                 </div>
               </div>
+
               <div className="st-actions">
                 <button
                   className={`st-follow-btn ${isFollowing ? "following" : "not-following"}`}
@@ -644,6 +754,7 @@ export default function StorePageClient({
             </div>
           </div>
 
+          {/* ── Stat cards ── */}
           <div className="st-stats">
             {statCards.map((s) => (
               <motion.div
@@ -668,6 +779,7 @@ export default function StorePageClient({
             ))}
           </div>
 
+          {/* ── Tabs ── */}
           <div className="st-tabs">
             {(["products", "about"] as const).map((tab) => (
               <button
@@ -696,7 +808,7 @@ export default function StorePageClient({
                     </div>
                     <p className="st-empty-title">No products yet</p>
                     <p className="st-empty-sub">
-                      This store hasn't listed any products yet
+                      This store hasn&apos;t listed any products yet
                     </p>
                   </div>
                 ) : (
@@ -724,34 +836,6 @@ export default function StorePageClient({
                         ? product.category.charAt(0).toUpperCase() +
                           product.category.slice(1).toLowerCase()
                         : null;
-
-                      const COLOR_HEX: Record<string, string> = {
-                        black: "#1a1714",
-                        white: "#f8f8f8",
-                        gray: "#9ca3af",
-                        grey: "#9ca3af",
-                        blue: "#3b82f6",
-                        red: "#ef4444",
-                        green: "#10b981",
-                        yellow: "#f59e0b",
-                        orange: "#f97316",
-                        purple: "#8b5cf6",
-                        pink: "#ec4899",
-                        brown: "#a16207",
-                        khaki: "#c4b5a0",
-                        navy: "#1e3a5f",
-                        beige: "#e8dcc8",
-                        cream: "#fef3c7",
-                      };
-                      const dot = (c: string) => {
-                        const k = c.toLowerCase().split(" ").pop() || "";
-                        return (
-                          COLOR_HEX[k] ||
-                          COLOR_HEX[c.toLowerCase()] ||
-                          "#e8e4de"
-                        );
-                      };
-
                       return (
                         <Link
                           key={product.id}
@@ -759,12 +843,9 @@ export default function StorePageClient({
                           className="st-product-card"
                           style={{ animationDelay: `${i * 40}ms` }}
                         >
-                          {/* Image */}
                           <div className="st-product-img">
                             <img src={product.image} alt={product.title} />
                             <div className="st-img-overlay" />
-
-                            {/* Badges */}
                             {isOOS && (
                               <span className="st-badge-img oos">
                                 Out of stock
@@ -778,8 +859,6 @@ export default function StorePageClient({
                             {!isOOS && product.isNew && !discount && (
                               <span className="st-badge-img new">New</span>
                             )}
-
-                            {/* Slide-up CTA */}
                             <button
                               className="st-add-btn"
                               onClick={(e) => {
@@ -804,10 +883,7 @@ export default function StorePageClient({
                               {isOOS ? "Out of stock" : "Add to cart"}
                             </button>
                           </div>
-
-                          {/* Info */}
                           <div className="st-product-body">
-                            {/* Seller + verified */}
                             <div className="st-product-seller-row">
                               <span className="st-product-seller-name">
                                 {seller.name}
@@ -830,11 +906,7 @@ export default function StorePageClient({
                                 </span>
                               )}
                             </div>
-
-                            {/* Title */}
                             <p className="st-product-name">{product.title}</p>
-
-                            {/* Category + stock */}
                             <div className="st-product-meta">
                               {categoryLabel && (
                                 <span className="st-product-cat">
@@ -847,8 +919,6 @@ export default function StorePageClient({
                                 {stockLabel.text}
                               </span>
                             </div>
-
-                            {/* Colors */}
                             {uniqueColors.length > 0 && (
                               <div className="st-product-colors">
                                 {uniqueColors.slice(0, 5).map((c, ci) => (
@@ -866,10 +936,7 @@ export default function StorePageClient({
                                 )}
                               </div>
                             )}
-
                             <div className="st-product-divider" />
-
-                            {/* Price + sizes */}
                             <div className="st-product-bottom">
                               <div>
                                 <p className="st-product-price">
@@ -904,6 +971,7 @@ export default function StorePageClient({
                 )}
               </motion.div>
             )}
+
             {activeTab === "about" && (
               <motion.div
                 key="about"
@@ -954,7 +1022,9 @@ export default function StorePageClient({
                         ["Total Stock", `${seller.totalStock} items`],
                         [
                           "Customer Rating",
-                          `${seller.rating.toFixed(1)} / 5.0`,
+                          avgRating > 0
+                            ? `${avgRating.toFixed(1)} / 5.0`
+                            : "No ratings yet",
                         ],
                         ["Total Sales", seller.totalSales.toLocaleString()],
                       ].map(([label, val]) => (

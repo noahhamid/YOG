@@ -10,7 +10,7 @@ export default async function StorePage({ params }: PageProps) {
   const { storeSlug } = await params;
 
   const seller = await prisma.seller.findUnique({
-    where: { storeSlug, approved: true },
+    where: { storeSlug, status: "APPROVED", deletedAt: null },
     include: {
       products: {
         where: { status: "PUBLISHED" },
@@ -25,6 +25,13 @@ export default async function StorePage({ params }: PageProps) {
   });
 
   if (!seller) notFound();
+
+  // ✅ Fetch real rating data
+  const ratingAgg = await prisma.storeReview.aggregate({
+    where: { sellerId: seller.id },
+    _avg: { rating: true },
+    _count: { rating: true },
+  });
 
   await prisma.seller.update({
     where: { id: seller.id },
@@ -51,7 +58,7 @@ export default async function StorePage({ params }: PageProps) {
         coverImage:
           seller.storeCover ||
           "https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?w=1200&q=80",
-        verified: seller.approved,
+        verified: seller.status === "APPROVED",
         location: seller.location,
         joined: seller.createdAt.toLocaleDateString("en-US", {
           month: "long",
@@ -61,8 +68,8 @@ export default async function StorePage({ params }: PageProps) {
           seller.storeDescription ||
           seller.description ||
           "Welcome to our store!",
-        rating: 4.8,
-        totalReviews: 0,
+        rating: ratingAgg._avg.rating ?? 0, // ✅ real avg
+        totalReviews: ratingAgg._count.rating, // ✅ real count
         followers: seller.followersList.length,
         totalViews: seller.totalViews,
         totalSales: seller.totalSales,

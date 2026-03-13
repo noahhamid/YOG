@@ -17,7 +17,6 @@ const KEYFRAMES = `
   .frame-transition { transition: all 0.72s cubic-bezier(0.4,0,0.2,1); }
 `;
 
-// ── Arrow icons ───────────────────────────────────────────────────────────────
 const ArrowLeft = () => (
   <svg
     width="16"
@@ -90,7 +89,6 @@ const HEADLINE = ["Dress", "for every", "moment."];
 export default function Home() {
   const [stage, setStage] = useState(0);
   const [center, setCenter] = useState(2);
-  // ── Safe viewport height: 0 on server, real value after hydration ────────
   const [vh, setVh] = useState(0);
 
   useEffect(() => {
@@ -134,13 +132,11 @@ export default function Home() {
     transition: `all 0.5s ease ${delay}s`,
   });
 
-  // Use 800 as SSR fallback — real value applied after mount
   const safeVh = vh || 800;
 
   return (
     <>
       <style>{KEYFRAMES}</style>
-
       <div className="flex flex-col items-center h-screen max-h-screen overflow-hidden bg-[#f6f5f3] pt-10">
         {/* Grain */}
         <div
@@ -228,14 +224,20 @@ export default function Home() {
             className="flex gap-2.5 flex-wrap justify-center"
             style={fadeUp(0.68)}
           >
-            <a
-              href="/shop"
-              className="inline-flex items-center gap-1.5 px-[22px] py-[10px] bg-[#1a1714] text-white text-[12px] font-bold rounded-[11px] no-underline transition-all duration-200 hover:bg-[#333] hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(0,0,0,0.14)]"
+            {/* Shop Now — smooth-scrolls to #shop section below the hero */}
+            <button
+              onClick={() =>
+                document
+                  .getElementById("shop")
+                  ?.scrollIntoView({ behavior: "smooth" })
+              }
+              className="inline-flex items-center gap-1.5 px-[22px] py-[10px] bg-[#1a1714] text-white text-[12px] font-bold rounded-[11px] border-none cursor-pointer transition-all duration-200 hover:bg-[#333] hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(0,0,0,0.14)]"
             >
               Shop Now <ArrowIco />
-            </a>
+            </button>
+            {/* Explore More — navigates to /stores (all seller stores listing) */}
             <a
-              href="/explore"
+              href="/store"
               className="inline-flex items-center gap-1.5 px-5 py-[10px] bg-transparent text-[#1a1714] text-[12px] font-bold border border-[#e8e4de] rounded-[11px] no-underline transition-all duration-200 hover:border-[#1a1714] hover:bg-white"
             >
               Explore More
@@ -247,7 +249,6 @@ export default function Home() {
         <div className="w-full flex-1 min-h-0 overflow-visible relative z-10">
           <div className="max-w-[1280px] mx-auto px-4 h-full">
             <div className="relative h-full">
-              {/* Images — gated on vh > 0 so window is never accessed on the server */}
               {vh > 0 && (
                 <div className="absolute inset-0 flex justify-center items-end">
                   {IMAGES.map((url, idx) => {
