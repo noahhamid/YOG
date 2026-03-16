@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 export const dynamic = 'force-dynamic';
 
 // Statuses that mean stock has been committed / fulfilled
-const STOCK_DEDUCT_ON  = "SHIPPED";    // deduct when seller ships
+const STOCK_DEDUCT_ON  = "DELIVERED";  // deduct when delivered to customer
 const STOCK_RESTORE_ON = "CANCELLED";  // restore if cancelled
 const SALES_COUNT_ON   = "DELIVERED";  // count toward totalSales when delivered
 
@@ -90,10 +90,10 @@ export async function PATCH(
         }
       }
 
-      // 2️⃣  CANCELLED → restore stock only if it was already deducted (was SHIPPED or beyond)
+      // 2️⃣  CANCELLED → restore stock only if it was already deducted (was DELIVERED)
       if (newStatus === STOCK_RESTORE_ON) {
-        const wasShipped = ["SHIPPED", "DELIVERED"].includes(prevStatus);
-        if (wasShipped && variant) {
+        const wasDeducted = prevStatus === "DELIVERED";
+        if (wasDeducted && variant) {
           await prisma.productVariant.update({
             where: { id: variant.id },
             data: { quantity: { increment: order.quantity } },
