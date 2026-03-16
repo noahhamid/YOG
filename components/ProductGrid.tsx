@@ -21,8 +21,8 @@ interface ProductGridProps {
 }
 
 const CACHE_KEY = "yog_products_cache";
-const CACHE_DURATION = 1 * 60 * 1000;
-const AUTO_REFRESH_INTERVAL = 3 * 1000;
+const CACHE_DURATION = 5 * 60 * 1000; // ✅ 5 min (was 1 min)
+const AUTO_REFRESH_INTERVAL = 5 * 60 * 1000; // ✅ 5 min (was 3 SECONDS)
 
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&display=swap');
@@ -39,21 +39,19 @@ const CSS = `
 }
 .pg-inner { max-width:1440px; margin:0 auto; }
 
-/* ── Layout — sidebar sticky fix ── */
 .pg-layout {
   display:flex; gap:22px;
-  align-items:flex-start;   /* critical: lets sticky work */
+  align-items:flex-start;
 }
 .pg-sidebar-col {
   flex-shrink:0;
-  align-self:flex-start;    /* critical: don't stretch to full height */
+  align-self:flex-start;
   position:sticky;
-  top:24px;                 /* distance from viewport top */
+  top:24px;
   width:232px;
 }
 .pg-main { flex:1; min-width:0; }
 
-/* ── Toolbar ── */
 .pg-toolbar {
   display:flex; align-items:center; justify-content:space-between;
   margin-bottom:18px; flex-wrap:wrap; gap:10px;
@@ -79,7 +77,6 @@ const CSS = `
 }
 .pg-sort:focus { border-color:var(--text); }
 
-/* ── Grid — 4 cols feels wider ── */
 .pg-grid {
   display:grid;
   grid-template-columns:repeat(4,1fr);
@@ -89,7 +86,6 @@ const CSS = `
 @media(max-width:900px) { .pg-grid { grid-template-columns:repeat(2,1fr); } }
 @media(max-width:500px) { .pg-grid { grid-template-columns:1fr 1fr; gap:10px; } }
 
-/* ── Card ── */
 .pg-card {
   background:var(--card); border-radius:14px; overflow:hidden;
   border:1px solid var(--border); display:block; text-decoration:none;
@@ -102,10 +98,9 @@ const CSS = `
   border-color:rgba(0,0,0,0.1);
 }
 
-/* ── Image ── */
 .pg-img-wrap {
   position:relative;
-  aspect-ratio:4/5;          /* less tall than 3/4 */
+  aspect-ratio:4/5;
   overflow:hidden; background:var(--hover);
 }
 .pg-img {
@@ -121,7 +116,6 @@ const CSS = `
 .pg-card:not(.oos):hover .pg-img.sec    { transform:scale(1.04); }
 .pg-img.dim { opacity:0.45; filter:grayscale(0.4); }
 
-/* Hover gradient + slide-up button */
 .pg-hover-layer {
   position:absolute; inset:0; z-index:4;
   background:linear-gradient(to top, rgba(0,0,0,0.48) 0%, rgba(0,0,0,0.06) 50%, transparent 72%);
@@ -152,7 +146,6 @@ const CSS = `
 .pg-card:not(.oos):hover .pg-wish-btn { opacity:1; transform:translateX(0); }
 .pg-wish-btn:hover { background:#fff; color:#ef4444; }
 
-/* ── Badges ── */
 .pg-badge {
   position:absolute; z-index:6;
   padding:3px 9px; border-radius:20px; pointer-events:none;
@@ -168,49 +161,33 @@ const CSS = `
   font-size:11px; padding:5px 13px;
 }
 
-/* ── Info panel ── */
 .pg-info { padding:13px 14px 15px; display:flex; flex-direction:column; gap:0; }
-
-/* seller line */
 .pg-seller {
   font-size:10px; font-weight:600; color:var(--muted);
   text-transform:uppercase; letter-spacing:0.5px;
   margin:0 0 4px;
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
-
-/* title */
 .pg-title {
   font-size:13px; font-weight:700; color:var(--text);
   margin:0 0 10px; line-height:1.3;
   display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
   overflow:hidden;
 }
-
-/* color swatches row */
 .pg-colors { display:flex; align-items:center; gap:4px; margin-bottom:10px; flex-wrap:wrap; }
 .pg-color-dot {
   width:12px; height:12px; border-radius:50%;
-  border:1.5px solid rgba(0,0,0,0.1);
-  flex-shrink:0;
+  border:1.5px solid rgba(0,0,0,0.1); flex-shrink:0;
 }
 .pg-color-more { font-size:10px; color:var(--muted); font-weight:600; }
-
-/* divider */
 .pg-info-divider { height:1px; background:var(--border); margin:0 0 10px; }
-
-/* bottom row */
 .pg-bottom { display:flex; align-items:flex-end; justify-content:space-between; gap:6px; }
-
-.pg-price-block {}
 .pg-price-main {
   font-size:16px; font-weight:800; color:var(--text);
   letter-spacing:-0.5px; line-height:1.1;
 }
 .pg-price-etb { font-size:11px; font-weight:500; color:var(--muted); margin-left:2px; }
 .pg-compare { font-size:11px; color:#c4bfb8; text-decoration:line-through; display:block; margin-top:1px; }
-
-/* size chips */
 .pg-sizes { display:flex; gap:4px; flex-wrap:wrap; justify-content:flex-end; }
 .pg-size {
   padding:3px 7px; border-radius:5px; border:1px solid var(--border);
@@ -219,7 +196,6 @@ const CSS = `
 }
 .pg-card:hover .pg-size { border-color:#c4bfb8; }
 
-/* ── Skeleton ── */
 @keyframes pg-shimmer {
   0%   { background-position:-600px 0; }
   100% { background-position: 600px 0; }
@@ -232,12 +208,8 @@ const CSS = `
 }
 .pg-skel-img { aspect-ratio:4/5; width:100%; }
 .pg-skel-body { padding:13px 14px 15px; display:flex; flex-direction:column; gap:8px; }
-.pg-skel-line {
-  border-radius:5px;
-  background:rgba(0,0,0,0.07);
-}
+.pg-skel-line { border-radius:5px; background:rgba(0,0,0,0.07); }
 
-/* ── Empty ── */
 .pg-empty {
   display:flex; flex-direction:column; align-items:center;
   padding:80px 24px; background:var(--card); border-radius:18px;
@@ -250,7 +222,6 @@ const CSS = `
 .pg-empty-btn:hover { background:#333; }
 `;
 
-// ─── Icons ────────────────────────────────────────────────────────────────────
 const CartIco = () => (
   <svg
     width="13"
@@ -312,7 +283,6 @@ const SearchIco = () => (
   </svg>
 );
 
-// ─── Skeleton ─────────────────────────────────────────────────────────────────
 function SkeletonCard() {
   return (
     <div className="pg-skel">
@@ -331,7 +301,6 @@ function SkeletonCard() {
   );
 }
 
-// color hex lookup — extend as needed
 const COLOR_HEX: Record<string, string> = {
   black: "#1a1714",
   white: "#f8f8f8",
@@ -350,16 +319,13 @@ const COLOR_HEX: Record<string, string> = {
   beige: "#e8dcc8",
   cream: "#fef3c7",
 };
-
 function colorDot(colorStr: string) {
   const key = colorStr.toLowerCase().split(" ").pop() || "";
   return COLOR_HEX[key] || COLOR_HEX[colorStr.toLowerCase()] || "#e8e4de";
 }
 
-// ─── Product Card ─────────────────────────────────────────────────────────────
 function ProductCard({ product, index, isVisible }: any) {
   const { addToCart } = useCart();
-
   const allImages = product.allImages || [];
   const primary = allImages[0] || product.image || "";
   const secondary = allImages[1] || "";
@@ -372,10 +338,7 @@ function ProductCard({ product, index, isVisible }: any) {
             100,
         )
       : 0;
-
-  // unique colors from variants or colors array
-  const rawColors: string[] = product.colors || [];
-  const uniqueColors = [...new Set(rawColors)];
+  const uniqueColors = [...new Set<string>(product.colors || [])];
 
   const handleCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -405,7 +368,6 @@ function ProductCard({ product, index, isVisible }: any) {
         transition: `opacity 0.4s ease ${index * 0.035}s, transform 0.4s ease ${index * 0.035}s`,
       }}
     >
-      {/* Image */}
       <div className="pg-img-wrap">
         <img
           src={primary}
@@ -416,8 +378,6 @@ function ProductCard({ product, index, isVisible }: any) {
         {hasAlt && (
           <img src={secondary} alt="" loading="lazy" className="pg-img sec" />
         )}
-
-        {/* Badges */}
         {!isOOS && discount > 0 && (
           <span className="pg-badge tl sale">−{discount}%</span>
         )}
@@ -425,8 +385,6 @@ function ProductCard({ product, index, isVisible }: any) {
           <span className="pg-badge tl new">New</span>
         )}
         {isOOS && <span className="pg-badge oos-center">Out of stock</span>}
-
-        {/* Actions */}
         {!isOOS && (
           <>
             <div className="pg-hover-layer" />
@@ -446,18 +404,11 @@ function ProductCard({ product, index, isVisible }: any) {
           </>
         )}
       </div>
-
-      {/* Info */}
       <div className="pg-info">
-        {/* Seller name */}
         {product.seller?.name && (
           <p className="pg-seller">{product.seller.name}</p>
         )}
-
-        {/* Title — 2 lines max */}
         <p className="pg-title">{product.title}</p>
-
-        {/* Color swatches */}
         {uniqueColors.length > 0 && (
           <div className="pg-colors">
             {uniqueColors.slice(0, 5).map((c, i) => (
@@ -473,12 +424,9 @@ function ProductCard({ product, index, isVisible }: any) {
             )}
           </div>
         )}
-
         <div className="pg-info-divider" />
-
-        {/* Price + sizes */}
         <div className="pg-bottom">
-          <div className="pg-price-block">
+          <div>
             <p className="pg-price-main">
               {product.price.toLocaleString()}
               <span className="pg-price-etb">ETB</span>
@@ -489,7 +437,6 @@ function ProductCard({ product, index, isVisible }: any) {
               </span>
             )}
           </div>
-
           {!isOOS && product.sizes?.length > 0 && (
             <div className="pg-sizes">
               {product.sizes.slice(0, 4).map((s: string) => (
@@ -497,11 +444,7 @@ function ProductCard({ product, index, isVisible }: any) {
                   {s}
                 </span>
               ))}
-              {product.sizes.length > 4 && (
-                <span className="pg-size" style={{ color: "var(--muted)" }}>
-                  …
-                </span>
-              )}
+              {product.sizes.length > 4 && <span className="pg-size">…</span>}
             </div>
           )}
         </div>
@@ -510,7 +453,6 @@ function ProductCard({ product, index, isVisible }: any) {
   );
 }
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
 export default function ProductGrid({
   initialCategory = "all",
   showTrendingOnly = false,
@@ -558,7 +500,6 @@ export default function ProductGrid({
     other: true,
   });
 
-  // IntersectionObserver
   useEffect(() => {
     const obs = new IntersectionObserver(
       ([e]) => {
@@ -573,7 +514,6 @@ export default function ProductGrid({
     return () => obs.disconnect();
   }, [isVisible]);
 
-  // Initial fetch
   useEffect(() => {
     if (hasFetchedRef.current) return;
     hasFetchedRef.current = true;
@@ -593,7 +533,7 @@ export default function ProductGrid({
                     [],
             );
             setIsLoadingProducts(false);
-            checkForNewProducts(parsed.productCount);
+            // ✅ Auto-refresh every 5 min, not every 3 seconds
             autoRefreshIntervalRef.current = setInterval(
               () => checkForNewProducts(parsed.productCount),
               AUTO_REFRESH_INTERVAL,
@@ -603,7 +543,7 @@ export default function ProductGrid({
         } catch {}
       }
     }
-    preloadAllCategories(false);
+    fetchAllProducts(false);
     return () => {
       if (autoRefreshIntervalRef.current)
         clearInterval(autoRefreshIntervalRef.current);
@@ -628,38 +568,43 @@ export default function ProductGrid({
 
   const checkForNewProducts = async (count: number) => {
     try {
-      const data = await fetch("/api/products/public").then((r) => r.json());
+      // ✅ Lightweight check — just count, don't re-fetch everything
+      const data = await fetch("/api/products/public?isFeatured=true").then(
+        (r) => r.json(),
+      );
       if ((data.products?.length || 0) !== count) {
         localStorage.removeItem(CACHE_KEY);
-        await preloadAllCategories(true);
+        await fetchAllProducts(true);
       }
     } catch {}
   };
 
-  const preloadAllCategories = async (silent = false) => {
+  // ✅ KEY FIX: ONE fetch instead of 7 — derive all categories client-side
+  const fetchAllProducts = async (silent = false) => {
     if (!silent) setIsLoadingProducts(true);
     try {
-      const [all, men, women, unisex, onSale, newArr, trending] =
-        await Promise.all([
-          fetch("/api/products/public").then((r) => r.json()),
-          fetch("/api/products/public?category=men").then((r) => r.json()),
-          fetch("/api/products/public?category=women").then((r) => r.json()),
-          fetch("/api/products/public?category=unisex").then((r) => r.json()),
-          fetch("/api/products/public?isFeatured=true").then((r) => r.json()),
-          fetch("/api/products/public?isTrending=true").then((r) => r.json()),
-          fetch("/api/products/trending").then((r) => r.json()),
-        ]);
+      // ✅ Two fetches only: all products + trending (needs special scoring)
+      const [allData, trendingData] = await Promise.all([
+        fetch("/api/products/public").then((r) => r.json()),
+        fetch("/api/products/trending").then((r) => r.json()),
+      ]);
+
+      const all: any[] = allData.products || [];
+      const trending: any[] = trendingData.products || [];
+
+      // ✅ Derive all categories client-side — no extra DB queries
       const cache: ProductsCache = {
-        all: all.products || [],
-        men: men.products || [],
-        women: women.products || [],
-        unisex: unisex.products || [],
-        onSale: onSale.products || [],
-        newArrivals: newArr.products || [],
-        trending: trending.products || [],
+        all,
+        men: all.filter((p) => p.category === "men"),
+        women: all.filter((p) => p.category === "women"),
+        unisex: all.filter((p) => p.category === "unisex"),
+        onSale: all.filter((p) => p.onSale),
+        newArrivals: all.filter((p) => p.newArrival),
+        trending,
         timestamp: Date.now(),
-        productCount: all.products?.length || 0,
+        productCount: all.length,
       };
+
       setProductsCache(cache);
       setDisplayedProducts(
         showTrendingOnly
@@ -670,13 +615,13 @@ export default function ProductGrid({
       );
       if (typeof window !== "undefined")
         localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
-      if (silent && autoRefreshIntervalRef.current) {
+
+      if (autoRefreshIntervalRef.current)
         clearInterval(autoRefreshIntervalRef.current);
-        autoRefreshIntervalRef.current = setInterval(
-          () => checkForNewProducts(cache.productCount),
-          AUTO_REFRESH_INTERVAL,
-        );
-      }
+      autoRefreshIntervalRef.current = setInterval(
+        () => checkForNewProducts(cache.productCount),
+        AUTO_REFRESH_INTERVAL,
+      );
     } catch {
     } finally {
       if (!silent) setIsLoadingProducts(false);
@@ -684,61 +629,10 @@ export default function ProductGrid({
   };
 
   const filterFromCache = () => {
-    if (showTrendingOnly) {
-      let f = [...productsCache.trending];
-      if (searchQuery) {
-        const q = searchQuery.toLowerCase();
-        f = f.filter(
-          (p) =>
-            p.title.toLowerCase().includes(q) ||
-            p.description.toLowerCase().includes(q),
-        );
-      }
-      f = f.filter((p) => p.price >= priceRange[0] && p.price <= priceRange[1]);
-      if (selectedSizes.length)
-        f = f.filter((p) =>
-          p.sizes?.some((s: string) => selectedSizes.includes(s)),
-        );
-      if (selectedColors.length)
-        f = f.filter((p) =>
-          p.colors?.some((c: string) =>
-            selectedColors.includes(c.toLowerCase()),
-          ),
-        );
-      if (selectedClothingTypes.length)
-        f = f.filter((p) => selectedClothingTypes.includes(p.clothingType));
-      if (selectedOccasions.length)
-        f = f.filter((p) => selectedOccasions.includes(p.occasion));
-      if (sortBy === "price-low") f.sort((a, b) => a.price - b.price);
-      else if (sortBy === "price-high") f.sort((a, b) => b.price - a.price);
-      else if (sortBy === "name")
-        f.sort((a, b) => a.title.localeCompare(b.title));
-      else f.sort((a, b) => (b.trendingScore || 0) - (a.trendingScore || 0));
-      setDisplayedProducts(f);
-      return;
-    }
-    let f =
-      selectedCategory !== "all" &&
-      !searchQuery &&
-      !selectedSizes.length &&
-      !selectedColors.length &&
-      !selectedClothingTypes.length &&
-      !selectedOccasions.length &&
-      !showNewArrivals &&
-      !showOnSale
-        ? [
-            ...((productsCache[
-              selectedCategory as keyof ProductsCache
-            ] as any[]) || []),
-          ]
-        : [...productsCache.all];
-    if (
-      selectedCategory !== "all" &&
-      (searchQuery || selectedSizes.length || selectedColors.length)
-    )
-      f = f.filter(
-        (p) => p.category.toLowerCase() === selectedCategory.toLowerCase(),
-      );
+    const base = showTrendingOnly ? productsCache.trending : productsCache.all;
+    let f = [...base];
+    if (!showTrendingOnly && selectedCategory !== "all")
+      f = f.filter((p) => p.category === selectedCategory);
     if (showOnSale) f = f.filter((p) => p.onSale);
     if (showNewArrivals) f = f.filter((p) => p.newArrival);
     if (searchQuery) {
@@ -766,6 +660,8 @@ export default function ProductGrid({
     else if (sortBy === "price-high") f.sort((a, b) => b.price - a.price);
     else if (sortBy === "name")
       f.sort((a, b) => a.title.localeCompare(b.title));
+    else if (showTrendingOnly)
+      f.sort((a, b) => (b.trendingScore || 0) - (a.trendingScore || 0));
     setDisplayedProducts(f);
   };
 
@@ -817,7 +713,6 @@ export default function ProductGrid({
       <section ref={sectionRef} className="pg-section">
         <div className="pg-inner">
           <div className="pg-layout">
-            {/* ── Sidebar — sticky wrapper ── */}
             <div className="pg-sidebar-col">
               <FilterSidebar
                 searchQuery={searchQuery}
@@ -847,8 +742,6 @@ export default function ProductGrid({
                 hideCategoryFilter={showTrendingOnly}
               />
             </div>
-
-            {/* ── Main ── */}
             <div className="pg-main">
               <div className="pg-toolbar">
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -874,7 +767,6 @@ export default function ProductGrid({
                   <option value="name">Name: A–Z</option>
                 </select>
               </div>
-
               {isLoadingProducts ? (
                 <div className="pg-grid">
                   {Array.from({ length: 8 }).map((_, i) => (

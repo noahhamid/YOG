@@ -1,142 +1,73 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-export const revalidate = 60; // Cache for 1 minute
+export const dynamic = "force-dynamic";
+
+// ✅ In-memory cache — 2 minute TTL for trending
+let cache: { data: any[]; ts: number } | null = null;
+const CACHE_TTL = 120_000; // 2 minutes
 
 export async function GET(req: NextRequest) {
   try {
-    console.log("🔥 Calculating trending products...");
+    const now = Date.now();
 
-    // ✅ TRENDING ALGORITHM
-    // Factors: Sales (40%), Views (30%), Rating (20%), Recency (10%)
-    
+    // ✅ Serve from cache if fresh
+    if (cache && now - cache.ts < CACHE_TTL) {
+      return NextResponse.json({ products: cache.data, count: cache.data.length });
+    }
+
     const products = await prisma.product.findMany({
-      where: {
-        status: "PUBLISHED",
-        seller: {
-          approved: true,
-        },
-      },
+      where: { status: "PUBLISHED", seller: { status: "APPROVED" } },
       select: {
-        id: true,
-        title: true,
-        description: true,
-        price: true,
-        compareAtPrice: true,
-        category: true,
-        clothingType: true,
-        occasion: true,
-        brand: true,
-        views: true,
-        createdAt: true,
-        images: {
-          select: { url: true },
-          orderBy: { position: "asc" },
-        },
-        variants: {
-          select: {
-            size: true,
-            color: true,
-            quantity: true,
-          },
-        },
-        seller: {
-          select: {
-            id: true,
-            brandName: true,
-            storeSlug: true,
-          },
-        },
-        // Get order count (sales)
-        orders: {
-          select: { id: true },
-        },
-        // Get average rating
-        reviews: {
-          select: { rating: true },
-        },
+        id: true, title: true, description: true, price: true,
+        compareAtPrice: true, category: true, clothingType: true,
+        occasion: true, brand: true, views: true, createdAt: true,
+        images: { select: { url: true }, orderBy: { position: "asc" }, take: 2 },
+        variants: { select: { size: true, color: true, quantity: true } },
+        seller: { select: { id: true, brandName: true, storeSlug: true } },
+        _count: { select: { orders: true } },
+        reviews: { select: { rating: true } },
       },
-      take: 200, // Get more products for scoring
+      take: 200,
     });
 
-    // ✅ SCORE EACH PRODUCT
-    const scoredProducts = products.map((product) => {
-      const salesCount = product.orders.length;
-      const viewCount = product.views;
-      const avgRating = product.reviews.length > 0
-        ? product.reviews.reduce((sum, r) => sum + r.rating, 0) / product.reviews.length
-        : 0;
-      
-      // Days since creation (newer = higher score)
-      const daysSinceCreation = (Date.now() - new Date(product.createdAt).getTime()) / (1000 * 60 * 60 * 24);
-      const recencyScore = Math.max(0, 30 - daysSinceCreation) / 30; // Max score for products < 30 days old
+    const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
 
-      // ✅ WEIGHTED TRENDING SCORE
-      const trendingScore = 
-        (salesCount * 0.4) +           // 40% weight on sales
-        (viewCount * 0.003) +          // 30% weight on views (scaled down)
-        (avgRating * 4 * 0.2) +        // 20% weight on rating (scaled to 20 points)
-        (recencyScore * 10 * 0.1);     // 10% weight on recency (scaled to 10 points)
-
+    const scored = products.map((p) => {
+      const salesCount   = p._count.orders;
+      const avgRating    = p.reviews.length > 0 ? p.reviews.reduce((s, r) => s + r.rating, 0) / p.reviews.length : 0;
+      const daysSince    = (now - new Date(p.createdAt).getTime()) / 86400000;
+      const recencyScore = Math.max(0, 30 - daysSince) / 30;
+      const trendingScore = (salesCount * 0.4) + (p.views * 0.003) + (avgRating * 4 * 0.2) + (recencyScore * 10 * 0.1);
+      const urls = p.images.map((i) => i.url);
       return {
-        ...product,
-        trendingScore,
-        salesCount,
-        viewCount,
-        avgRating,
+        id: p.id, title: p.title, description: p.description,
+        price: p.price, compareAtPrice: p.compareAtPrice,
+        category: p.category.toLowerCase(), clothingType: p.clothingType, occasion: p.occasion,
+        brand: p.brand || p.seller.brandName,
+        image: urls[0] || "https://via.placeholder.com/400", allImages: urls,
+        sizes:  [...new Set(p.variants.map((v) => v.size))],
+        colors: [...new Set(p.variants.map((v) => v.color.toLowerCase()))],
+        newArrival: new Date(p.createdAt).getTime() > now - THIRTY_DAYS,
+        onSale: p.compareAtPrice ? p.compareAtPrice > p.price : false,
+        seller: { id: p.seller.id, name: p.seller.brandName, slug: p.seller.storeSlug },
+        stock: p.variants.reduce((s, v) => s + v.quantity, 0),
+        trendingScore, salesCount, avgRating, trending: true,
       };
     });
 
-    // ✅ SORT BY TRENDING SCORE
-    const trendingProducts = scoredProducts
-      .sort((a, b) => b.trendingScore - a.trendingScore)
-      .slice(0, 50); // Top 50 trending products
+    const trending = scored.sort((a, b) => b.trendingScore - a.trendingScore).slice(0, 50);
 
-    console.log(`🔥 Top 5 trending products:`);
-    trendingProducts.slice(0, 5).forEach((p, i) => {
-      console.log(`  ${i + 1}. ${p.title} (Score: ${p.trendingScore.toFixed(2)}, Sales: ${p.salesCount}, Views: ${p.viewCount}, Rating: ${p.avgRating.toFixed(1)})`);
-    });
-
-    // ✅ TRANSFORM FOR FRONTEND
-    const transformedProducts = trendingProducts.map((product) => {
-      const allImageUrls = product.images.map((img) => img.url);
-
-      return {
-        id: product.id,
-        title: product.title,
-        description: product.description,
-        price: product.price,
-        compareAtPrice: product.compareAtPrice,
-        category: product.category.toLowerCase(),
-        clothingType: product.clothingType,
-        occasion: product.occasion,
-        brand: product.brand || product.seller.brandName,
-        image: allImageUrls[0] || "https://via.placeholder.com/400",
-        allImages: allImageUrls,
-        sizes: [...new Set(product.variants.map((v) => v.size))],
-        colors: [...new Set(product.variants.map((v) => v.color.toLowerCase()))],
-        newArrival: new Date(product.createdAt).getTime() > Date.now() - 30 * 24 * 60 * 60 * 1000,
-        onSale: product.compareAtPrice ? product.compareAtPrice > product.price : false,
-        seller: {
-          id: product.seller.id,
-          name: product.seller.brandName,
-          slug: product.seller.storeSlug,
-        },
-        stock: product.variants.reduce((sum, v) => sum + v.quantity, 0),
-        trendingScore: product.trendingScore,
-        trending: true,
-      };
-    });
-
-    return NextResponse.json({
-      products: transformedProducts,
-      count: transformedProducts.length,
-    });
-  } catch (error: any) {
-    console.error("❌ Error calculating trending products:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch trending products" },
-      { status: 500 }
+    console.log(`🔥 Top 5 trending:`);
+    trending.slice(0, 5).forEach((p, i) =>
+      console.log(`  ${i + 1}. ${p.title} (Score: ${p.trendingScore.toFixed(2)}, Sales: ${p.salesCount}, Rating: ${p.avgRating.toFixed(1)})`)
     );
+
+    cache = { data: trending, ts: now };
+
+    return NextResponse.json({ products: trending, count: trending.length });
+  } catch (error: any) {
+    console.error("❌ Error calculating trending:", error);
+    return NextResponse.json({ error: "Failed to fetch trending products" }, { status: 500 });
   }
 }
