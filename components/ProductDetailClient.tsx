@@ -11,78 +11,61 @@ import Navbar from "@/components/Navbar";
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&display=swap');
   @keyframes pd-fade { from{opacity:0} to{opacity:1} }
-  @keyframes pd-slideUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
 
   .pd-page { min-height:100vh; background:#f6f5f3; font-family:'Sora',sans-serif; }
 
-  /* ── Sticky nav ── */
-  .pd-nav {
-    position:sticky; top:0; z-index:40;
-    background:rgba(246,245,243,0.92); backdrop-filter:blur(14px);
-    border-bottom:1px solid #e8e4de; height:56px;
-    display:flex; align-items:center; padding:0 20px;
-  }
-  .pd-nav-inner {
-    max-width:1200px; margin:0 auto; width:100%;
+  /* ── Body ── */
+  .pd-body { max-width:1200px; margin:0 auto; padding:88px 20px 72px; }
+
+  /* ── Top action row — back + breadcrumb + share/fav ── */
+  .pd-topbar {
     display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:22px; gap:12px;
   }
-  .pd-nav-left  { display:flex; align-items:center; gap:10px; }
-  .pd-nav-right { display:flex; align-items:center; gap:8px; }
+  .pd-topbar-left  { display:flex; align-items:center; gap:10px; min-width:0; }
+  .pd-topbar-right { display:flex; align-items:center; gap:8px; flex-shrink:0; }
   .pd-icon-btn {
     width:36px; height:36px; border-radius:10px;
     border:1.5px solid #e8e4de; background:#fff;
     cursor:pointer; display:flex; align-items:center; justify-content:center;
-    color:#9e9890; transition:all 0.15s;
+    color:#9e9890; transition:all 0.15s; flex-shrink:0;
   }
   .pd-icon-btn:hover { border-color:#1a1714; color:#1a1714; background:#f5f3f0; }
   .pd-icon-btn.active { color:#ef4444; border-color:#fecaca; background:#fef2f2; }
-  .pd-breadcrumb { font-size:12px; color:#9e9890; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:220px; }
+  .pd-breadcrumb {
+    font-size:12px; color:#9e9890; font-weight:500;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
   .pd-breadcrumb span { color:#1a1714; font-weight:700; }
 
-  /* ── Main layout ── */
-  .pd-body { max-width:1200px; margin:0 auto; padding:28px 20px 72px; }
-
-  /* Two-col: image left (sticky), info right */
+  /* ── Main two-col grid ── */
   .pd-main-grid {
     display:grid;
     grid-template-columns:minmax(0,1.1fr) minmax(0,0.9fr);
-    gap:32px;
-    align-items:start;
-    margin-bottom:48px;
+    gap:32px; align-items:start; margin-bottom:48px;
   }
   @media(max-width:900px){ .pd-main-grid { grid-template-columns:1fr; gap:24px; } }
 
-  /* Image col is sticky */
-  .pd-col-image {
-    position:sticky;
-    top:72px; /* nav height + gap */
-  }
+  /* Image col sticky — only navbar above it now (72px) */
+  .pd-col-image { position:sticky; top:88px; }
   @media(max-width:900px){ .pd-col-image { position:static; } }
 
-  /* Info col — NO transform animation here, that's what broke the modals */
   .pd-col-info { display:flex; flex-direction:column; gap:18px; }
 
-  /* Description card */
   .pd-desc-card {
     background:#fff; border:1px solid #e8e4de; border-radius:16px;
-    padding:22px 24px;
-    animation:pd-fade 0.4s ease both 0.15s;
+    padding:22px 24px; animation:pd-fade 0.4s ease both 0.15s;
   }
   .pd-desc-title { font-size:14px; font-weight:800; color:#1a1714; letter-spacing:-0.2px; margin:0 0 10px; }
-  .pd-desc-text { font-size:13px; color:#6b6560; line-height:1.85; white-space:pre-line; margin:0; }
+  .pd-desc-text  { font-size:13px; color:#6b6560; line-height:1.85; white-space:pre-line; margin:0; }
 
-  /* Reviews — full width below the grid */
   .pd-reviews-section {
     background:#fff; border:1px solid #e8e4de; border-radius:20px;
-    padding:28px 28px 32px;
-    animation:pd-fade 0.4s ease both 0.2s;
+    padding:28px 28px 32px; animation:pd-fade 0.4s ease both 0.2s;
   }
   @media(max-width:640px){ .pd-reviews-section { padding:20px 16px 24px; border-radius:16px; } }
 
-  /* Wrap each info card so we can fade them without transform */
-  .pd-info-card {
-    animation:pd-fade 0.35s ease both;
-  }
+  .pd-info-card { animation:pd-fade 0.35s ease both; }
   .pd-info-card:nth-child(2) { animation-delay:0.06s; }
   .pd-info-card:nth-child(3) { animation-delay:0.12s; }
 `;
@@ -158,10 +141,11 @@ export default function ProductDetailClient({ product }: { product: any }) {
     <>
       <style>{CSS}</style>
       <div className="pd-page">
-        {/* ── Nav ── */}
-        <nav className="pd-nav">
-          <div className="pd-nav-inner">
-            <div className="pd-nav-left">
+        <Navbar />
+        <div className="pd-body">
+          {/* ── Back + breadcrumb + actions ── */}
+          <div className="pd-topbar">
+            <div className="pd-topbar-left">
               <button className="pd-icon-btn" onClick={() => router.back()}>
                 <BackIco />
               </button>
@@ -169,24 +153,21 @@ export default function ProductDetailClient({ product }: { product: any }) {
                 {product.category} · <span>{product.title}</span>
               </p>
             </div>
-            <div className="pd-nav-right">
+            <div className="pd-topbar-right">
               <button className="pd-icon-btn" onClick={handleShare}>
                 <ShareIco />
               </button>
               <button
-                className={`pd-icon-btn ${isFav ? "active" : ""}`}
+                className={`pd-icon-btn${isFav ? " active" : ""}`}
                 onClick={() => setIsFav(!isFav)}
               >
                 <HeartIco filled={isFav} />
               </button>
             </div>
           </div>
-        </nav>
 
-        <div className="pd-body">
           {/* ── Main two-col grid ── */}
           <div className="pd-main-grid">
-            {/* LEFT — sticky image */}
             <div className="pd-col-image">
               <ProductImageGallery
                 images={product.images}
@@ -195,15 +176,10 @@ export default function ProductDetailClient({ product }: { product: any }) {
               />
             </div>
 
-            {/* RIGHT — info stack. NO CSS transforms here so modals stay viewport-fixed */}
             <div className="pd-col-info">
               <div className="pd-info-card">
                 <SellerCard seller={product.seller} />
               </div>
-
-              {/* ProductInfo renders the OrderModal inside itself —
-                  because pd-col-info has no transform, position:fixed
-                  in the modal will correctly anchor to the viewport */}
               <div className="pd-info-card">
                 <ProductInfo
                   product={{
@@ -213,7 +189,6 @@ export default function ProductDetailClient({ product }: { product: any }) {
                   }}
                 />
               </div>
-
               {product.description && (
                 <div className="pd-info-card pd-desc-card">
                   <p className="pd-desc-title">Description</p>
@@ -223,9 +198,7 @@ export default function ProductDetailClient({ product }: { product: any }) {
             </div>
           </div>
 
-          {/* ── Reviews — full width below the grid ── */}
-          {/* ProductReviews renders its own modals — same rule applies,
-              no ancestor transform here so position:fixed works correctly */}
+          {/* ── Reviews ── */}
           <div className="pd-reviews-section">
             <ProductReviews
               productId={product.id}
