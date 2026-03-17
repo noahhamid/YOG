@@ -6,6 +6,7 @@ import ProductInfo from "./product/ProductInfo";
 import SellerCard from "./product/SellerCard";
 import ProductReviews from "./product/ProductReviews";
 import { productCache } from "@/lib/productCache";
+import Navbar from "@/components/Navbar";
 
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&display=swap');

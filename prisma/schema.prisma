@@ -36,7 +36,7 @@ model StoreReview {
   userId    String
   userName  String
   rating    Int
-  comment   String
+  comment   String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   seller    Seller   @relation(fields: [sellerId], references: [id], onDelete: Cascade)
@@ -198,6 +198,8 @@ model Product {
   images         ProductImage[]
   variants       ProductVariant[]
   reviews        Review[]
+  averageRating  Float  @default(0)
+reviewCount    Int    @default(0)
 
   @@index([category])
   @@index([clothingType])
