@@ -21,8 +21,8 @@ interface ProductGridProps {
 }
 
 const CACHE_KEY = "yog_products_cache";
-const CACHE_DURATION = 5 * 60 * 1000; // ✅ 5 min (was 1 min)
-const AUTO_REFRESH_INTERVAL = 5 * 60 * 1000; // ✅ 5 min (was 3 SECONDS)
+const CACHE_DURATION = 5 * 60 * 1000;
+const AUTO_REFRESH_INTERVAL = 5 * 60 * 1000;
 
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&display=swap');
@@ -47,17 +47,16 @@ const CSS = `
   flex-shrink:0;
   align-self:flex-start;
   position:sticky;
-  top:24px;
+  top:70px;
   width:232px;
 }
 .pg-main { flex:1; min-width:0; }
 
+/* ── Toolbar ── */
 .pg-toolbar {
   display:flex; align-items:center; justify-content:space-between;
   margin-bottom:18px; flex-wrap:wrap; gap:10px;
 }
-.pg-count { font-size:13px; color:var(--muted); font-weight:500; }
-.pg-count strong { color:var(--text); font-weight:700; }
 .pg-filter-chip {
   display:inline-flex; align-items:center; gap:5px;
   padding:4px 11px; background:var(--text); color:#fff;
@@ -66,16 +65,44 @@ const CSS = `
   transition:background 0.15s;
 }
 .pg-filter-chip:hover { background:#333; }
-.pg-sort {
-  padding:9px 36px 9px 14px; border:1.5px solid var(--border);
+
+/* ── Custom sort dropdown ── */
+.pg-sort-wrap { position:relative; }
+.pg-sort-btn {
+  display:flex; align-items:center; gap:8px;
+  padding:9px 14px; border:1.5px solid var(--border);
   border-radius:10px; background:var(--card);
   font-family:'Sora',sans-serif; font-size:12px; font-weight:600;
-  color:var(--text); outline:none; cursor:pointer;
-  transition:border-color 0.15s; appearance:none;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%239e9890' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
-  background-repeat:no-repeat; background-position:right 12px center;
+  color:var(--text); cursor:pointer; transition:all 0.15s;
+  white-space:nowrap;
 }
-.pg-sort:focus { border-color:var(--text); }
+.pg-sort-btn:hover { border-color:var(--text); }
+.pg-sort-btn.open { border-color:var(--text); box-shadow:0 0 0 3px rgba(26,23,20,0.06); }
+.pg-sort-chevron { color:var(--muted); transition:transform 0.22s cubic-bezier(0.34,1.56,0.64,1); flex-shrink:0; }
+.pg-sort-chevron.open { transform:rotate(180deg); }
+.pg-sort-label { font-size:10px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.6px; }
+
+@keyframes pg-sort-in {
+  from { opacity:0; transform:translateY(-8px) scale(0.97); }
+  to   { opacity:1; transform:translateY(0) scale(1); }
+}
+.pg-sort-menu {
+  position:absolute; top:calc(100% + 6px); left:0; min-width:180px;
+  background:var(--card); border:1.5px solid var(--border);
+  border-radius:12px; box-shadow:0 12px 36px rgba(0,0,0,0.10);
+  overflow:hidden; z-index:50;
+  animation:pg-sort-in 0.18s cubic-bezier(0.22,1,0.36,1);
+}
+.pg-sort-option {
+  width:100%; padding:10px 14px; border:none; background:transparent;
+  text-align:left; font-family:'Sora',sans-serif; font-size:13px;
+  font-weight:500; color:var(--text); cursor:pointer;
+  display:flex; align-items:center; justify-content:space-between;
+  transition:background 0.12s;
+}
+.pg-sort-option:hover { background:var(--hover); }
+.pg-sort-option.active { font-weight:700; background:var(--hover); }
+.pg-sort-check { width:16px; height:16px; border-radius:5px; background:var(--text); display:flex; align-items:center; justify-content:center; }
 
 .pg-grid {
   display:grid;
@@ -282,6 +309,98 @@ const SearchIco = () => (
     <line x1="21" y1="21" x2="16.65" y2="16.65" />
   </svg>
 );
+const ChevIco = () => (
+  <svg
+    width="13"
+    height="13"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <polyline points="6 9 12 15 18 9" />
+  </svg>
+);
+const CheckIco = () => (
+  <svg
+    width="9"
+    height="9"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="white"
+    strokeWidth="3"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <polyline points="20 6 9 17 4 12" />
+  </svg>
+);
+
+const SORT_OPTIONS = [
+  { value: "featured", label: "Featured" },
+  { value: "price-low", label: "Price: Low → High" },
+  { value: "price-high", label: "Price: High → Low" },
+  { value: "name", label: "Name: A–Z" },
+];
+
+function SortDropdown({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const current = SORT_OPTIONS.find((o) => o.value === value);
+
+  useEffect(() => {
+    const fn = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node))
+        setOpen(false);
+    };
+    document.addEventListener("mousedown", fn);
+    return () => document.removeEventListener("mousedown", fn);
+  }, []);
+
+  return (
+    <div ref={ref} className="pg-sort-wrap">
+      <button
+        className={`pg-sort-btn${open ? " open" : ""}`}
+        onClick={() => setOpen((p) => !p)}
+      >
+        <span className="pg-sort-label">Sort</span>
+        <span style={{ fontWeight: 700 }}>{current?.label}</span>
+        <span className={`pg-sort-chevron${open ? " open" : ""}`}>
+          <ChevIco />
+        </span>
+      </button>
+      {open && (
+        <div className="pg-sort-menu">
+          {SORT_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              className={`pg-sort-option${value === opt.value ? " active" : ""}`}
+              onClick={() => {
+                onChange(opt.value);
+                setOpen(false);
+              }}
+            >
+              {opt.label}
+              {value === opt.value && (
+                <span className="pg-sort-check">
+                  <CheckIco />
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function SkeletonCard() {
   return (
@@ -459,7 +578,6 @@ export default function ProductGrid({
 }: ProductGridProps) {
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
-
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
@@ -472,7 +590,6 @@ export default function ProductGrid({
   const [sortBy, setSortBy] = useState("featured");
   const [showNewArrivals, setShowNewArrivals] = useState(false);
   const [showOnSale, setShowOnSale] = useState(false);
-
   const [productsCache, setProductsCache] = useState<ProductsCache>({
     all: [],
     men: [],
@@ -486,10 +603,8 @@ export default function ProductGrid({
   });
   const [displayedProducts, setDisplayedProducts] = useState<any[]>([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
-
   const hasFetchedRef = useRef(false);
   const autoRefreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
-
   const [expandedSections, setExpandedSections] = useState({
     category: true,
     clothingType: true,
@@ -533,7 +648,6 @@ export default function ProductGrid({
                     [],
             );
             setIsLoadingProducts(false);
-            // ✅ Auto-refresh every 5 min, not every 3 seconds
             autoRefreshIntervalRef.current = setInterval(
               () => checkForNewProducts(parsed.productCount),
               AUTO_REFRESH_INTERVAL,
@@ -568,7 +682,6 @@ export default function ProductGrid({
 
   const checkForNewProducts = async (count: number) => {
     try {
-      // ✅ Lightweight check — just count, don't re-fetch everything
       const data = await fetch("/api/products/public?isFeatured=true").then(
         (r) => r.json(),
       );
@@ -579,20 +692,15 @@ export default function ProductGrid({
     } catch {}
   };
 
-  // ✅ KEY FIX: ONE fetch instead of 7 — derive all categories client-side
   const fetchAllProducts = async (silent = false) => {
     if (!silent) setIsLoadingProducts(true);
     try {
-      // ✅ Two fetches only: all products + trending (needs special scoring)
       const [allData, trendingData] = await Promise.all([
         fetch("/api/products/public").then((r) => r.json()),
         fetch("/api/products/trending").then((r) => r.json()),
       ]);
-
       const all: any[] = allData.products || [];
       const trending: any[] = trendingData.products || [];
-
-      // ✅ Derive all categories client-side — no extra DB queries
       const cache: ProductsCache = {
         all,
         men: all.filter((p) => p.category === "men"),
@@ -604,7 +712,6 @@ export default function ProductGrid({
         timestamp: Date.now(),
         productCount: all.length,
       };
-
       setProductsCache(cache);
       setDisplayedProducts(
         showTrendingOnly
@@ -615,7 +722,6 @@ export default function ProductGrid({
       );
       if (typeof window !== "undefined")
         localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
-
       if (autoRefreshIntervalRef.current)
         clearInterval(autoRefreshIntervalRef.current);
       autoRefreshIntervalRef.current = setInterval(
@@ -743,12 +849,10 @@ export default function ProductGrid({
               />
             </div>
             <div className="pg-main">
+              {/* ── Toolbar: sort left, filter chip right ── */}
               <div className="pg-toolbar">
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <p className="pg-count">
-                    <strong>{displayedProducts.length}</strong>{" "}
-                    {displayedProducts.length === 1 ? "product" : "products"}
-                  </p>
+                  <SortDropdown value={sortBy} onChange={setSortBy} />
                   {activeFiltersCount > 0 && (
                     <button className="pg-filter-chip" onClick={clearFilters}>
                       {activeFiltersCount} filter
@@ -756,16 +860,6 @@ export default function ProductGrid({
                     </button>
                   )}
                 </div>
-                <select
-                  className="pg-sort"
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                >
-                  <option value="featured">Featured</option>
-                  <option value="price-low">Price: Low → High</option>
-                  <option value="price-high">Price: High → Low</option>
-                  <option value="name">Name: A–Z</option>
-                </select>
               </div>
               {isLoadingProducts ? (
                 <div className="pg-grid">

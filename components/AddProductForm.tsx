@@ -423,7 +423,7 @@ export default function AddProductForm({
       label: "Underwear",
       description: "Intimates & Loungewear",
     },
-    { value: "SHOES", label: "Footwear", description: "Shoes & Accessories" },
+    { value: "SHOES", label: "Shoes", description: "Shoes & Footwears" },
     {
       value: "ACCESSORIES",
       label: "Accessories",
@@ -459,16 +459,6 @@ export default function AddProductForm({
     { value: "DRAFT", label: "Draft", description: "Hidden from store" },
     { value: "ARCHIVED", label: "Archived", description: "No longer sold" },
   ];
-  const sizes: DropdownOption[] = [
-    "XS",
-    "S",
-    "M",
-    "L",
-    "XL",
-    "XXL",
-    "2XL",
-    "3XL",
-  ].map((s) => ({ value: s, label: s }));
 
   // ── handlers ────────────────────────────────────────────────────────────────
   const handleInput = (
@@ -996,15 +986,17 @@ export default function AddProductForm({
                           padding: "8px 10px",
                         }}
                       >
-                        <Dropdown
-                          options={sizes}
+                        <input
                           value={v.size}
-                          onChange={(val) => {
+                          onChange={(e: ChangeEvent<HTMLInputElement>) => {
                             const n = [...variants];
-                            n[i].size = val;
+                            n[i].size = e.target.value;
                             setVariants(n);
                           }}
-                          placeholder="Size"
+                          placeholder="e.g. M, 41, 5Y"
+                          style={{ ...inputStyle(false), fontSize: 13 }}
+                          onFocus={applyFocus}
+                          onBlur={applyBlur}
                         />
                         <input
                           value={v.color}

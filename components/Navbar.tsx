@@ -47,37 +47,6 @@ const BellIcon = () => (
     <path d="M13.73 21a2 2 0 0 1-3.46 0" />
   </svg>
 );
-const MenuIcon = () => (
-  <svg
-    width="19"
-    height="19"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.8"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <line x1="3" y1="6" x2="21" y2="6" />
-    <line x1="3" y1="12" x2="21" y2="12" />
-    <line x1="3" y1="18" x2="21" y2="18" />
-  </svg>
-);
-const CloseIcon = () => (
-  <svg
-    width="17"
-    height="17"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <line x1="18" y1="6" x2="6" y2="18" />
-    <line x1="6" y1="6" x2="18" y2="18" />
-  </svg>
-);
 const UserIcon = () => (
   <svg
     width="14"
@@ -140,26 +109,47 @@ const LogOutIcon = () => (
   </svg>
 );
 
+// ── Animated hamburger/X icon ──────────────────────────────────────────────
+function MenuToggle({ open, onClick }: { open: boolean; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="lg:hidden relative w-8 h-8 flex flex-col items-center justify-center gap-[5px] cursor-pointer bg-transparent border-none p-0"
+      aria-label={open ? "Close menu" : "Open menu"}
+    >
+      <motion.span
+        className="block w-5 h-[2px] bg-[#1a1714] rounded-full origin-center"
+        animate={open ? { rotate: 45, y: 7 } : { rotate: 0, y: 0 }}
+        transition={{ duration: 0.28, ease: [0.4, 0, 0.2, 1] }}
+      />
+      <motion.span
+        className="block w-5 h-[2px] bg-[#1a1714] rounded-full"
+        animate={open ? { opacity: 0, scaleX: 0 } : { opacity: 1, scaleX: 1 }}
+        transition={{ duration: 0.18, ease: "easeInOut" }}
+      />
+      <motion.span
+        className="block w-5 h-[2px] bg-[#1a1714] rounded-full origin-center"
+        animate={open ? { rotate: -45, y: -7 } : { rotate: 0, y: 0 }}
+        transition={{ duration: 0.28, ease: [0.4, 0, 0.2, 1] }}
+      />
+    </button>
+  );
+}
+
 const LEFT_LINKS = ["Shop", "Men", "Women", "Trending"];
 
-const NavLink = ({
-  href,
-  label,
-  scrolled,
-}: {
-  href: string;
-  label: string;
-  scrolled: boolean;
-}) => (
+const NavLink = ({ href, label }: { href: string; label: string }) => (
   <Link
     href={href}
     className="relative text-[10.5px] font-bold uppercase tracking-[0.18em] transition-opacity hover:opacity-40 whitespace-nowrap group"
-    style={{ color: scrolled ? "#1a1714" : "#1a1714" }}
+    style={{ color: "#1a1714" }}
   >
     {label}
     <span className="absolute -bottom-0.5 left-0 w-0 h-px bg-[#1a1714] transition-all duration-200 group-hover:w-full" />
   </Link>
 );
+
+const MOBILE_LINKS = ["Shop", "Men", "Women", "Trending", "Stores"];
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -184,13 +174,20 @@ export default function Navbar() {
     return () => window.removeEventListener("userLoggedIn", loadUser);
   }, []);
 
+  // Close mobile menu on resize to desktop
+  useEffect(() => {
+    const onResize = () => {
+      if (window.innerWidth >= 1024) setShowMobileMenu(false);
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
   const loadUser = async () => {
     const s = localStorage.getItem("yog_user");
     if (s) {
       const storedUser = JSON.parse(s);
       setUser(storedUser);
-
-      // Auto-refresh session on load
       try {
         const res = await fetch("/api/auth/refresh", {
           method: "POST",
@@ -202,13 +199,10 @@ export default function Navbar() {
           localStorage.setItem("yog_user", JSON.stringify(data.user));
           setUser(data.user);
         }
-      } catch (err) {
-        console.error("Session refresh failed:", err);
-      }
+      } catch {}
     }
   };
 
-  // notification polling
   useEffect(() => {
     if (!user) return;
     const poll = async () => {
@@ -232,10 +226,9 @@ export default function Navbar() {
             );
             if (newest) {
               setToastNotification(newest);
-              const updated = [...shownIds, newest.id];
               localStorage.setItem(
                 "yog_shown_notifications",
-                JSON.stringify(updated),
+                JSON.stringify([...shownIds, newest.id]),
               );
             }
           }
@@ -243,7 +236,7 @@ export default function Navbar() {
       } catch {}
     };
     poll();
-    const iv = setInterval(poll, 10000);
+    const iv = setInterval(poll, 60000);
     return () => clearInterval(iv);
   }, [user]);
 
@@ -263,9 +256,6 @@ export default function Navbar() {
     window.location.href = "/";
   };
 
-  const scrolledBg = "rgba(255,255,255,0.97)";
-  const scrolledBorder = "1px solid #e8e4de";
-
   return (
     <>
       <header
@@ -276,29 +266,24 @@ export default function Navbar() {
         }}
       >
         <nav
-          className="relative flex items-center justify-between w-full max-w-[1700px] px-10 py-0 pointer-events-auto"
+          className="relative flex items-center justify-between w-full max-w-[1700px] px-6 md:px-10 py-0 pointer-events-auto"
           style={{
-            background: isScrolled ? scrolledBg : "transparent",
-            borderBottom: isScrolled ? scrolledBorder : "none",
+            background: isScrolled ? "rgba(255,255,255,0.97)" : "transparent",
+            borderBottom: isScrolled ? "1px solid #e8e4de" : "none",
             backdropFilter: isScrolled ? "blur(14px)" : "none",
             borderRadius: isScrolled ? "0px" : "999px",
             transition: "all 0.6s cubic-bezier(0.4,0,0.2,1)",
             fontFamily: "'Sora',sans-serif",
           }}
         >
-          {/* ── LEFT ──────────────────────────────────────────────────── */}
-          <div className="flex items-center gap-7 flex-1 py-4">
+          {/* ── LEFT — hidden on mobile ── */}
+          <div className="hidden lg:flex items-center gap-7 flex-1 py-4">
             {LEFT_LINKS.map((l) => (
-              <NavLink
-                key={l}
-                href={`/${l.toLowerCase()}`}
-                label={l}
-                scrolled={isScrolled}
-              />
+              <NavLink key={l} href={`/${l.toLowerCase()}`} label={l} />
             ))}
           </div>
 
-          {/* ── LOGO (center absolute trapezoid) ──────────────────────── */}
+          {/* ── LOGO ── */}
           <div
             className="absolute left-1/2 -translate-x-1/2 z-20"
             style={{
@@ -312,8 +297,8 @@ export default function Navbar() {
                 style={{
                   clipPath: "polygon(8% 0%, 92% 0%, 100% 100%, 0% 100%)",
                   background: "#fff",
-                  paddingLeft: isScrolled ? "120px" : "200px",
-                  paddingRight: isScrolled ? "120px" : "200px",
+                  paddingLeft: isScrolled ? "80px" : "120px",
+                  paddingRight: isScrolled ? "80px" : "120px",
                   paddingTop: isScrolled ? "0" : "4px",
                   paddingBottom: isScrolled ? "0" : "4px",
                   transition: "all 0.6s cubic-bezier(0.4,0,0.2,1)",
@@ -321,7 +306,7 @@ export default function Navbar() {
                 }}
               >
                 <span
-                  className="py-[14px] text-[28px] font-black leading-none text-[#1a1714] select-none"
+                  className="py-[14px] text-[26px] font-black leading-none text-[#1a1714] select-none"
                   style={{
                     fontFamily: "'Bebas Neue',sans-serif",
                     letterSpacing: "0.28em",
@@ -333,18 +318,14 @@ export default function Navbar() {
             </Link>
           </div>
 
-          {/* ── RIGHT ─────────────────────────────────────────────────── */}
-          <div className="flex items-center justify-end gap-6 flex-1 py-4">
-            {/* Following (logged-in only) */}
+          {/* ── RIGHT ── */}
+          <div className="flex items-center justify-end gap-4 md:gap-6 flex-1 py-4">
+            {/* Desktop only links */}
             {user && (
-              <NavLink
-                href="/following"
-                label="Following"
-                scrolled={isScrolled}
-              />
+              <span className="hidden lg:block">
+                <NavLink href="/following" label="Following" />
+              </span>
             )}
-
-            {/* Sell link */}
             <div
               className="hidden xl:block"
               style={{ borderRight: "1px solid #e8e4de", paddingRight: "24px" }}
@@ -356,23 +337,20 @@ export default function Navbar() {
                     : "/seller/apply"
                 }
                 label="Sell"
-                scrolled={isScrolled}
               />
             </div>
-
-            {/* Auth links */}
             {!user && (
-              <>
-                <NavLink href="/login" label="Log In" scrolled={isScrolled} />
-                <NavLink href="/signup" label="Sign Up" scrolled={isScrolled} />
-              </>
+              <div className="hidden lg:flex items-center gap-6">
+                <NavLink href="/login" label="Log In" />
+                <NavLink href="/signup" label="Sign Up" />
+              </div>
             )}
 
-            {/* Bell */}
+            {/* Bell — desktop only */}
             {user && (
               <button
                 onClick={() => setShowNotifications(true)}
-                className="relative text-[#1a1714] hover:opacity-40 transition-opacity cursor-pointer"
+                className="hidden lg:flex relative text-[#1a1714] hover:opacity-40 transition-opacity cursor-pointer"
               >
                 <BellIcon />
                 {unreadCount > 0 && (
@@ -383,7 +361,7 @@ export default function Navbar() {
               </button>
             )}
 
-            {/* Cart */}
+            {/* Cart — always visible */}
             <Link
               href="/cart"
               className="relative text-[#1a1714] hover:opacity-40 transition-opacity"
@@ -396,9 +374,9 @@ export default function Navbar() {
               )}
             </Link>
 
-            {/* Avatar / profile menu */}
+            {/* Avatar — desktop only */}
             {user && (
-              <div className="relative profile-menu">
+              <div className="hidden lg:block relative profile-menu">
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -416,7 +394,6 @@ export default function Navbar() {
                     user.name[0].toUpperCase()
                   )}
                 </button>
-
                 <AnimatePresence>
                   {showProfileMenu && (
                     <motion.div
@@ -430,7 +407,6 @@ export default function Navbar() {
                         boxShadow: "0 12px 40px rgba(0,0,0,0.1)",
                       }}
                     >
-                      {/* User header */}
                       <div
                         className="px-4 py-3.5 bg-[#f6f5f3]"
                         style={{ borderBottom: "1px solid #e8e4de" }}
@@ -467,8 +443,6 @@ export default function Navbar() {
                           {user.role}
                         </span>
                       </div>
-
-                      {/* Menu items */}
                       <div className="py-1.5">
                         {(
                           [
@@ -506,14 +480,12 @@ export default function Navbar() {
                               </span>
                             </Link>
                           ))}
-
                         <div
                           style={{
                             margin: "4px 0",
                             borderTop: "1px solid #e8e4de",
                           }}
                         />
-
                         <button
                           onClick={handleSignOut}
                           className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-red-50 transition-colors w-full cursor-pointer"
@@ -532,67 +504,246 @@ export default function Navbar() {
               </div>
             )}
 
-            {/* Mobile menu button */}
-            <button
-              className="lg:hidden text-[#1a1714] hover:opacity-40 transition-opacity cursor-pointer"
+            {/* Animated hamburger — mobile only */}
+            <MenuToggle
+              open={showMobileMenu}
               onClick={() => setShowMobileMenu((p) => !p)}
-            >
-              {showMobileMenu ? <CloseIcon /> : <MenuIcon />}
-            </button>
+            />
           </div>
         </nav>
 
-        {/* ── Mobile menu ────────────────────────────────────────────── */}
+        {/* ── Full-screen mobile menu ── */}
         <AnimatePresence>
           {showMobileMenu && (
             <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
-              className="absolute top-full left-4 right-4 mt-2 bg-white rounded-2xl overflow-hidden pointer-events-auto"
+              initial={{ opacity: 0, y: -16, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -16, scale: 0.98 }}
+              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+              className="absolute top-full left-3 right-3 mt-2 bg-white rounded-2xl overflow-hidden pointer-events-auto"
               style={{
                 border: "1px solid #e8e4de",
-                boxShadow: "0 12px 40px rgba(0,0,0,0.10)",
+                boxShadow: "0 20px 60px rgba(0,0,0,0.12)",
                 fontFamily: "'Sora',sans-serif",
               }}
             >
-              {[...LEFT_LINKS, "Following", "Sell"].map((l) => (
-                <Link
+              {/* Nav links with staggered animation */}
+              {MOBILE_LINKS.map((l, i) => (
+                <motion.div
                   key={l}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{
+                    delay: i * 0.04 + 0.05,
+                    duration: 0.22,
+                    ease: [0.22, 1, 0.36, 1],
+                  }}
+                >
+                  <Link
+                    href={l === "Stores" ? "/stores" : `/${l.toLowerCase()}`}
+                    onClick={() => setShowMobileMenu(false)}
+                    className="flex items-center justify-between px-5 py-4 text-[13px] font-700 text-[#1a1714] hover:bg-[#f6f5f3] transition-colors"
+                    style={{
+                      borderBottom: "1px solid #f0ede8",
+                      fontWeight: 700,
+                      letterSpacing: "0.05em",
+                    }}
+                  >
+                    {l}
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#c4bfb8"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <polyline points="9 18 15 12 9 6" />
+                    </svg>
+                  </Link>
+                </motion.div>
+              ))}
+
+              {/* Sell */}
+              <motion.div
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.25, duration: 0.22 }}
+              >
+                <Link
                   href={
-                    l === "Sell"
-                      ? user?.role === "SELLER" || user?.role === "ADMIN"
-                        ? "/seller/dashboard"
-                        : "/seller/apply"
-                      : `/${l.toLowerCase()}`
+                    user?.role === "SELLER" || user?.role === "ADMIN"
+                      ? "/seller/dashboard"
+                      : "/seller/apply"
                   }
                   onClick={() => setShowMobileMenu(false)}
-                  className="flex items-center px-5 py-3.5 text-[12px] font-bold uppercase tracking-[0.15em] text-[#1a1714] hover:bg-[#f6f5f3] transition-colors"
-                  style={{ borderBottom: "1px solid #e8e4de" }}
+                  className="flex items-center justify-between px-5 py-4 hover:bg-[#f6f5f3] transition-colors"
+                  style={{ borderBottom: "1px solid #f0ede8" }}
                 >
-                  {l}
+                  <span
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 700,
+                      color: "#1a1714",
+                      letterSpacing: "0.05em",
+                    }}
+                  >
+                    Sell on YOG
+                  </span>
+                  <span
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 700,
+                      padding: "3px 8px",
+                      borderRadius: 20,
+                      background: "#f0fdf4",
+                      color: "#15803d",
+                      border: "1px solid #bbf7d0",
+                    }}
+                  >
+                    Open
+                  </span>
                 </Link>
-              ))}
-              {!user && (
-                <>
-                  <Link
-                    href="/login"
-                    onClick={() => setShowMobileMenu(false)}
-                    className="flex items-center px-5 py-3.5 text-[12px] font-bold uppercase tracking-[0.15em] text-[#1a1714] hover:bg-[#f6f5f3] transition-colors"
-                    style={{ borderBottom: "1px solid #e8e4de" }}
-                  >
-                    Log In
-                  </Link>
-                  <Link
-                    href="/signup"
-                    onClick={() => setShowMobileMenu(false)}
-                    className="flex items-center px-5 py-3.5 text-[12px] font-bold uppercase tracking-[0.15em] text-[#1a1714] hover:bg-[#f6f5f3] transition-colors"
-                  >
-                    Sign Up
-                  </Link>
-                </>
-              )}
+              </motion.div>
+
+              {/* User section */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.28, duration: 0.2 }}
+              >
+                {user ? (
+                  <div>
+                    <div
+                      className="px-5 py-3 flex items-center gap-3"
+                      style={{
+                        borderBottom: "1px solid #f0ede8",
+                        background: "#faf9f8",
+                      }}
+                    >
+                      <div className="w-9 h-9 rounded-full bg-[#1a1714] text-white text-[13px] font-bold flex items-center justify-center overflow-hidden flex-shrink-0">
+                        {user.image ? (
+                          <img
+                            src={user.image}
+                            alt={user.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          user.name[0].toUpperCase()
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p
+                          style={{
+                            fontSize: 13,
+                            fontWeight: 700,
+                            color: "#1a1714",
+                            margin: 0,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {user.name}
+                        </p>
+                        <p
+                          style={{
+                            fontSize: 11,
+                            color: "#9e9890",
+                            margin: 0,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {user.email}
+                        </p>
+                      </div>
+                    </div>
+                    <Link
+                      href="/account"
+                      onClick={() => setShowMobileMenu(false)}
+                      className="flex items-center gap-3 px-5 py-3.5 hover:bg-[#f6f5f3] transition-colors"
+                      style={{ borderBottom: "1px solid #f0ede8" }}
+                    >
+                      <span style={{ color: "#9e9890" }}>
+                        <UserIcon />
+                      </span>
+                      <span
+                        style={{
+                          fontSize: 13,
+                          fontWeight: 600,
+                          color: "#1a1714",
+                        }}
+                      >
+                        Account Settings
+                      </span>
+                    </Link>
+                    {user.role === "SELLER" && (
+                      <Link
+                        href="/seller/dashboard"
+                        onClick={() => setShowMobileMenu(false)}
+                        className="flex items-center gap-3 px-5 py-3.5 hover:bg-[#f6f5f3] transition-colors"
+                        style={{ borderBottom: "1px solid #f0ede8" }}
+                      >
+                        <span style={{ color: "#9e9890" }}>
+                          <StoreIcon />
+                        </span>
+                        <span
+                          style={{
+                            fontSize: 13,
+                            fontWeight: 600,
+                            color: "#1a1714",
+                          }}
+                        >
+                          Seller Dashboard
+                        </span>
+                      </Link>
+                    )}
+                    <button
+                      onClick={() => {
+                        setShowMobileMenu(false);
+                        handleSignOut();
+                      }}
+                      className="flex items-center gap-3 px-5 py-3.5 hover:bg-red-50 transition-colors w-full"
+                    >
+                      <span style={{ color: "#f87171" }}>
+                        <LogOutIcon />
+                      </span>
+                      <span
+                        style={{
+                          fontSize: 13,
+                          fontWeight: 600,
+                          color: "#ef4444",
+                        }}
+                      >
+                        Sign Out
+                      </span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="p-4 flex gap-3">
+                    <Link
+                      href="/login"
+                      onClick={() => setShowMobileMenu(false)}
+                      className="flex-1 flex items-center justify-center py-3 rounded-xl border border-[#e8e4de] text-[13px] font-700 text-[#1a1714] hover:bg-[#f6f5f3] transition-colors no-underline"
+                      style={{ fontWeight: 700 }}
+                    >
+                      Log In
+                    </Link>
+                    <Link
+                      href="/signup"
+                      onClick={() => setShowMobileMenu(false)}
+                      className="flex-1 flex items-center justify-center py-3 rounded-xl bg-[#1a1714] text-[13px] font-700 text-white hover:bg-[#333] transition-colors no-underline"
+                      style={{ fontWeight: 700 }}
+                    >
+                      Sign Up
+                    </Link>
+                  </div>
+                )}
+              </motion.div>
             </motion.div>
           )}
         </AnimatePresence>

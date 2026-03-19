@@ -26,17 +26,38 @@ export default async function StorePage({ params }: PageProps) {
 
   if (!seller) notFound();
 
-  // ✅ Fetch real rating data
-  const ratingAgg = await prisma.storeReview.aggregate({
-    where: { sellerId: seller.id },
-    _avg: { rating: true },
-    _count: { rating: true },
-  });
+  // ✅ Run all aggregations in parallel — one round-trip
+  const [ratingAgg, totalSalesAgg] = await Promise.all([
+    prisma.storeReview.aggregate({
+      where: { sellerId: seller.id },
+      _avg: { rating: true },
+      _count: { rating: true },
+    }),
+    // ✅ Count total items sold from DELIVERED orders — always accurate
+    prisma.order.aggregate({
+      where: { sellerId: seller.id, status: "DELIVERED" },
+      _sum: { quantity: true },
+    }),
+  ]);
 
-  await prisma.seller.update({
-    where: { id: seller.id },
-    data: { totalViews: { increment: 1 } },
-  });
+  // ✅ Sync stored totalSales if it's out of date (fire and forget)
+  const realTotalSales = totalSalesAgg._sum.quantity ?? 0;
+  if (seller.totalSales !== realTotalSales) {
+    prisma.seller
+      .update({
+        where: { id: seller.id },
+        data: { totalSales: realTotalSales },
+      })
+      .catch(() => {});
+  }
+
+  // ✅ Increment views (fire and forget — don't block render)
+  prisma.seller
+    .update({
+      where: { id: seller.id },
+      data: { totalViews: { increment: 1 } },
+    })
+    .catch(() => {});
 
   const totalStock = seller.products.reduce(
     (sum, p) => sum + p.variants.reduce((vs, v) => vs + v.quantity, 0),
@@ -68,11 +89,11 @@ export default async function StorePage({ params }: PageProps) {
           seller.storeDescription ||
           seller.description ||
           "Welcome to our store!",
-        rating: ratingAgg._avg.rating ?? 0, // ✅ real avg
-        totalReviews: ratingAgg._count.rating, // ✅ real count
+        rating: ratingAgg._avg.rating ?? 0,
+        totalReviews: ratingAgg._count.rating,
         followers: seller.followersList.length,
         totalViews: seller.totalViews,
-        totalSales: seller.totalSales,
+        totalSales: realTotalSales, // ✅ always accurate
         totalProducts: seller.products.length,
         totalStock,
         instagram: seller.instagram,

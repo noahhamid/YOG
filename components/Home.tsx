@@ -9,44 +9,72 @@ const KEYFRAMES = `
     0%,100%{transform:translate(0,0)} 20%{transform:translate(-1px,2px)}
     40%{transform:translate(2px,-1px)} 60%{transform:translate(-2px,1px)} 80%{transform:translate(1px,-2px)}
   }
-  @keyframes hm-marquee { from{transform:translateX(0)} to{transform:translateX(-50%)} }
   @keyframes hm-word-in { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
-  .anim-grain   { animation: hm-grain 0.5s steps(1) infinite; }
-  .anim-marquee { animation: hm-marquee 28s linear infinite; }
-  .anim-word    { animation: hm-word-in 0.5s cubic-bezier(0.16,1,0.3,1) forwards; }
+  .anim-grain { animation: hm-grain 0.5s steps(1) infinite; }
+  .anim-word  { animation: hm-word-in 0.5s cubic-bezier(0.16,1,0.3,1) forwards; }
   .frame-transition { transition: all 0.72s cubic-bezier(0.4,0,0.2,1); }
+
+  .hm-root {
+    display:flex; flex-direction:column; align-items:center;
+    height:100svh; max-height:100svh; overflow:hidden;
+    background:#f6f5f3; padding-top:10px;
+  }
+
+  .hm-text {
+    display:flex; flex-direction:column; align-items:center; text-align:center;
+    padding:40px 20px 14px; width:100%; max-width:900px; flex-shrink:0;
+    border-bottom:1px solid #e8e4de;
+  }
+  .hm-eyebrow { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+  .hm-eyebrow-line { width:24px; height:1.5px; background:#9e9890; }
+  .hm-eyebrow-text { font-size:11px; font-weight:700; color:#9e9890; text-transform:uppercase; letter-spacing:1.2px; }
+
+  .hm-h1 {
+    font-size:clamp(36px,5.5vw,80px); font-weight:800; color:#1a1714;
+    line-height:1; letter-spacing:-0.04em; margin:0 0 10px; white-space:nowrap;
+  }
+  @media(max-width:600px){
+    .hm-h1 { font-size:clamp(28px,9vw,48px); white-space:normal; }
+  }
+
+  .hm-sub { font-size:13px; color:#9e9890; line-height:1.65; max-width:380px; margin:0 0 14px; }
+  @media(max-width:480px){ .hm-sub { font-size:12px; } }
+
+  .hm-btns { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
+  .hm-btn-primary {
+    display:inline-flex; align-items:center; gap:6px;
+    padding:10px 22px; background:#1a1714; color:#fff;
+    font-size:12px; font-weight:700; border-radius:11px; border:none;
+    cursor:pointer; text-decoration:none; transition:all 0.18s;
+  }
+  .hm-btn-primary:hover { background:#333; transform:translateY(-1px); box-shadow:0 6px 20px rgba(0,0,0,0.14); }
+  .hm-btn-ghost {
+    display:inline-flex; align-items:center; gap:6px;
+    padding:10px 20px; background:transparent; color:#1a1714;
+    font-size:12px; font-weight:700; border-radius:11px;
+    border:1.5px solid #e8e4de; text-decoration:none; transition:all 0.18s;
+  }
+  .hm-btn-ghost:hover { border-color:#1a1714; background:#fff; }
+
+  .hm-carousel-area { width:100%; flex:1; min-height:0; overflow:visible; position:relative; }
+  .hm-carousel-inner { max-width:1280px; margin:0 auto; padding:0 16px; height:100%; position:relative; }
+  .hm-frames { position:absolute; inset:0; display:flex; justify-content:center; align-items:flex-end; }
+
+  .hm-dots {
+    position:absolute; bottom:18px; left:50%; transform:translateX(-50%);
+    display:flex; gap:7px; z-index:30;
+  }
+  .hm-dot { height:6px; border-radius:3px; border:none; cursor:pointer; transition:all 0.3s; background:rgba(26,23,20,0.18); }
+  .hm-dot.active { width:20px; background:#1a1714; }
+  .hm-dot:not(.active) { width:6px; }
+
+  @media(max-width:640px){
+    .hm-root { height:auto; max-height:none; overflow:auto; }
+    .hm-carousel-area { min-height:55vw; height:auto; }
+    .hm-text { padding:28px 16px 12px; }
+  }
 `;
 
-const ArrowLeft = () => (
-  <svg
-    width="16"
-    height="16"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <line x1="19" y1="12" x2="5" y2="12" />
-    <polyline points="12 19 5 12 12 5" />
-  </svg>
-);
-const ArrowRight = () => (
-  <svg
-    width="16"
-    height="16"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <line x1="5" y1="12" x2="19" y2="12" />
-    <polyline points="12 5 19 12 12 19" />
-  </svg>
-);
 const ArrowIco = () => (
   <svg
     width="13"
@@ -69,19 +97,6 @@ const IMAGES = [
   "https://i.pinimg.com/736x/ab/bb/f3/abbbf3e25662109c77967649cff0f65e.jpg",
   "https://i.pinimg.com/1200x/e9/3a/72/e93a72d23920a6cda792be63b7df8879.jpg",
   "https://i.pinimg.com/736x/9e/08/02/9e080294c3e98b72af065936d7354819.jpg",
-];
-
-const MARQUEE = [
-  "Free shipping above 500 ETB",
-  "New drops every week",
-  "Verified Ethiopian sellers",
-  "Secure checkout",
-  "500+ styles available",
-  "Free shipping above 500 ETB",
-  "New drops every week",
-  "Verified Ethiopian sellers",
-  "Secure checkout",
-  "500+ styles available",
 ];
 
 const HEADLINE = ["Dress", "for every", "moment."];
@@ -114,10 +129,7 @@ export default function Home() {
       3500,
     );
     return () => clearInterval(iv);
-  }, [stage, center]);
-
-  const goPrev = () => setCenter((p) => (p === 0 ? IMAGES.length - 1 : p - 1));
-  const goNext = () => setCenter((p) => (p === IMAGES.length - 1 ? 0 : p + 1));
+  }, [stage]);
 
   const getPos = (idx: number) => {
     let d = idx - center;
@@ -133,11 +145,12 @@ export default function Home() {
   });
 
   const safeVh = vh || 800;
+  const isMobile = vh > 0 && vh < 640;
 
   return (
     <>
       <style>{KEYFRAMES}</style>
-      <div className="flex flex-col items-center h-screen max-h-screen overflow-hidden bg-[#f6f5f3] pt-10">
+      <div className="hm-root ">
         {/* Grain */}
         <div
           className="fixed inset-0 pointer-events-none z-0 opacity-35 anim-grain"
@@ -147,35 +160,15 @@ export default function Home() {
           }}
         />
 
-        {/* Marquee */}
-        <div className="w-full overflow-hidden border-b border-[#e8e4de] py-2 bg-[#f6f5f3] relative z-10 shrink-0">
-          <div className="flex w-max anim-marquee">
-            {MARQUEE.map((item, i) => (
-              <div
-                key={i}
-                className="flex items-center gap-4 px-7 text-[11px] font-bold text-[#9e9890] uppercase tracking-[1.4px] whitespace-nowrap"
-              >
-                <span className="w-1 h-1 rounded-full bg-[#e8e4de] shrink-0" />
-                {item}
-              </div>
-            ))}
-          </div>
-        </div>
-
         {/* Text block */}
-        <div className="flex flex-col items-center text-center pt-10 pb-[5px] px-6 relative z-10 w-full max-w-[900px] shrink-0 border-b border-[#e8e4de]">
-          <div
-            className="flex items-center gap-2.5 mb-2.5"
-            style={fadeUp(0.05)}
-          >
-            <div className="w-7 h-[1.5px] bg-[#9e9890]" />
-            <span className="text-[11px] font-bold text-[#9e9890] uppercase tracking-[1.2px]">
-              Yog Fashion · Ethiopia
-            </span>
-            <div className="w-7 h-[1.5px] bg-[#9e9890]" />
+        <div className="hm-text" style={{ zIndex: 10 }}>
+          <div className="hm-eyebrow mt-10" style={fadeUp(0.05)}>
+            <div className="hm-eyebrow-line" />
+            <span className="hm-eyebrow-text">Yog Fashion · Ethiopia</span>
+            <div className="hm-eyebrow-line" />
           </div>
 
-          <h1 className="text-[clamp(44px,5.5vw,80px)] font-extrabold text-[#1a1714] leading-none tracking-[-3px] mb-2.5 whitespace-nowrap">
+          <h1 className="hm-h1">
             {HEADLINE.map((line, li) => (
               <span
                 key={li}
@@ -198,7 +191,14 @@ export default function Home() {
                         }}
                       >
                         {li === 1 ? (
-                          <em className="not-italic text-[#9e9890] font-light tracking-[-2px]">
+                          <em
+                            style={{
+                              fontStyle: "normal",
+                              color: "#9e9890",
+                              fontWeight: 300,
+                              letterSpacing: "-0.04em",
+                            }}
+                          >
                             {word}
                           </em>
                         ) : (
@@ -212,161 +212,112 @@ export default function Home() {
             ))}
           </h1>
 
-          <p
-            className="text-[13px] text-[#9e9890] font-normal leading-relaxed max-w-[400px] mb-2.5"
-            style={fadeUp(0.55)}
-          >
+          <p className="hm-sub" style={fadeUp(0.55)}>
             Shop verified sellers across Ethiopia — streetwear, formal,
             activewear and more, delivered to your door.
           </p>
 
-          <div
-            className="flex gap-2.5 flex-wrap justify-center"
-            style={fadeUp(0.68)}
-          >
-            {/* Shop Now — smooth-scrolls to #shop section below the hero */}
+          <div className="hm-btns" style={fadeUp(0.68)}>
             <button
+              className="hm-btn-primary"
               onClick={() =>
                 document
                   .getElementById("shop")
                   ?.scrollIntoView({ behavior: "smooth" })
               }
-              className="inline-flex items-center gap-1.5 px-[22px] py-[10px] bg-[#1a1714] text-white text-[12px] font-bold rounded-[11px] border-none cursor-pointer transition-all duration-200 hover:bg-[#333] hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(0,0,0,0.14)]"
             >
               Shop Now <ArrowIco />
             </button>
-            {/* Explore More — navigates to /stores (all seller stores listing) */}
-            <a
-              href="/store"
-              className="inline-flex items-center gap-1.5 px-5 py-[10px] bg-transparent text-[#1a1714] text-[12px] font-bold border border-[#e8e4de] rounded-[11px] no-underline transition-all duration-200 hover:border-[#1a1714] hover:bg-white"
-            >
-              Explore More
+            <a href="/stores" className="hm-btn-ghost">
+              Explore Stores
             </a>
           </div>
         </div>
 
         {/* Arc carousel */}
-        <div className="w-full flex-1 min-h-0 overflow-visible relative z-10">
-          <div className="max-w-[1280px] mx-auto px-4 h-full">
-            <div className="relative h-full">
-              {vh > 0 && (
-                <div className="absolute inset-0 flex justify-center items-end">
-                  {IMAGES.map((url, idx) => {
-                    const pos = getPos(idx);
-                    const absDist = Math.abs(pos);
-                    const isCenter = pos === 0;
-                    const visible = absDist <= 2;
+        <div className="hm-carousel-area" style={{ zIndex: 10 }}>
+          <div className="hm-carousel-inner">
+            <div className="hm-frames">
+              {vh > 0 &&
+                IMAGES.map((url, idx) => {
+                  const pos = getPos(idx);
+                  const absDist = Math.abs(pos);
+                  const isCenter = pos === 0;
+                  const visible = absDist <= 2;
 
-                    const H = Math.round(safeVh * 0.52);
-                    const imgH = H * (1 - absDist * 0.05);
-                    const W = isCenter
-                      ? Math.round(safeVh * 0.38)
-                      : Math.round(safeVh * 0.34);
-                    const rot = pos * 4;
-                    const pushDn =
-                      Math.abs(rot) *
-                      (W / 10) *
-                      Math.sin((Math.abs(rot) * Math.PI) / 180);
-                    const gapX = 270;
+                  const scale = isMobile ? 0.55 : 1;
+                  // ✅ 20% smaller than before
+                  const H = Math.round(safeVh * 0.5 * scale);
+                  const imgH = H * (1 - absDist * 0.04);
+                  const W = isCenter
+                    ? Math.round(safeVh * (isMobile ? 0.18 : 0.4))
+                    : Math.round(safeVh * (isMobile ? 0.16 : 0.37));
+                  const rot = pos * 4;
+                  const pushDn =
+                    Math.abs(rot) *
+                    (W / 10) *
+                    Math.sin((Math.abs(rot) * Math.PI) / 180);
+                  // ✅ tighter gap
+                  const gapX = isMobile ? 80 : 290;
 
-                    let tX: string = `${pos * gapX}px`;
-                    let tY: string = `${pushDn}px`;
-                    let imgW: string = `${W}px`;
-                    let imgHstr: string = `${imgH}px`;
-                    let opacity: number = visible ? 1 : 0;
+                  let tX = `${pos * gapX}px`;
+                  let tY = `${pushDn}px`;
+                  let imgW = `${W}px`;
+                  let imgHstr = `${imgH}px`;
+                  let opacity = visible ? 1 : 0;
 
-                    if (isCenter && stage === 0) {
-                      opacity = 0;
-                      imgW = `${Math.round(safeVh * 0.56)}px`;
-                      imgHstr = `${Math.round(safeVh * 0.7)}px`;
-                      tY = `${-Math.round(safeVh * 0.42)}px`;
-                    } else if (!isCenter && stage < 1) {
-                      opacity = 0;
-                      tX = pos < 0 ? "-900px" : "900px";
-                    }
+                  if (isCenter && stage === 0) {
+                    opacity = 0;
+                    imgW = `${Math.round(safeVh * 0.44 * scale)}px`;
+                    imgHstr = `${Math.round(safeVh * 0.56 * scale)}px`;
+                    tY = `${-Math.round(safeVh * 0.34 * scale)}px`;
+                  } else if (!isCenter && stage < 1) {
+                    opacity = 0;
+                    tX = pos < 0 ? "-900px" : "900px";
+                  }
 
-                    return (
-                      <div
-                        key={idx}
-                        className="shrink-0 overflow-hidden absolute left-1/2 shadow-[0_10px_36px_rgba(0,0,0,0.13)] frame-transition"
-                        style={{
-                          width: imgW,
-                          height: imgHstr,
-                          borderRadius: "9999px 9999px 0 0",
-                          transform: `translateX(calc(-50% + ${tX})) translateY(${tY}) rotate(${rot}deg)`,
-                          transformOrigin: "bottom center",
-                          opacity,
-                          pointerEvents: visible ? "auto" : "none",
-                          cursor: isCenter ? "default" : "pointer",
-                        }}
-                        onClick={() => !isCenter && setCenter(idx)}
-                      >
-                        <img
-                          src={url}
-                          alt={`Look ${idx + 1}`}
-                          className="w-full h-full object-cover object-top block"
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+                  return (
+                    <div
+                      key={idx}
+                      className="shrink-0 overflow-hidden absolute left-1/2 frame-transition"
+                      style={{
+                        width: imgW,
+                        height: imgHstr,
+                        borderRadius: "9999px 9999px 0 0",
+                        transform: `translateX(calc(-50% + ${tX})) translateY(${tY}) rotate(${rot}deg)`,
+                        transformOrigin: "bottom center",
+                        opacity,
+                        boxShadow: isCenter
+                          ? "0 14px 48px rgba(0,0,0,0.18)"
+                          : "0 8px 28px rgba(0,0,0,0.10)",
+                        pointerEvents: "none",
+                      }}
+                    >
+                      <img
+                        src={url}
+                        alt={`Look ${idx + 1}`}
+                        className="w-full h-full object-cover object-top block"
+                      />
+                    </div>
+                  );
+                })}
+            </div>
 
-              {/* Arrows */}
-              {(["prev", "next"] as const).map((dir) => (
+            {/* Dots */}
+            <div
+              className="hm-dots"
+              style={{
+                opacity: stage >= 2 ? 1 : 0,
+                transition: "opacity 0.4s ease 0.7s",
+              }}
+            >
+              {IMAGES.map((_, i) => (
                 <button
-                  key={dir}
-                  onClick={dir === "prev" ? goPrev : goNext}
-                  aria-label={dir === "prev" ? "Previous" : "Next"}
-                  className={`absolute bottom-4 z-30 cursor-pointer group ${dir === "prev" ? "left-[100px]" : "right-[100px]"}`}
-                  style={{
-                    transform:
-                      stage >= 2
-                        ? `rotate(${dir === "prev" ? -8 : 8}deg) translateY(0)`
-                        : `rotate(${dir === "prev" ? -8 : 8}deg) translateY(100px)`,
-                    opacity: stage >= 2 ? 1 : 0,
-                    transition:
-                      "transform 0.4s ease 0.6s, opacity 0.4s ease 0.6s",
-                  }}
-                >
-                  <div
-                    className="flex items-center justify-center transition-all duration-200 group-hover:scale-105 group-hover:shadow-[0_6px_24px_rgba(0,0,0,0.22)]"
-                    style={{
-                      width: 48,
-                      height: 28,
-                      borderRadius: 999,
-                      background: "rgba(26,23,20,0.78)",
-                      border: "1px solid rgba(255,255,255,0.14)",
-                      backdropFilter: "blur(10px)",
-                      color: "rgba(255,255,255,0.8)",
-                    }}
-                  >
-                    {dir === "prev" ? <ArrowLeft /> : <ArrowRight />}
-                  </div>
-                </button>
+                  key={i}
+                  className={`hm-dot${i === center ? " active" : ""}`}
+                  onClick={() => setCenter(i)}
+                />
               ))}
-
-              {/* Dots */}
-              <div
-                className="absolute bottom-[22px] left-1/2 -translate-x-1/2 flex gap-[7px] z-30"
-                style={{
-                  opacity: stage >= 2 ? 1 : 0,
-                  transition: "opacity 0.4s ease 0.7s",
-                }}
-              >
-                {IMAGES.map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setCenter(i)}
-                    className="h-[6px] rounded-[3px] border-none cursor-pointer transition-all duration-300"
-                    style={{
-                      width: i === center ? "20px" : "6px",
-                      background:
-                        i === center ? "#1a1714" : "rgba(26,23,20,0.18)",
-                    }}
-                  />
-                ))}
-              </div>
             </div>
           </div>
         </div>

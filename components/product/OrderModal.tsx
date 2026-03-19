@@ -6,7 +6,7 @@ const CSS = `
   @keyframes om-in { from{opacity:0;transform:translateY(24px) scale(0.97)} to{opacity:1;transform:none} }
   @keyframes om-spin { to{transform:rotate(360deg)} }
   .om-backdrop {
-    position:fixed; inset:0; background:rgba(0,0,0,0.48); z-index:100;
+    position:fixed; inset:0; background:rgba(0,0,0,0.48); z-index:9999;
     display:flex; align-items:flex-end; justify-content:center; padding:0;
     backdrop-filter:blur(3px);
   }
