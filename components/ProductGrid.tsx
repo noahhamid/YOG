@@ -37,20 +37,102 @@ const CSS = `
   background:var(--bg); font-family:'Sora',sans-serif;
   padding:28px 24px 80px;
 }
+@media(max-width:768px){
+  .pg-section { padding:0 0 80px; }
+}
+
 .pg-inner { max-width:1440px; margin:0 auto; }
 
+/* ── Mobile sticky search bar ── */
+.pg-mobile-bar {
+  display:none;
+  position:sticky; top:64px; z-index:30;
+  background:var(--bg); border-bottom:1px solid var(--border);
+  padding:10px 14px; gap:8px;
+  align-items:center;
+}
+@media(max-width:768px){ .pg-mobile-bar { display:flex; } }
+
+.pg-mob-search {
+  flex:1; position:relative;
+}
+.pg-mob-search-input {
+  width:100%; padding:9px 14px 9px 36px;
+  border:1.5px solid var(--border); border-radius:10px;
+  background:var(--card); font-family:'Sora',sans-serif;
+  font-size:13px; color:var(--text); outline:none;
+  transition:border-color 0.15s; box-sizing:border-box;
+}
+.pg-mob-search-input:focus { border-color:var(--text); }
+.pg-mob-search-input::placeholder { color:#c4bfb8; }
+.pg-mob-search-ico {
+  position:absolute; left:10px; top:50%; transform:translateY(-50%);
+  color:var(--muted); pointer-events:none;
+}
+.pg-mob-search-clear {
+  position:absolute; right:9px; top:50%; transform:translateY(-50%);
+  width:18px; height:18px; border-radius:50%; border:none;
+  background:#d1cdc7; color:#fff; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+}
+
+.pg-mob-filter-btn {
+  display:flex; align-items:center; gap:6px;
+  padding:9px 13px; border:1.5px solid var(--border);
+  border-radius:10px; background:var(--card);
+  font-family:'Sora',sans-serif; font-size:12px; font-weight:700;
+  color:var(--text); cursor:pointer; white-space:nowrap; flex-shrink:0;
+  transition:all 0.15s;
+}
+.pg-mob-filter-btn.has-filters { background:var(--text); color:#fff; border-color:var(--text); }
+
+/* ── Filter drawer (mobile) ── */
+@keyframes pg-drawer-in { from{transform:translateY(100%)} to{transform:translateY(0)} }
+@keyframes pg-backdrop-in { from{opacity:0} to{opacity:1} }
+.pg-drawer-backdrop {
+  position:fixed; inset:0; background:rgba(0,0,0,0.4);
+  z-index:100; backdrop-filter:blur(2px);
+  animation:pg-backdrop-in 0.2s ease;
+}
+.pg-drawer {
+  position:fixed; bottom:0; left:0; right:0; z-index:101;
+  background:var(--bg); border-radius:20px 20px 0 0;
+  max-height:88vh; overflow-y:auto;
+  animation:pg-drawer-in 0.32s cubic-bezier(0.22,1,0.36,1);
+  padding-bottom:env(safe-area-inset-bottom);
+}
+.pg-drawer-handle {
+  display:flex; justify-content:center; padding:12px 0 4px;
+}
+.pg-drawer-handle span {
+  width:36px; height:4px; border-radius:2px; background:#d1cdc7;
+}
+.pg-drawer-header {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 16px 12px; border-bottom:1px solid var(--border);
+}
+.pg-drawer-title { font-size:15px; font-weight:800; color:var(--text); }
+.pg-drawer-close {
+  width:32px; height:32px; border-radius:8px; border:1.5px solid var(--border);
+  background:var(--card); cursor:pointer; display:flex; align-items:center;
+  justify-content:center; color:var(--muted);
+}
+
+/* ── Desktop layout ── */
 .pg-layout {
-  display:flex; gap:22px;
-  align-items:flex-start;
+  display:flex; gap:22px; align-items:flex-start;
 }
 .pg-sidebar-col {
-  flex-shrink:0;
-  align-self:flex-start;
-  position:sticky;
-  top:70px;
-  width:232px;
+  flex-shrink:0; align-self:flex-start;
+  position:sticky; top:70px; width:232px;
+}
+@media(max-width:768px){
+  .pg-sidebar-col { display:none; }
 }
 .pg-main { flex:1; min-width:0; }
+@media(max-width:768px){
+  .pg-main { padding:14px 14px 0; }
+}
 
 /* ── Toolbar ── */
 .pg-toolbar {
@@ -73,15 +155,13 @@ const CSS = `
   padding:9px 14px; border:1.5px solid var(--border);
   border-radius:10px; background:var(--card);
   font-family:'Sora',sans-serif; font-size:12px; font-weight:600;
-  color:var(--text); cursor:pointer; transition:all 0.15s;
-  white-space:nowrap;
+  color:var(--text); cursor:pointer; transition:all 0.15s; white-space:nowrap;
 }
 .pg-sort-btn:hover { border-color:var(--text); }
 .pg-sort-btn.open { border-color:var(--text); box-shadow:0 0 0 3px rgba(26,23,20,0.06); }
 .pg-sort-chevron { color:var(--muted); transition:transform 0.22s cubic-bezier(0.34,1.56,0.64,1); flex-shrink:0; }
 .pg-sort-chevron.open { transform:rotate(180deg); }
 .pg-sort-label { font-size:10px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.6px; }
-
 @keyframes pg-sort-in {
   from { opacity:0; transform:translateY(-8px) scale(0.97); }
   to   { opacity:1; transform:translateY(0) scale(1); }
@@ -104,15 +184,16 @@ const CSS = `
 .pg-sort-option.active { font-weight:700; background:var(--hover); }
 .pg-sort-check { width:16px; height:16px; border-radius:5px; background:var(--text); display:flex; align-items:center; justify-content:center; }
 
+/* ── Grid ── */
 .pg-grid {
-  display:grid;
-  grid-template-columns:repeat(4,1fr);
-  gap:16px;
+  display:grid; grid-template-columns:repeat(4,1fr); gap:16px;
 }
 @media(max-width:1300px){ .pg-grid { grid-template-columns:repeat(3,1fr); } }
-@media(max-width:900px) { .pg-grid { grid-template-columns:repeat(2,1fr); } }
-@media(max-width:500px) { .pg-grid { grid-template-columns:1fr 1fr; gap:10px; } }
+@media(max-width:900px)  { .pg-grid { grid-template-columns:repeat(2,1fr); } }
+@media(max-width:768px)  { .pg-grid { grid-template-columns:repeat(2,1fr); gap:10px; } }
+@media(max-width:380px)  { .pg-grid { grid-template-columns:repeat(2,1fr); gap:8px; } }
 
+/* ── Cards ── */
 .pg-card {
   background:var(--card); border-radius:14px; overflow:hidden;
   border:1px solid var(--border); display:block; text-decoration:none;
@@ -121,19 +202,15 @@ const CSS = `
 }
 .pg-card:not(.oos):hover {
   box-shadow:0 12px 36px rgba(0,0,0,0.10);
-  transform:translateY(-3px);
-  border-color:rgba(0,0,0,0.1);
+  transform:translateY(-3px); border-color:rgba(0,0,0,0.1);
 }
-
 .pg-img-wrap {
-  position:relative;
-  aspect-ratio:4/5;
+  position:relative; aspect-ratio:4/5;
   overflow:hidden; background:var(--hover);
 }
 .pg-img {
   position:absolute; inset:0; width:100%; height:100%;
-  object-fit:cover;
-  transition:opacity 0.45s ease, transform 0.45s ease;
+  object-fit:cover; transition:opacity 0.45s ease, transform 0.45s ease;
 }
 .pg-img.pri { opacity:1; }
 .pg-img.sec { opacity:0; }
@@ -142,14 +219,12 @@ const CSS = `
 .pg-card:not(.oos):hover .pg-img.pri    { transform:scale(1.04); }
 .pg-card:not(.oos):hover .pg-img.sec    { transform:scale(1.04); }
 .pg-img.dim { opacity:0.45; filter:grayscale(0.4); }
-
 .pg-hover-layer {
   position:absolute; inset:0; z-index:4;
   background:linear-gradient(to top, rgba(0,0,0,0.48) 0%, rgba(0,0,0,0.06) 50%, transparent 72%);
   opacity:0; transition:opacity 0.22s;
 }
 .pg-card:not(.oos):hover .pg-hover-layer { opacity:1; }
-
 .pg-cart-btn {
   position:absolute; bottom:12px; left:12px; right:12px; z-index:5;
   padding:10px 0; border-radius:9px; border:none;
@@ -161,7 +236,6 @@ const CSS = `
 }
 .pg-card:not(.oos):hover .pg-cart-btn { opacity:1; transform:translateY(0); }
 .pg-cart-btn:hover { background:#f0ede8; }
-
 .pg-wish-btn {
   position:absolute; top:10px; right:10px; z-index:5;
   width:30px; height:30px; border-radius:8px; border:none;
@@ -172,10 +246,8 @@ const CSS = `
 }
 .pg-card:not(.oos):hover .pg-wish-btn { opacity:1; transform:translateX(0); }
 .pg-wish-btn:hover { background:#fff; color:#ef4444; }
-
 .pg-badge {
-  position:absolute; z-index:6;
-  padding:3px 9px; border-radius:20px; pointer-events:none;
+  position:absolute; z-index:6; padding:3px 9px; border-radius:20px; pointer-events:none;
   font-size:10px; font-weight:800; letter-spacing:0.2px;
 }
 .pg-badge.tl { top:10px; left:10px; }
@@ -184,57 +256,46 @@ const CSS = `
 .pg-badge.oos-center {
   top:50%; left:50%; transform:translate(-50%,-50%);
   background:rgba(26,23,20,0.72); color:#fff;
-  backdrop-filter:blur(4px); border-radius:10px;
-  font-size:11px; padding:5px 13px;
+  backdrop-filter:blur(4px); border-radius:10px; font-size:11px; padding:5px 13px;
 }
-
-.pg-info { padding:13px 14px 15px; display:flex; flex-direction:column; gap:0; }
+.pg-info { padding:10px 11px 12px; display:flex; flex-direction:column; gap:0; }
+@media(max-width:768px){ .pg-info { padding:8px 10px 10px; } }
 .pg-seller {
   font-size:10px; font-weight:600; color:var(--muted);
-  text-transform:uppercase; letter-spacing:0.5px;
-  margin:0 0 4px;
+  text-transform:uppercase; letter-spacing:0.5px; margin:0 0 3px;
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
 .pg-title {
-  font-size:13px; font-weight:700; color:var(--text);
-  margin:0 0 10px; line-height:1.3;
-  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
-  overflow:hidden;
+  font-size:12px; font-weight:700; color:var(--text);
+  margin:0 0 8px; line-height:1.3;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
 }
-.pg-colors { display:flex; align-items:center; gap:4px; margin-bottom:10px; flex-wrap:wrap; }
-.pg-color-dot {
-  width:12px; height:12px; border-radius:50%;
-  border:1.5px solid rgba(0,0,0,0.1); flex-shrink:0;
-}
+@media(max-width:400px){ .pg-title { font-size:11px; } }
+.pg-colors { display:flex; align-items:center; gap:4px; margin-bottom:8px; flex-wrap:wrap; }
+.pg-color-dot { width:11px; height:11px; border-radius:50%; border:1.5px solid rgba(0,0,0,0.1); flex-shrink:0; }
 .pg-color-more { font-size:10px; color:var(--muted); font-weight:600; }
-.pg-info-divider { height:1px; background:var(--border); margin:0 0 10px; }
-.pg-bottom { display:flex; align-items:flex-end; justify-content:space-between; gap:6px; }
-.pg-price-main {
-  font-size:16px; font-weight:800; color:var(--text);
-  letter-spacing:-0.5px; line-height:1.1;
-}
-.pg-price-etb { font-size:11px; font-weight:500; color:var(--muted); margin-left:2px; }
-.pg-compare { font-size:11px; color:#c4bfb8; text-decoration:line-through; display:block; margin-top:1px; }
-.pg-sizes { display:flex; gap:4px; flex-wrap:wrap; justify-content:flex-end; }
+.pg-info-divider { height:1px; background:var(--border); margin:0 0 8px; }
+.pg-bottom { display:flex; align-items:flex-end; justify-content:space-between; gap:4px; }
+.pg-price-main { font-size:14px; font-weight:800; color:var(--text); letter-spacing:-0.5px; line-height:1.1; }
+@media(max-width:400px){ .pg-price-main { font-size:13px; } }
+.pg-price-etb { font-size:10px; font-weight:500; color:var(--muted); margin-left:2px; }
+.pg-compare { font-size:10px; color:#c4bfb8; text-decoration:line-through; display:block; margin-top:1px; }
+.pg-sizes { display:flex; gap:3px; flex-wrap:wrap; justify-content:flex-end; }
 .pg-size {
-  padding:3px 7px; border-radius:5px; border:1px solid var(--border);
-  font-size:9px; font-weight:700; color:var(--muted);
-  letter-spacing:0.2px; transition:border-color 0.15s;
+  padding:2px 5px; border-radius:5px; border:1px solid var(--border);
+  font-size:8px; font-weight:700; color:var(--muted); letter-spacing:0.2px;
+  transition:border-color 0.15s;
 }
 .pg-card:hover .pg-size { border-color:#c4bfb8; }
 
-@keyframes pg-shimmer {
-  0%   { background-position:-600px 0; }
-  100% { background-position: 600px 0; }
-}
+@keyframes pg-shimmer { 0%{background-position:-600px 0} 100%{background-position:600px 0} }
 .pg-skel {
   border-radius:14px; overflow:hidden; border:1px solid var(--border);
   background:linear-gradient(90deg,#ede9e4 25%,#e4ded8 50%,#ede9e4 75%);
-  background-size:1200px 100%;
-  animation:pg-shimmer 1.8s ease-in-out infinite;
+  background-size:1200px 100%; animation:pg-shimmer 1.8s ease-in-out infinite;
 }
 .pg-skel-img { aspect-ratio:4/5; width:100%; }
-.pg-skel-body { padding:13px 14px 15px; display:flex; flex-direction:column; gap:8px; }
+.pg-skel-body { padding:10px 11px 12px; display:flex; flex-direction:column; gap:8px; }
 .pg-skel-line { border-radius:5px; background:rgba(0,0,0,0.07); }
 
 .pg-empty {
@@ -249,6 +310,7 @@ const CSS = `
 .pg-empty-btn:hover { background:#333; }
 `;
 
+// ── Icons ──────────────────────────────────────────────────────────────────
 const CartIco = () => (
   <svg
     width="13"
@@ -294,10 +356,10 @@ const XIco = () => (
     <line x1="6" y1="6" x2="18" y2="18" />
   </svg>
 );
-const SearchIco = () => (
+const SearchIco = ({ size = 26 }: { size?: number }) => (
   <svg
-    width="26"
-    height="26"
+    width={size}
+    height={size}
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
@@ -337,6 +399,22 @@ const CheckIco = () => (
     <polyline points="20 6 9 17 4 12" />
   </svg>
 );
+const FilterIco = () => (
+  <svg
+    width="14"
+    height="14"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <line x1="4" y1="6" x2="20" y2="6" />
+    <line x1="8" y1="12" x2="16" y2="12" />
+    <line x1="11" y1="18" x2="13" y2="18" />
+  </svg>
+);
 
 const SORT_OPTIONS = [
   { value: "featured", label: "Featured" },
@@ -355,7 +433,6 @@ function SortDropdown({
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const current = SORT_OPTIONS.find((o) => o.value === value);
-
   useEffect(() => {
     const fn = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node))
@@ -364,7 +441,6 @@ function SortDropdown({
     document.addEventListener("mousedown", fn);
     return () => document.removeEventListener("mousedown", fn);
   }, []);
-
   return (
     <div ref={ref} className="pg-sort-wrap">
       <button
@@ -474,7 +550,7 @@ function ProductCard({ product, index, isVisible }: any) {
       sellerId: product.seller?.id || "unknown",
       sellerName: product.seller?.name || "Unknown",
     });
-    alert(`✅ Added to cart!`);
+    alert("✅ Added to cart!");
   };
 
   return (
@@ -558,12 +634,12 @@ function ProductCard({ product, index, isVisible }: any) {
           </div>
           {!isOOS && product.sizes?.length > 0 && (
             <div className="pg-sizes">
-              {product.sizes.slice(0, 4).map((s: string) => (
+              {product.sizes.slice(0, 3).map((s: string) => (
                 <span key={s} className="pg-size">
                   {s}
                 </span>
               ))}
-              {product.sizes.length > 4 && <span className="pg-size">…</span>}
+              {product.sizes.length > 3 && <span className="pg-size">…</span>}
             </div>
           )}
         </div>
@@ -590,6 +666,7 @@ export default function ProductGrid({
   const [sortBy, setSortBy] = useState("featured");
   const [showNewArrivals, setShowNewArrivals] = useState(false);
   const [showOnSale, setShowOnSale] = useState(false);
+  const [showDrawer, setShowDrawer] = useState(false);
   const [productsCache, setProductsCache] = useState<ProductsCache>({
     all: [],
     men: [],
@@ -614,6 +691,14 @@ export default function ProductGrid({
     color: true,
     other: true,
   });
+
+  // lock body scroll when drawer open
+  useEffect(() => {
+    document.body.style.overflow = showDrawer ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [showDrawer]);
 
   useEffect(() => {
     const obs = new IntersectionObserver(
@@ -813,43 +898,101 @@ export default function ProductGrid({
     (showNewArrivals ? 1 : 0) +
     (showOnSale ? 1 : 0);
 
+  const sharedSidebarProps = {
+    searchQuery,
+    selectedCategory: showTrendingOnly ? "all" : selectedCategory,
+    selectedSizes,
+    priceRange,
+    selectedColors,
+    selectedClothingTypes,
+    selectedOccasions,
+    showNewArrivals,
+    showOnSale,
+    onSearchChange: setSearchQuery,
+    onCategoryChange: showTrendingOnly ? () => {} : setSelectedCategory,
+    onSizeToggle: toggleSize,
+    onPriceChange: setPriceRange,
+    onColorToggle: toggleColor,
+    onClothingTypeToggle: toggleClothingType,
+    onOccasionToggle: toggleOccasion,
+    onNewArrivalsChange: setShowNewArrivals,
+    onSaleChange: setShowOnSale,
+    onClearFilters: clearFilters,
+    activeFiltersCount,
+    expandedSections,
+    onToggleSection: toggleSection,
+    hideCategoryFilter: showTrendingOnly,
+  };
+
   return (
     <>
       <style>{CSS}</style>
+
+      {/* ── Mobile sticky search + filter bar ── */}
+      <div className="pg-mobile-bar">
+        <div className="pg-mob-search">
+          <span className="pg-mob-search-ico">
+            <SearchIco size={15} />
+          </span>
+          <input
+            className="pg-mob-search-input"
+            type="text"
+            placeholder="Search products…"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          {searchQuery && (
+            <button
+              className="pg-mob-search-clear"
+              onClick={() => setSearchQuery("")}
+            >
+              <XIco />
+            </button>
+          )}
+        </div>
+        <button
+          className={`pg-mob-filter-btn${activeFiltersCount > 0 ? " has-filters" : ""}`}
+          onClick={() => setShowDrawer(true)}
+        >
+          <FilterIco />
+          Filters{activeFiltersCount > 0 ? ` (${activeFiltersCount})` : ""}
+        </button>
+      </div>
+
+      {/* ── Mobile filter drawer ── */}
+      {showDrawer && (
+        <>
+          <div
+            className="pg-drawer-backdrop"
+            onClick={() => setShowDrawer(false)}
+          />
+          <div className="pg-drawer">
+            <div className="pg-drawer-handle">
+              <span />
+            </div>
+            <div className="pg-drawer-header">
+              <span className="pg-drawer-title">Filters</span>
+              <button
+                className="pg-drawer-close"
+                onClick={() => setShowDrawer(false)}
+              >
+                <XIco />
+              </button>
+            </div>
+            <FilterSidebar {...sharedSidebarProps} />
+          </div>
+        </>
+      )}
+
       <section ref={sectionRef} className="pg-section">
         <div className="pg-inner">
           <div className="pg-layout">
+            {/* Desktop sidebar */}
             <div className="pg-sidebar-col">
-              <FilterSidebar
-                searchQuery={searchQuery}
-                selectedCategory={showTrendingOnly ? "all" : selectedCategory}
-                selectedSizes={selectedSizes}
-                priceRange={priceRange}
-                selectedColors={selectedColors}
-                selectedClothingTypes={selectedClothingTypes}
-                selectedOccasions={selectedOccasions}
-                showNewArrivals={showNewArrivals}
-                showOnSale={showOnSale}
-                onSearchChange={setSearchQuery}
-                onCategoryChange={
-                  showTrendingOnly ? () => {} : setSelectedCategory
-                }
-                onSizeToggle={toggleSize}
-                onPriceChange={setPriceRange}
-                onColorToggle={toggleColor}
-                onClothingTypeToggle={toggleClothingType}
-                onOccasionToggle={toggleOccasion}
-                onNewArrivalsChange={setShowNewArrivals}
-                onSaleChange={setShowOnSale}
-                onClearFilters={clearFilters}
-                activeFiltersCount={activeFiltersCount}
-                expandedSections={expandedSections}
-                onToggleSection={toggleSection}
-                hideCategoryFilter={showTrendingOnly}
-              />
+              <FilterSidebar {...sharedSidebarProps} />
             </div>
+
             <div className="pg-main">
-              {/* ── Toolbar: sort left, filter chip right ── */}
               <div className="pg-toolbar">
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <SortDropdown value={sortBy} onChange={setSortBy} />
@@ -861,6 +1004,7 @@ export default function ProductGrid({
                   )}
                 </div>
               </div>
+
               {isLoadingProducts ? (
                 <div className="pg-grid">
                   {Array.from({ length: 8 }).map((_, i) => (
