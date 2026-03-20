@@ -141,7 +141,7 @@ export default function SellerCard({ seller }: { seller: any }) {
           </div>
         </div>
         {seller.slug && (
-          <Link href={`/store/${seller.slug}`} className="sc-btn">
+          <Link href={`/stores/${seller.slug}`} className="sc-btn">
             View Store
           </Link>
         )}
