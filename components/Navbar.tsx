@@ -11,7 +11,7 @@ const NAV_STYLES = `
 
   /* ── Bar ── */
   .nav-bar {
-    position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+    position: fixed; top: 16px; left: 50%; transform: translateX(-50%) translateY(0px);
     z-index: 9999;
     display: flex; align-items: center;
     width: calc(100% - 32px); max-width: 1200px;
@@ -21,24 +21,59 @@ const NAV_STYLES = `
     -webkit-backdrop-filter: blur(20px) saturate(160%);
     border: 1.5px solid rgba(232,228,222,0.9); border-radius: 18px;
     box-shadow: 0 4px 32px rgba(26,23,20,0.08), 0 1px 0 rgba(255,255,255,0.6) inset;
-    transition: box-shadow 0.3s, background 0.3s;
+    transition:
+      box-shadow 0.5s cubic-bezier(0.16,1,0.3,1),
+      background 0.5s cubic-bezier(0.16,1,0.3,1),
+      border-color 0.5s ease,
+      top 0.5s cubic-bezier(0.16,1,0.3,1),
+      width 0.5s cubic-bezier(0.16,1,0.3,1),
+      max-width 0.5s cubic-bezier(0.16,1,0.3,1),
+      border-radius 0.5s cubic-bezier(0.16,1,0.3,1),
+      left 0.5s cubic-bezier(0.16,1,0.3,1),
+      transform 0.5s cubic-bezier(0.16,1,0.3,1);
   }
   .nav-bar.scrolled {
-    background: rgba(246,245,243,0.95);
-    box-shadow: 0 8px 48px rgba(26,23,20,0.13), 0 1px 0 rgba(255,255,255,0.6) inset;
+    top: 0;
+    width: 100%;
+    max-width: 100%;
+    border-radius: 0 0 20px 20px;
+    border-top: none;
+    background: rgba(246,245,243,0.98);
+    border-color: rgba(200,195,188,0.9);
+    box-shadow:
+      0 8px 40px rgba(26,23,20,0.12),
+      0 1px 0 rgba(255,255,255,0.7) inset;
   }
 
   /* ── Brand ── */
   .nav-brand { display: flex; align-items: center; gap: 6px; text-decoration: none; flex-shrink: 0; margin-right: 6px; }
-  .nav-logo-img { height: 58px; width: auto; object-fit: contain; display: block; }
+  .nav-logo-img {
+    height: 58px; width: auto; object-fit: contain; display: block;
+    transition: height 0.45s cubic-bezier(0.16,1,0.3,1), opacity 0.3s ease;
+  }
+  .nav-bar.scrolled .nav-logo-img { height: 50px; }
 
   /* ── Center ── */
   .nav-center {
     flex: 1; display: flex; align-items: center; justify-content: center;
     overflow: hidden;
-    transition: flex 0.42s cubic-bezier(0.16,1,0.3,1), opacity 0.3s ease;
+    transition: flex 0.42s cubic-bezier(0.16,1,0.3,1), opacity 0.3s ease, justify-content 0s;
   }
-  .nav-center.search-open { flex: 0 0 0px; opacity: 0; pointer-events: none; }
+  /* Search open: ONLY the links group shifts left — bell/cart/profile stay put */
+  .nav-center.search-open {
+    flex: 0 1 auto;
+    min-width: 0;
+    justify-content: flex-start;
+    opacity: 1;
+    pointer-events: auto;
+  }
+  /* Scrolled: links stay centered regardless of search state */
+  .nav-bar.scrolled .nav-center.search-open {
+    flex: 1;
+    justify-content: center;
+    opacity: 1;
+    pointer-events: auto;
+  }
 
   .nav-links { display: flex; align-items: center; gap: 2px; white-space: nowrap; }
   .nav-link {
@@ -46,6 +81,7 @@ const NAV_STYLES = `
     text-decoration: none; border-radius: 10px; border: none; background: transparent;
     cursor: pointer; letter-spacing: 0.01em; transition: color .2s, background .2s; white-space: nowrap;
   }
+  .nav-bar.scrolled .nav-link { color: #524f4c; }
   .nav-link:hover { color: #1a1714; background: rgba(26,23,20,.05); }
   .nav-link.active { color: #1a1714; background: rgba(26,23,20,.07); }
   .nav-link::after {
@@ -67,12 +103,10 @@ const NAV_STYLES = `
   }
   .nav-sell:hover { color:#1a1714; border-color:#1a1714; background:#fff; }
 
-  /* ── Right cluster ── */
+  /* ── Right cluster — always pinned to far right ── */
   .nav-right {
-    display: flex; align-items: center; gap: 3px; flex-shrink: 0; margin-left: 4px;
-    transition: flex 0.42s cubic-bezier(0.16,1,0.3,1);
+    display: flex; align-items: center; gap: 3px; flex-shrink: 0; margin-left: auto;
   }
-  .nav-right.search-open { flex: 1; justify-content: flex-end; }
 
   /* ── Search ── */
   .nav-search-wrap {
@@ -80,6 +114,13 @@ const NAV_STYLES = `
     transition: width 0.42s cubic-bezier(0.16,1,0.3,1); width: 36px;
   }
   .nav-search-wrap.exp { width: clamp(240px, 36vw, 440px); }
+  /* Scrolled: always show a wide pill with placeholder */
+  .nav-bar.scrolled .nav-search-wrap { width: clamp(200px, 22vw, 340px); }
+  .nav-bar.scrolled .nav-search-wrap.exp { width: clamp(300px, 38vw, 520px); }
+  .nav-bar.scrolled .nav-search-pill.col {
+    width: 100%; padding: 0 12px; justify-content: flex-start;
+    background: #fff; border-color: #e8e4de; border-radius: 11px; cursor: pointer;
+  }
   .nav-search-pill {
     width: 100%; height: 36px; display: flex; align-items: center; gap: 8px;
     padding: 0 12px; background: #fff; border: 1.5px solid #e8e4de; border-radius: 11px;
@@ -176,74 +217,44 @@ const NAV_STYLES = `
     transition:background .18s; flex-shrink: 0;
   }
   .nav-mobile-btn:hover { background:rgba(26,23,20,.06); }
+  .drawer-close-btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 38px; height: 38px;
+    border: none; background: rgba(26,23,20,0.07); border-radius: 12px;
+    cursor: pointer; color: #1a1714; flex-shrink: 0; transition: background .18s;
+  }
+  .drawer-close-btn:hover { background: rgba(26,23,20,0.13); }
 
   /* ── Mobile full-screen drawer ── */
-  .nav-drawer {
-    position:fixed; inset:0; z-index:9998; pointer-events:none;
-  }
-  .nav-drawer-backdrop {
-    position:absolute; inset:0;
-    background:rgba(26,23,20,0);
-    transition:background 0.4s ease;
-  }
-  .nav-drawer.open .nav-drawer-backdrop {
-    background:rgba(26,23,20,0.4);
-    pointer-events:all;
-    backdrop-filter:blur(6px);
-    -webkit-backdrop-filter:blur(6px);
-  }
+  .nav-drawer { position:fixed; inset:0; z-index:9998; pointer-events:none; }
+  .nav-drawer-backdrop { position:absolute; inset:0; background:rgba(26,23,20,0); transition:background 0.4s ease; }
+  .nav-drawer.open .nav-drawer-backdrop { background:rgba(26,23,20,0.4); pointer-events:all; backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); }
   .nav-drawer-panel {
     position:absolute; top:0; left:0; right:0;
-    background:#f6f5f3;
-    border-bottom:1.5px solid #e8e4de;
-    border-radius:0 0 28px 28px;
-    padding:0 0 28px;
+    background:#f6f5f3; border-bottom:1.5px solid #e8e4de;
+    border-radius:0 0 28px 28px; padding:0 0 28px;
     transform:translateY(-110%);
     transition:transform 0.48s cubic-bezier(0.16,1,0.3,1);
-    box-shadow:0 24px 80px rgba(26,23,20,0.18);
-    overflow:hidden;
+    box-shadow:0 24px 80px rgba(26,23,20,0.18); overflow:hidden;
   }
-  .nav-drawer.open .nav-drawer-panel {
-    transform:translateY(0);
-    pointer-events:all;
-  }
+  .nav-drawer.open .nav-drawer-panel { transform:translateY(0); pointer-events:all; }
 
-  /* Drawer top bar (mirrors main bar height) */
-  .drawer-topbar {
-    height:66px; display:flex; align-items:center; justify-content:space-between;
-    padding:0 20px 0 10px; border-bottom:1px solid #ede9e3;
-  }
-
-  /* Drawer search */
+  .drawer-topbar { height:66px; display:flex; align-items:center; justify-content:space-between; padding:0 20px 0 10px; border-bottom:1px solid #ede9e3; }
   .drawer-search-wrap {
-    margin:18px 20px 8px;
-    display:flex; align-items:center; gap:10px;
+    margin:18px 20px 8px; display:flex; align-items:center; gap:10px;
     background:#fff; border:1.5px solid #e8e4de; border-radius:13px;
-    padding:0 14px; height:46px;
-    transition:border-color .2s, box-shadow .2s;
+    padding:0 14px; height:46px; transition:border-color .2s, box-shadow .2s;
   }
-  .drawer-search-wrap:focus-within {
-    border-color:#1a1714;
-    box-shadow:0 0 0 3px rgba(26,23,20,.07);
-  }
+  .drawer-search-wrap:focus-within { border-color:#1a1714; box-shadow:0 0 0 3px rgba(26,23,20,.07); }
   .drawer-search-ico { color:#9e9890; display:flex; flex-shrink:0; transition:color .2s; }
   .drawer-search-wrap:focus-within .drawer-search-ico { color:#1a1714; }
-  .drawer-search-input {
-    flex:1; border:none; background:transparent; outline:none;
-    font-size:14px; font-weight:500; color:#1a1714; font-family:'Sora',sans-serif;
-  }
+  .drawer-search-input { flex:1; border:none; background:transparent; outline:none; font-size:14px; font-weight:500; color:#1a1714; font-family:'Sora',sans-serif; }
   .drawer-search-input::placeholder { color:#b8b3ad; }
 
-  /* Trending chips in drawer */
   .drawer-chips-wrap { padding:6px 20px 14px; display:flex; flex-wrap:wrap; gap:7px; }
-  .drawer-chip {
-    padding:5px 13px; font-size:11px; font-weight:700; color:#6b6760;
-    background:#fff; border:1.5px solid #e8e4de; border-radius:99px;
-    cursor:pointer; font-family:'Sora',sans-serif; transition:all .15s;
-  }
+  .drawer-chip { padding:5px 13px; font-size:11px; font-weight:700; color:#6b6760; background:#fff; border:1.5px solid #e8e4de; border-radius:99px; cursor:pointer; font-family:'Sora',sans-serif; transition:all .15s; }
   .drawer-chip:hover { border-color:#1a1714; color:#1a1714; }
 
-  /* Drawer nav links — staggered in */
   .drawer-links { padding:4px 12px; }
   .drawer-link {
     display:flex; align-items:center; justify-content:space-between;
@@ -255,48 +266,87 @@ const NAV_STYLES = `
   }
   .nav-drawer.open .drawer-link {
     opacity:1; transform:translateY(0);
-    transition:background .15s,
-      opacity .4s cubic-bezier(0.16,1,0.3,1),
-      transform .4s cubic-bezier(0.16,1,0.3,1);
+    transition:background .15s, opacity .4s cubic-bezier(0.16,1,0.3,1), transform .4s cubic-bezier(0.16,1,0.3,1);
   }
   .nav-drawer.open .drawer-link:nth-child(1) { transition-delay: 0.08s, 0.08s, 0.08s; }
   .nav-drawer.open .drawer-link:nth-child(2) { transition-delay: 0.13s, 0.13s, 0.13s; }
   .nav-drawer.open .drawer-link:nth-child(3) { transition-delay: 0.18s, 0.18s, 0.18s; }
   .nav-drawer.open .drawer-link:nth-child(4) { transition-delay: 0.23s, 0.23s, 0.23s; }
   .nav-drawer.open .drawer-link:nth-child(5) { transition-delay: 0.28s, 0.28s, 0.28s; }
+  .nav-drawer.open .drawer-link:nth-child(6) { transition-delay: 0.33s, 0.33s, 0.33s; }
+  .nav-drawer.open .drawer-link:nth-child(7) { transition-delay: 0.38s, 0.38s, 0.38s; }
   .drawer-link:hover { background:rgba(26,23,20,.05); }
   .drawer-link.sell { color:#9e9890; font-size:15px; font-weight:600; }
-
   .drawer-link-right { display:flex; align-items:center; gap:8px; }
-
-  /* Drawer divider */
   .drawer-divider { height:1px; background:#ede9e3; margin:4px 12px 8px; }
 
-  /* Drawer bottom action row */
+  /* Profile row in drawer */
+  .drawer-profile-row {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:12px 12px; border-radius:14px; cursor:pointer;
+    text-decoration:none; width:100%;
+    opacity:0; transform:translateY(10px);
+    transition:background .15s, opacity .0s, transform .0s;
+  }
+  .nav-drawer.open .drawer-profile-row {
+    opacity:1; transform:translateY(0);
+    transition:background .15s, opacity .4s cubic-bezier(0.16,1,0.3,1), transform .4s cubic-bezier(0.16,1,0.3,1);
+    transition-delay: 0.38s, 0.38s, 0.38s;
+  }
+  .drawer-profile-row:hover { background:rgba(26,23,20,.05); }
+
   .drawer-bottom {
-    display:flex; align-items:center; gap:8px;
-    margin:8px 20px 0;
-    opacity:0; transform:translateY(8px);
-    transition:opacity .0s, transform .0s;
+    display:flex; align-items:center; gap:8px; margin:8px 20px 0;
+    opacity:0; transform:translateY(8px); transition:opacity .0s, transform .0s;
   }
   .nav-drawer.open .drawer-bottom {
     opacity:1; transform:translateY(0);
-    transition:opacity .4s cubic-bezier(.16,1,.3,1) .32s, transform .4s cubic-bezier(.16,1,.3,1) .32s;
+    transition:opacity .4s cubic-bezier(.16,1,.3,1) .44s, transform .4s cubic-bezier(.16,1,.3,1) .44s;
   }
 
   /* ── Responsive ── */
   @media (max-width: 960px) {
-    .nav-center { display:none; }
-    .nav-profile-name { display:none; }
-    /* hide desktop search — it's inside drawer on mobile */
-    .nav-search-wrap { display:none; }
-    .nav-mobile-btn { display:flex; }
+    .nav-center { display: none; }
+    .nav-profile-name { display: none; }
+    .nav-search-wrap { display: none; }
+    .nav-mobile-btn { display: flex; }
+    .nav-bell-btn { display: none; }
+    .nav-cart-btn { display: none; }
+    .nav-divider { display: none; }
+    .nav-profile-btn { display: none; }
+    .nav-bar { justify-content: space-between; }
+    .nav-brand { margin-right: 0; }
+  }
+  @media (max-width: 768px) {
+    .nav-bar { top: 12px; width: calc(100% - 24px); }
   }
   @media (max-width: 600px) {
-    .nav-bar { height:58px; top:12px; width:calc(100% - 24px); padding:0 6px 0 4px; }
-    .nav-logo-img { height:46px; }
-    .drawer-topbar { height:58px; }
-    .drawer-link { font-size:16px; padding:12px 12px; }
+    .nav-bar { height: 56px; top: 10px; width: calc(100% - 20px); padding: 0 6px 0 4px; border-radius: 16px; }
+    .nav-logo-img { height: 46px; }
+    .nav-bell-btn { display: none; }
+    .nav-cart-btn { display: none; }
+    .nav-divider { display: none; }
+    .nav-profile-btn { display: none; }
+    .drawer-topbar { height: 56px; padding: 0 14px 0 6px; }
+    .drawer-topbar .nav-logo-img { height: 44px; }
+    .nav-drawer-panel { border-radius: 0; min-height: 100dvh; padding-bottom: env(safe-area-inset-bottom, 24px); }
+    .drawer-links { padding: 4px 10px; }
+    .drawer-link { font-size: 22px; padding: 13px 12px; }
+    .drawer-link.sell { font-size: 15px; }
+    .drawer-search-wrap { margin: 14px 16px 6px; height: 48px; }
+    .drawer-chips-wrap { padding: 4px 16px 10px; }
+    .drawer-bottom { margin: 10px 16px 0; }
+    .drawer-profile-row { padding: 13px 12px; }
+  }
+  @media (max-width: 390px) {
+    .nav-bar { height: 52px; border-radius: 14px; }
+    .nav-logo-img { height: 42px; }
+    .nav-icon-btn { width: 32px; height: 32px; }
+    .nav-mobile-btn { width: 34px; height: 34px; }
+    .drawer-topbar { height: 52px; }
+    .drawer-link { font-size: 20px; padding: 11px 12px; }
+    .drawer-search-wrap { height: 44px; }
+    .drawer-search-input { font-size: 13px; }
   }
 `;
 
@@ -536,7 +586,6 @@ export default function Navbar() {
   const mobileInputRef = useRef<HTMLInputElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
-  const drawerRef = useRef<HTMLDivElement>(null);
 
   const results = query.trim()
     ? PRODUCTS.filter(
@@ -565,10 +614,8 @@ export default function Navbar() {
     else setQuery("");
   }, [searchOpen]);
 
-  // focus mobile search when drawer opens
   useEffect(() => {
-    if (drawerOpen) setTimeout(() => mobileInputRef.current?.focus(), 380);
-    else setMobileQuery("");
+    if (!drawerOpen) setMobileQuery("");
   }, [drawerOpen]);
 
   useEffect(() => {
@@ -590,15 +637,6 @@ export default function Navbar() {
     return () => document.removeEventListener("mousedown", h);
   }, [profileOpen]);
 
-  useEffect(() => {
-    if (!drawerOpen) return;
-    const h = (e: MouseEvent) => {
-      if (!drawerRef.current?.contains(e.target as Node)) setDrawerOpen(false);
-    };
-    setTimeout(() => document.addEventListener("mousedown", h), 0);
-    return () => document.removeEventListener("mousedown", h);
-  }, [drawerOpen]);
-
   return (
     <div className="nav-root">
       <style>{NAV_STYLES}</style>
@@ -610,7 +648,7 @@ export default function Navbar() {
           <img src={LOGO_URL} alt="Yog Fashion" className="nav-logo-img" />
         </a>
 
-        {/* Center links */}
+        {/* Center links — shifts LEFT when search opens, stays visible */}
         <div className={`nav-center${searchOpen ? " search-open" : ""}`}>
           <div className="nav-links">
             {LINKS.map((l) => (
@@ -633,38 +671,41 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Right */}
-        <div className={`nav-right${searchOpen ? " search-open" : ""}`}>
-          {/* Desktop search */}
+        {/* Right — never moves */}
+        <div className="nav-right">
+          {/* Search */}
           <div
             ref={searchRef}
             className={`nav-search-wrap${searchOpen ? " exp" : ""}`}
           >
             <div
-              className={`nav-search-pill${searchOpen ? "" : " col"}`}
+              className={`nav-search-pill${searchOpen || scrolled ? "" : " col"}`}
               onClick={() => !searchOpen && setSearchOpen(true)}
             >
               <span className="nav-search-icon">
                 <Ico.Search size={16} />
               </span>
-              {searchOpen && (
+              {(searchOpen || scrolled) && (
                 <>
                   <input
                     ref={inputRef}
                     className="nav-search-input"
-                    placeholder="Search products, brands…"
+                    placeholder="Search clothes, brands, styles…"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
+                    onFocus={() => !searchOpen && setSearchOpen(true)}
                   />
-                  <button
-                    className="nav-search-close"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSearchOpen(false);
-                    }}
-                  >
-                    <Ico.Close />
-                  </button>
+                  {searchOpen && (
+                    <button
+                      className="nav-search-close"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSearchOpen(false);
+                      }}
+                    >
+                      <Ico.Close />
+                    </button>
+                  )}
                 </>
               )}
             </div>
@@ -731,11 +772,11 @@ export default function Navbar() {
             )}
           </div>
 
-          <button className="nav-icon-btn">
+          <button className="nav-icon-btn nav-bell-btn">
             <Ico.Bell />
             <span className="nav-badge pulse">3</span>
           </button>
-          <button className="nav-icon-btn">
+          <button className="nav-icon-btn nav-cart-btn">
             <Ico.Cart />
             <span className="nav-badge">2</span>
           </button>
@@ -798,27 +839,37 @@ export default function Navbar() {
       </nav>
 
       {/* ── Mobile drawer ── */}
-      <div ref={drawerRef} className={`nav-drawer${drawerOpen ? " open" : ""}`}>
+      <div className={`nav-drawer${drawerOpen ? " open" : ""}`}>
         <div
           className="nav-drawer-backdrop"
           onClick={() => setDrawerOpen(false)}
         />
         <div className="nav-drawer-panel">
-          {/* Topbar — mirrors nav bar height */}
           <div className="drawer-topbar">
             <a href="/" className="nav-brand">
               <img src={LOGO_URL} alt="Yog Fashion" className="nav-logo-img" />
             </a>
             <button
-              className="nav-mobile-btn"
+              className="drawer-close-btn"
               onClick={() => setDrawerOpen(false)}
-              style={{ background: "rgba(26,23,20,.06)" }}
+              aria-label="Close menu"
             >
-              <Ico.Menu open={true} />
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.4"
+                strokeLinecap="round"
+              >
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
             </button>
           </div>
 
-          {/* Search inside drawer */}
+          {/* Search */}
           <div className="drawer-search-wrap">
             <span className="drawer-search-ico">
               <Ico.Search size={17} />
@@ -826,7 +877,7 @@ export default function Navbar() {
             <input
               ref={mobileInputRef}
               className="drawer-search-input"
-              placeholder="Search products, brands…"
+              placeholder="Search clothes, brands, styles…"
               value={mobileQuery}
               onChange={(e) => setMobileQuery(e.target.value)}
             />
@@ -846,7 +897,6 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Trending chips */}
           {!mobileQuery && (
             <div className="drawer-chips-wrap">
               {TRENDING.map((t) => (
@@ -861,7 +911,6 @@ export default function Navbar() {
             </div>
           )}
 
-          {/* Mobile search results */}
           {mobileQuery && (
             <div style={{ padding: "0 20px 12px" }}>
               {mobileResults.length === 0 ? (
@@ -878,13 +927,7 @@ export default function Navbar() {
                 mobileResults.map((p, i) => (
                   <div key={p.id}>
                     {i > 0 && (
-                      <div
-                        style={{
-                          height: "1px",
-                          background: "#f0ede9",
-                          margin: "0 0 0",
-                        }}
-                      />
+                      <div style={{ height: "1px", background: "#f0ede9" }} />
                     )}
                     <div
                       style={{
@@ -955,7 +998,6 @@ export default function Navbar() {
             </div>
           )}
 
-          {/* Nav links */}
           {!mobileQuery && (
             <>
               <div className="drawer-links">
@@ -994,9 +1036,73 @@ export default function Navbar() {
                   </span>
                   <Ico.Chevron />
                 </a>
+                <div className="drawer-divider" />
+                {/* Profile row — always accessible on mobile */}
+                <a
+                  href="/account"
+                  className="drawer-profile-row"
+                  onClick={() => setDrawerOpen(false)}
+                >
+                  <span
+                    style={{ display: "flex", alignItems: "center", gap: 12 }}
+                  >
+                    <div
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 10,
+                        overflow: "hidden",
+                        background: "#1a1714",
+                        flexShrink: 0,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <img
+                        src={LOGO_URL}
+                        alt=""
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "contain",
+                        }}
+                      />
+                    </div>
+                    <span
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "flex-start",
+                        gap: 2,
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: 17,
+                          fontWeight: 700,
+                          color: "#1a1714",
+                          letterSpacing: "-0.03em",
+                          lineHeight: 1.1,
+                        }}
+                      >
+                        Yog Admin
+                      </span>
+                      <span
+                        style={{
+                          fontSize: 11,
+                          color: "#9e9890",
+                          fontWeight: 400,
+                        }}
+                      >
+                        aa31noah@outlook.com
+                      </span>
+                    </span>
+                  </span>
+                  <Ico.Chevron />
+                </a>
               </div>
 
-              {/* Bottom row — bell, cart, profile */}
               <div className="drawer-bottom">
                 <button
                   className="nav-icon-btn"
@@ -1021,24 +1127,6 @@ export default function Navbar() {
                 >
                   <Ico.Cart />
                   <span className="nav-badge">2</span>
-                </button>
-                <button
-                  className="nav-profile-btn"
-                  style={{
-                    flex: 1,
-                    justifyContent: "space-between",
-                    padding: "9px 10px 9px 14px",
-                  }}
-                >
-                  <span
-                    className="nav-profile-name"
-                    style={{ display: "block" }}
-                  >
-                    Yog Admin
-                  </span>
-                  <div className="nav-avatar">
-                    <img src={LOGO_URL} alt="" />
-                  </div>
                 </button>
               </div>
             </>

@@ -6,7 +6,7 @@ export default function HomePage() {
   return (
     <>
       {/* Hero Section with Background Effects */}
-      <main className="relative bg-gradient-to-b from-gray-400 via-gray-300 to-white mt-5 mx-5 rounded-2xl overflow-hidden">
+      <main className="relative bg-gradient-to-b from-gray-400 via-gray-300 to-white mt-5 mx-5 rounded-2xl  overflow-hidden">
         <div className="absolute inset-0 overflow-hidden opacity-[0.06]">
           {/* Left diagonal lines */}
           <div
