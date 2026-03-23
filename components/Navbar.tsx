@@ -1,355 +1,32 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useCart } from "@/context/CartContext";
+import Link from "next/link";
+import NotificationCenter from "./notifications/NotificationCenter";
+import NotificationToast from "./notifications/NotificationToast";
+
+interface UserData {
+  id: string;
+  email: string;
+  name: string;
+  role: "USER" | "SELLER" | "ADMIN";
+  image?: string;
+}
 
 const LOGO_URL =
   "https://res.cloudinary.com/ddfozmzv0/image/upload/v1774012277/edited-photo_ojra9c.png";
 
-const NAV_STYLES = `
-  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&display=swap');
-  .nav-root * { font-family: 'Sora', sans-serif; box-sizing: border-box; }
+const LINKS = [
+  { label: "Shop", href: "/shop" },
+  { label: "Men", href: "/men" },
+  { label: "Women", href: "/women" },
+  { label: "Trending", href: "/trending", badge: "New" },
+];
+const MOBILE_LINKS = ["Shop", "Men", "Women", "Trending", "Stores"];
+const TRENDING = ["Streetwear", "Linen sets", "Formal wear", "Activewear"];
 
-  /* ── Bar ── */
-  .nav-bar {
-    position: fixed; top: 16px; left: 50%; transform: translateX(-50%) translateY(0px);
-    z-index: 9999;
-    display: flex; align-items: center;
-    width: calc(100% - 32px); max-width: 1200px;
-    padding: 0 8px 0 6px; height: 66px; gap: 0;
-    background: rgba(246,245,243,0.78);
-    backdrop-filter: blur(20px) saturate(160%);
-    -webkit-backdrop-filter: blur(20px) saturate(160%);
-    border: 1.5px solid rgba(232,228,222,0.9); border-radius: 18px;
-    box-shadow: 0 4px 32px rgba(26,23,20,0.08), 0 1px 0 rgba(255,255,255,0.6) inset;
-    transition:
-      box-shadow 0.5s cubic-bezier(0.16,1,0.3,1),
-      background 0.5s cubic-bezier(0.16,1,0.3,1),
-      border-color 0.5s ease,
-      top 0.5s cubic-bezier(0.16,1,0.3,1),
-      width 0.5s cubic-bezier(0.16,1,0.3,1),
-      max-width 0.5s cubic-bezier(0.16,1,0.3,1),
-      border-radius 0.5s cubic-bezier(0.16,1,0.3,1),
-      left 0.5s cubic-bezier(0.16,1,0.3,1),
-      transform 0.5s cubic-bezier(0.16,1,0.3,1);
-  }
-  .nav-bar.scrolled {
-    top: 0;
-    width: 100%;
-    max-width: 100%;
-    border-radius: 0 0 20px 20px;
-    border-top: none;
-    background: rgba(246,245,243,0.98);
-    border-color: rgba(200,195,188,0.9);
-    box-shadow:
-      0 8px 40px rgba(26,23,20,0.12),
-      0 1px 0 rgba(255,255,255,0.7) inset;
-  }
-
-  /* ── Brand ── */
-  .nav-brand { display: flex; align-items: center; gap: 6px; text-decoration: none; flex-shrink: 0; margin-right: 6px; }
-  .nav-logo-img {
-    height: 58px; width: auto; object-fit: contain; display: block;
-    transition: height 0.45s cubic-bezier(0.16,1,0.3,1), opacity 0.3s ease;
-  }
-  .nav-bar.scrolled .nav-logo-img { height: 50px; }
-
-  /* ── Center ── */
-  .nav-center {
-    flex: 1; display: flex; align-items: center; justify-content: center;
-    overflow: hidden;
-    transition: flex 0.42s cubic-bezier(0.16,1,0.3,1), opacity 0.3s ease, justify-content 0s;
-  }
-  /* Search open: ONLY the links group shifts left — bell/cart/profile stay put */
-  .nav-center.search-open {
-    flex: 0 1 auto;
-    min-width: 0;
-    justify-content: flex-start;
-    opacity: 1;
-    pointer-events: auto;
-  }
-  /* Scrolled: links stay centered regardless of search state */
-  .nav-bar.scrolled .nav-center.search-open {
-    flex: 1;
-    justify-content: center;
-    opacity: 1;
-    pointer-events: auto;
-  }
-
-  .nav-links { display: flex; align-items: center; gap: 2px; white-space: nowrap; }
-  .nav-link {
-    position: relative; padding: 7px 14px; font-size: 12px; font-weight: 600; color: #6b6760;
-    text-decoration: none; border-radius: 10px; border: none; background: transparent;
-    cursor: pointer; letter-spacing: 0.01em; transition: color .2s, background .2s; white-space: nowrap;
-  }
-  .nav-bar.scrolled .nav-link { color: #524f4c; }
-  .nav-link:hover { color: #1a1714; background: rgba(26,23,20,.05); }
-  .nav-link.active { color: #1a1714; background: rgba(26,23,20,.07); }
-  .nav-link::after {
-    content:''; position:absolute; bottom:4px; left:14px; right:14px;
-    height:1.5px; background:#1a1714; border-radius:1px;
-    transform:scaleX(0); transform-origin:left; transition:transform .22s cubic-bezier(.16,1,.3,1);
-  }
-  .nav-link:hover::after, .nav-link.active::after { transform: scaleX(1); }
-  .nav-link-badge {
-    display:inline-flex; align-items:center; justify-content:center;
-    margin-left:5px; padding:1px 6px; background:#1a1714; color:#f6f5f3;
-    font-size:8px; font-weight:800; letter-spacing:.06em; text-transform:uppercase;
-    border-radius:99px; vertical-align:middle; line-height:14px;
-  }
-  .nav-sell {
-    padding:7px 12px; font-size:12px; font-weight:700; color:#9e9890;
-    border:1.5px solid #e8e4de; border-radius:10px; background:transparent;
-    cursor:pointer; transition:all .2s; display:inline-flex; align-items:center; gap:5px; text-decoration:none;
-  }
-  .nav-sell:hover { color:#1a1714; border-color:#1a1714; background:#fff; }
-
-  /* ── Right cluster — always pinned to far right ── */
-  .nav-right {
-    display: flex; align-items: center; gap: 3px; flex-shrink: 0; margin-left: auto;
-  }
-
-  /* ── Search ── */
-  .nav-search-wrap {
-    display: flex; align-items: center; position: relative;
-    transition: width 0.42s cubic-bezier(0.16,1,0.3,1); width: 36px;
-  }
-  .nav-search-wrap.exp { width: clamp(240px, 36vw, 440px); }
-  /* Scrolled: always show a wide pill with placeholder */
-  .nav-bar.scrolled .nav-search-wrap { width: clamp(200px, 22vw, 340px); }
-  .nav-bar.scrolled .nav-search-wrap.exp { width: clamp(300px, 38vw, 520px); }
-  .nav-bar.scrolled .nav-search-pill.col {
-    width: 100%; padding: 0 12px; justify-content: flex-start;
-    background: #fff; border-color: #e8e4de; border-radius: 11px; cursor: pointer;
-  }
-  .nav-search-pill {
-    width: 100%; height: 36px; display: flex; align-items: center; gap: 8px;
-    padding: 0 12px; background: #fff; border: 1.5px solid #e8e4de; border-radius: 11px;
-    overflow: hidden; transition: all 0.42s cubic-bezier(0.16,1,0.3,1); cursor: pointer;
-  }
-  .nav-search-pill:focus-within { border-color: #1a1714; box-shadow: 0 0 0 3px rgba(26,23,20,.07); cursor: default; }
-  .nav-search-pill.col { width: 36px; padding: 0; justify-content: center; background: transparent; border-color: transparent; border-radius: 11px; }
-  .nav-search-pill.col:hover { background: rgba(26,23,20,.06); }
-  .nav-search-icon { color: #6b6760; flex-shrink: 0; display: flex; transition: color .2s; }
-  .nav-search-pill:focus-within .nav-search-icon { color: #1a1714; }
-  .nav-search-input { flex: 1; border: none; background: transparent; outline: none; font-size: 12px; font-weight: 500; color: #1a1714; font-family: 'Sora', sans-serif; width: 0; min-width: 0; }
-  .nav-search-input::placeholder { color: #b8b3ad; }
-  .nav-search-wrap.exp .nav-search-input { width: 100%; }
-  .nav-search-close { background: none; border: none; cursor: pointer; padding: 0; color: #b8b3ad; display: flex; border-radius: 6px; transition: color .15s; flex-shrink: 0; }
-  .nav-search-close:hover { color: #1a1714; }
-  .nav-search-drop {
-    position: absolute; top: calc(100% + 8px); right: 0; width: 100%; min-width: 310px;
-    background: #fff; border: 1.5px solid #e8e4de; border-radius: 14px; overflow: hidden;
-    box-shadow: 0 12px 40px rgba(26,23,20,.12);
-    animation: drop-in .22s cubic-bezier(.16,1,.3,1) forwards; z-index: 200;
-  }
-  @keyframes drop-in { from{opacity:0;transform:scaleY(.92) translateY(-6px)} to{opacity:1;transform:scaleY(1) translateY(0)} }
-  .search-lbl { padding:10px 14px 6px; font-size:9px; font-weight:800; color:#b8b3ad; text-transform:uppercase; letter-spacing:1px; }
-  .search-chips { display:flex; flex-wrap:wrap; gap:6px; padding:0 14px 10px; }
-  .search-chip { padding:5px 12px; font-size:11px; font-weight:700; color:#6b6760; background:#f6f5f3; border:1.5px solid #e8e4de; border-radius:99px; cursor:pointer; font-family:'Sora',sans-serif; transition:all .15s; }
-  .search-chip:hover { border-color:#1a1714; color:#1a1714; }
-  .search-divider { height:1px; background:#f0ede9; margin:0 14px; }
-  .search-item { display:flex; align-items:center; gap:10px; padding:9px 14px; cursor:pointer; transition:background .12s; }
-  .search-item:hover { background:#f6f5f3; }
-  .search-thumb { width:34px; height:34px; border-radius:8px; background:#f0ede9; overflow:hidden; flex-shrink:0; }
-  .search-thumb img { width:100%; height:100%; object-fit:cover; }
-  .search-item-name { font-size:12px; font-weight:600; color:#1a1714; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .search-item-cat  { font-size:11px; color:#9e9890; margin-top:1px; }
-  .search-item-price { font-size:12px; font-weight:700; color:#1a1714; flex-shrink:0; }
-  .search-footer { padding:10px 14px; display:flex; align-items:center; justify-content:center; gap:6px; cursor:pointer; font-size:11px; font-weight:700; color:#9e9890; transition:color .15s; }
-  .search-footer:hover { color:#1a1714; }
-
-  /* ── Icon buttons ── */
-  .nav-icon-btn {
-    position:relative; width:36px; height:36px; display:flex; align-items:center; justify-content:center;
-    border:none; background:transparent; border-radius:11px; cursor:pointer; color:#6b6760; transition:color .18s, background .18s;
-  }
-  .nav-icon-btn:hover { color:#1a1714; background:rgba(26,23,20,.06); }
-  .nav-badge {
-    position:absolute; top:4px; right:4px; min-width:16px; height:16px; padding:0 4px;
-    background:#1a1714; color:#f6f5f3; font-size:9px; font-weight:800; line-height:16px;
-    border-radius:99px; text-align:center; border:1.5px solid rgba(246,245,243,.9);
-  }
-  .nav-badge.pulse { animation:nb-pulse 2s ease-in-out infinite; }
-  @keyframes nb-pulse { 0%,100%{box-shadow:0 0 0 0 rgba(26,23,20,.35)} 50%{box-shadow:0 0 0 4px rgba(26,23,20,0)} }
-  .nav-divider { width:1px; height:20px; background:#e8e4de; margin:0 2px; flex-shrink:0; }
-
-  /* ── Profile button ── */
-  .nav-profile-btn {
-    display:flex; align-items:center; gap:8px; padding:3px 4px 3px 10px;
-    border:1.5px solid #e8e4de; border-radius:13px; background:#fff;
-    cursor:pointer; transition:all .2s; margin-left:2px;
-  }
-  .nav-profile-btn:hover, .nav-profile-btn.open { border-color:#1a1714; box-shadow:0 2px 12px rgba(0,0,0,.08); }
-  .nav-profile-name { font-size:12px; font-weight:700; color:#1a1714; letter-spacing:-0.02em; white-space:nowrap; }
-  .nav-avatar { width:28px; height:28px; border-radius:9px; overflow:hidden; flex-shrink:0; background:#1a1714; display:flex; align-items:center; justify-content:center; }
-  .nav-avatar img { width:100%; height:100%; object-fit:contain; display:block; }
-
-  /* ── Profile dropdown ── */
-  .nav-profile-drop {
-    position:absolute; top:calc(100% + 10px); right:0; width:234px;
-    background:#fff; border:1.5px solid #e8e4de; border-radius:16px; overflow:hidden;
-    box-shadow:0 16px 48px rgba(26,23,20,.14);
-    animation:drop-in .24s cubic-bezier(.16,1,.3,1) forwards; z-index:200;
-  }
-  .pdrop-header { padding:14px 16px 12px; border-bottom:1px solid #f0ede9; }
-  .pdrop-name  { font-size:13px; font-weight:800; color:#1a1714; letter-spacing:-0.03em; line-height:1.2; }
-  .pdrop-email { font-size:11px; color:#9e9890; margin-top:2px; }
-  .pdrop-role  { display:inline-flex; align-items:center; margin-top:8px; padding:3px 9px; background:#1a1714; color:#f6f5f3; font-size:9px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; border-radius:99px; line-height:1.4; }
-  .pdrop-section { padding:6px 0; }
-  .pdrop-item {
-    display:flex; align-items:center; gap:10px; padding:9px 16px;
-    font-size:12px; font-weight:600; color:#1a1714; cursor:pointer;
-    transition:background .12s; border:none; background:transparent;
-    width:100%; text-align:left; letter-spacing:-0.01em; text-decoration:none;
-  }
-  .pdrop-item:hover { background:#f6f5f3; }
-  .pdrop-item .pdrop-ico { color:#9e9890; flex-shrink:0; display:flex; transition:color .15s; }
-  .pdrop-item:hover .pdrop-ico { color:#1a1714; }
-  .pdrop-divider { height:1px; background:#f0ede9; }
-  .pdrop-signout { color:#c0392b !important; }
-  .pdrop-signout .pdrop-ico { color:#e07070 !important; }
-  .pdrop-signout:hover { background:#fdf0f0 !important; }
-
-  /* ── Mobile hamburger button ── */
-  .nav-mobile-btn {
-    display:none; width:38px; height:38px; align-items:center; justify-content:center;
-    border:none; background:transparent; border-radius:12px; cursor:pointer; color:#1a1714;
-    transition:background .18s; flex-shrink: 0;
-  }
-  .nav-mobile-btn:hover { background:rgba(26,23,20,.06); }
-  .drawer-close-btn {
-    display: flex; align-items: center; justify-content: center;
-    width: 38px; height: 38px;
-    border: none; background: rgba(26,23,20,0.07); border-radius: 12px;
-    cursor: pointer; color: #1a1714; flex-shrink: 0; transition: background .18s;
-  }
-  .drawer-close-btn:hover { background: rgba(26,23,20,0.13); }
-
-  /* ── Mobile full-screen drawer ── */
-  .nav-drawer { position:fixed; inset:0; z-index:9998; pointer-events:none; }
-  .nav-drawer-backdrop { position:absolute; inset:0; background:rgba(26,23,20,0); transition:background 0.4s ease; }
-  .nav-drawer.open .nav-drawer-backdrop { background:rgba(26,23,20,0.4); pointer-events:all; backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); }
-  .nav-drawer-panel {
-    position:absolute; top:0; left:0; right:0;
-    background:#f6f5f3; border-bottom:1.5px solid #e8e4de;
-    border-radius:0 0 28px 28px; padding:0 0 28px;
-    transform:translateY(-110%);
-    transition:transform 0.48s cubic-bezier(0.16,1,0.3,1);
-    box-shadow:0 24px 80px rgba(26,23,20,0.18); overflow:hidden;
-  }
-  .nav-drawer.open .nav-drawer-panel { transform:translateY(0); pointer-events:all; }
-
-  .drawer-topbar { height:66px; display:flex; align-items:center; justify-content:space-between; padding:0 20px 0 10px; border-bottom:1px solid #ede9e3; }
-  .drawer-search-wrap {
-    margin:18px 20px 8px; display:flex; align-items:center; gap:10px;
-    background:#fff; border:1.5px solid #e8e4de; border-radius:13px;
-    padding:0 14px; height:46px; transition:border-color .2s, box-shadow .2s;
-  }
-  .drawer-search-wrap:focus-within { border-color:#1a1714; box-shadow:0 0 0 3px rgba(26,23,20,.07); }
-  .drawer-search-ico { color:#9e9890; display:flex; flex-shrink:0; transition:color .2s; }
-  .drawer-search-wrap:focus-within .drawer-search-ico { color:#1a1714; }
-  .drawer-search-input { flex:1; border:none; background:transparent; outline:none; font-size:14px; font-weight:500; color:#1a1714; font-family:'Sora',sans-serif; }
-  .drawer-search-input::placeholder { color:#b8b3ad; }
-
-  .drawer-chips-wrap { padding:6px 20px 14px; display:flex; flex-wrap:wrap; gap:7px; }
-  .drawer-chip { padding:5px 13px; font-size:11px; font-weight:700; color:#6b6760; background:#fff; border:1.5px solid #e8e4de; border-radius:99px; cursor:pointer; font-family:'Sora',sans-serif; transition:all .15s; }
-  .drawer-chip:hover { border-color:#1a1714; color:#1a1714; }
-
-  .drawer-links { padding:4px 12px; }
-  .drawer-link {
-    display:flex; align-items:center; justify-content:space-between;
-    padding:14px 12px; font-size:18px; font-weight:700; color:#1a1714;
-    text-decoration:none; border-radius:14px; border:none; background:transparent;
-    cursor:pointer; width:100%; letter-spacing:-0.04em;
-    opacity:0; transform:translateY(10px);
-    transition:background .15s, opacity .0s, transform .0s;
-  }
-  .nav-drawer.open .drawer-link {
-    opacity:1; transform:translateY(0);
-    transition:background .15s, opacity .4s cubic-bezier(0.16,1,0.3,1), transform .4s cubic-bezier(0.16,1,0.3,1);
-  }
-  .nav-drawer.open .drawer-link:nth-child(1) { transition-delay: 0.08s, 0.08s, 0.08s; }
-  .nav-drawer.open .drawer-link:nth-child(2) { transition-delay: 0.13s, 0.13s, 0.13s; }
-  .nav-drawer.open .drawer-link:nth-child(3) { transition-delay: 0.18s, 0.18s, 0.18s; }
-  .nav-drawer.open .drawer-link:nth-child(4) { transition-delay: 0.23s, 0.23s, 0.23s; }
-  .nav-drawer.open .drawer-link:nth-child(5) { transition-delay: 0.28s, 0.28s, 0.28s; }
-  .nav-drawer.open .drawer-link:nth-child(6) { transition-delay: 0.33s, 0.33s, 0.33s; }
-  .nav-drawer.open .drawer-link:nth-child(7) { transition-delay: 0.38s, 0.38s, 0.38s; }
-  .drawer-link:hover { background:rgba(26,23,20,.05); }
-  .drawer-link.sell { color:#9e9890; font-size:15px; font-weight:600; }
-  .drawer-link-right { display:flex; align-items:center; gap:8px; }
-  .drawer-divider { height:1px; background:#ede9e3; margin:4px 12px 8px; }
-
-  /* Profile row in drawer */
-  .drawer-profile-row {
-    display:flex; align-items:center; justify-content:space-between;
-    padding:12px 12px; border-radius:14px; cursor:pointer;
-    text-decoration:none; width:100%;
-    opacity:0; transform:translateY(10px);
-    transition:background .15s, opacity .0s, transform .0s;
-  }
-  .nav-drawer.open .drawer-profile-row {
-    opacity:1; transform:translateY(0);
-    transition:background .15s, opacity .4s cubic-bezier(0.16,1,0.3,1), transform .4s cubic-bezier(0.16,1,0.3,1);
-    transition-delay: 0.38s, 0.38s, 0.38s;
-  }
-  .drawer-profile-row:hover { background:rgba(26,23,20,.05); }
-
-  .drawer-bottom {
-    display:flex; align-items:center; gap:8px; margin:8px 20px 0;
-    opacity:0; transform:translateY(8px); transition:opacity .0s, transform .0s;
-  }
-  .nav-drawer.open .drawer-bottom {
-    opacity:1; transform:translateY(0);
-    transition:opacity .4s cubic-bezier(.16,1,.3,1) .44s, transform .4s cubic-bezier(.16,1,.3,1) .44s;
-  }
-
-  /* ── Responsive ── */
-  @media (max-width: 960px) {
-    .nav-center { display: none; }
-    .nav-profile-name { display: none; }
-    .nav-search-wrap { display: none; }
-    .nav-mobile-btn { display: flex; }
-    .nav-bell-btn { display: none; }
-    .nav-cart-btn { display: none; }
-    .nav-divider { display: none; }
-    .nav-profile-btn { display: none; }
-    .nav-bar { justify-content: space-between; }
-    .nav-brand { margin-right: 0; }
-  }
-  @media (max-width: 768px) {
-    .nav-bar { top: 12px; width: calc(100% - 24px); }
-  }
-  @media (max-width: 600px) {
-    .nav-bar { height: 56px; top: 10px; width: calc(100% - 20px); padding: 0 6px 0 4px; border-radius: 16px; }
-    .nav-logo-img { height: 46px; }
-    .nav-bell-btn { display: none; }
-    .nav-cart-btn { display: none; }
-    .nav-divider { display: none; }
-    .nav-profile-btn { display: none; }
-    .drawer-topbar { height: 56px; padding: 0 14px 0 6px; }
-    .drawer-topbar .nav-logo-img { height: 44px; }
-    .nav-drawer-panel { border-radius: 0; min-height: 100dvh; padding-bottom: env(safe-area-inset-bottom, 24px); }
-    .drawer-links { padding: 4px 10px; }
-    .drawer-link { font-size: 22px; padding: 13px 12px; }
-    .drawer-link.sell { font-size: 15px; }
-    .drawer-search-wrap { margin: 14px 16px 6px; height: 48px; }
-    .drawer-chips-wrap { padding: 4px 16px 10px; }
-    .drawer-bottom { margin: 10px 16px 0; }
-    .drawer-profile-row { padding: 13px 12px; }
-  }
-  @media (max-width: 390px) {
-    .nav-bar { height: 52px; border-radius: 14px; }
-    .nav-logo-img { height: 42px; }
-    .nav-icon-btn { width: 32px; height: 32px; }
-    .nav-mobile-btn { width: 34px; height: 34px; }
-    .drawer-topbar { height: 52px; }
-    .drawer-link { font-size: 20px; padding: 11px 12px; }
-    .drawer-search-wrap { height: 44px; }
-    .drawer-search-input { font-size: 13px; }
-  }
-`;
-
+// ── Fake product data for search preview ─────────────────────────────────────
 const PRODUCTS = [
   {
     id: 1,
@@ -387,14 +64,310 @@ const PRODUCTS = [
     img: "https://i.pinimg.com/1200x/e9/3a/72/e93a72d23920a6cda792be63b7df8879.jpg",
   },
 ];
-const TRENDING = ["Streetwear", "Linen sets", "Formal wear", "Activewear"];
-const LINKS = [
-  { label: "Shop", href: "/shop" },
-  { label: "Men", href: "/men" },
-  { label: "Women", href: "/women" },
-  { label: "Trending", href: "/trending", badge: "New" },
-];
 
+// ── CSS ───────────────────────────────────────────────────────────────────────
+const NAV_STYLES = `
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&display=swap');
+  .nav-root * { font-family: 'Sora', sans-serif; box-sizing: border-box; }
+
+  .nav-bar {
+    position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+    z-index: 9999;
+    display: flex; align-items: center;
+    width: calc(100% - 32px); max-width: 1200px;
+    padding: 0 8px 0 6px; height: 66px; gap: 0;
+    background: rgba(246,245,243,0.78);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    border: 1.5px solid rgba(232,228,222,0.9); border-radius: 18px;
+    box-shadow: 0 4px 32px rgba(26,23,20,0.08), 0 1px 0 rgba(255,255,255,0.6) inset;
+    transition:
+      box-shadow 0.5s cubic-bezier(0.16,1,0.3,1),
+      background 0.5s cubic-bezier(0.16,1,0.3,1),
+      border-color 0.5s ease,
+      top 0.5s cubic-bezier(0.16,1,0.3,1),
+      width 0.5s cubic-bezier(0.16,1,0.3,1),
+      max-width 0.5s cubic-bezier(0.16,1,0.3,1),
+      border-radius 0.5s cubic-bezier(0.16,1,0.3,1);
+  }
+  .nav-bar.scrolled {
+    top: 0; width: 100%; max-width: 100%;
+    border-radius: 0 0 20px 20px; border-top: none;
+    background: rgba(246,245,243,0.98);
+    border-color: rgba(200,195,188,0.9);
+    box-shadow: 0 8px 40px rgba(26,23,20,0.12), 0 1px 0 rgba(255,255,255,0.7) inset;
+  }
+
+  .nav-brand { display:flex; align-items:center; gap:6px; text-decoration:none; flex-shrink:0; margin-right:6px; }
+  .nav-logo-img { height:58px; width:auto; object-fit:contain; display:block; transition:height 0.45s cubic-bezier(0.16,1,0.3,1); }
+  .nav-bar.scrolled .nav-logo-img { height:50px; }
+
+  .nav-center {
+    flex:1; display:flex; align-items:center; justify-content:center;
+    overflow:hidden; transition:flex 0.42s cubic-bezier(0.16,1,0.3,1), opacity 0.3s ease;
+  }
+  .nav-center.search-open { flex:0 1 auto; min-width:0; justify-content:flex-start; }
+  .nav-bar.scrolled .nav-center.search-open { flex:1; justify-content:center; }
+
+  .nav-links { display:flex; align-items:center; gap:2px; white-space:nowrap; }
+  .nav-link {
+    position:relative; padding:7px 14px; font-size:12px; font-weight:600; color:#6b6760;
+    text-decoration:none; border-radius:10px; border:none; background:transparent;
+    cursor:pointer; letter-spacing:0.01em; transition:color .2s, background .2s; white-space:nowrap;
+  }
+  .nav-bar.scrolled .nav-link { color:#524f4c; }
+  .nav-link:hover { color:#1a1714; background:rgba(26,23,20,.05); }
+  .nav-link.active { color:#1a1714; background:rgba(26,23,20,.07); }
+  .nav-link::after {
+    content:''; position:absolute; bottom:4px; left:14px; right:14px;
+    height:1.5px; background:#1a1714; border-radius:1px;
+    transform:scaleX(0); transform-origin:left; transition:transform .22s cubic-bezier(.16,1,.3,1);
+  }
+  .nav-link:hover::after, .nav-link.active::after { transform:scaleX(1); }
+  .nav-link-badge {
+    display:inline-flex; align-items:center; justify-content:center;
+    margin-left:5px; padding:1px 6px; background:#1a1714; color:#f6f5f3;
+    font-size:8px; font-weight:800; letter-spacing:.06em; text-transform:uppercase;
+    border-radius:99px; vertical-align:middle; line-height:14px;
+  }
+  .nav-sell {
+    padding:7px 12px; font-size:12px; font-weight:700; color:#9e9890;
+    border:1.5px solid #e8e4de; border-radius:10px; background:transparent;
+    cursor:pointer; transition:all .2s; display:inline-flex; align-items:center; gap:5px; text-decoration:none;
+  }
+  .nav-sell:hover { color:#1a1714; border-color:#1a1714; background:#fff; }
+
+  .nav-right { display:flex; align-items:center; gap:3px; flex-shrink:0; margin-left:auto; }
+
+  /* Search */
+  .nav-search-wrap { display:flex; align-items:center; position:relative; transition:width 0.42s cubic-bezier(0.16,1,0.3,1); width:36px; }
+  .nav-search-wrap.exp { width:clamp(240px,36vw,440px); }
+  .nav-bar.scrolled .nav-search-wrap { width:clamp(200px,22vw,340px); }
+  .nav-bar.scrolled .nav-search-wrap.exp { width:clamp(300px,38vw,520px); }
+  .nav-search-pill {
+    width:100%; height:36px; display:flex; align-items:center; gap:8px;
+    padding:0 12px; background:#fff; border:1.5px solid #e8e4de; border-radius:11px;
+    overflow:hidden; transition:all 0.42s cubic-bezier(0.16,1,0.3,1); cursor:pointer;
+  }
+  .nav-search-pill:focus-within { border-color:#1a1714; box-shadow:0 0 0 3px rgba(26,23,20,.07); cursor:default; }
+  .nav-search-pill.col { width:36px; padding:0; justify-content:center; background:transparent; border-color:transparent; border-radius:11px; }
+  .nav-search-pill.col:hover { background:rgba(26,23,20,.06); }
+  .nav-search-icon { color:#6b6760; flex-shrink:0; display:flex; transition:color .2s; }
+  .nav-search-pill:focus-within .nav-search-icon { color:#1a1714; }
+  .nav-search-input { flex:1; border:none; background:transparent; outline:none; font-size:12px; font-weight:500; color:#1a1714; font-family:'Sora',sans-serif; width:0; min-width:0; }
+  .nav-search-input::placeholder { color:#b8b3ad; }
+  .nav-search-wrap.exp .nav-search-input { width:100%; }
+  .nav-search-close { background:none; border:none; cursor:pointer; padding:0; color:#b8b3ad; display:flex; border-radius:6px; transition:color .15s; flex-shrink:0; }
+  .nav-search-close:hover { color:#1a1714; }
+  .nav-search-drop {
+    position:absolute; top:calc(100% + 8px); right:0; width:100%; min-width:310px;
+    background:#fff; border:1.5px solid #e8e4de; border-radius:14px; overflow:hidden;
+    box-shadow:0 12px 40px rgba(26,23,20,.12); z-index:200;
+    animation:drop-in .22s cubic-bezier(.16,1,.3,1) forwards;
+  }
+  @keyframes drop-in { from{opacity:0;transform:scaleY(.92) translateY(-6px)} to{opacity:1;transform:scaleY(1) translateY(0)} }
+  .search-lbl { padding:10px 14px 6px; font-size:9px; font-weight:800; color:#b8b3ad; text-transform:uppercase; letter-spacing:1px; }
+  .search-chips { display:flex; flex-wrap:wrap; gap:6px; padding:0 14px 10px; }
+  .search-chip { padding:5px 12px; font-size:11px; font-weight:700; color:#6b6760; background:#f6f5f3; border:1.5px solid #e8e4de; border-radius:99px; cursor:pointer; font-family:'Sora',sans-serif; transition:all .15s; }
+  .search-chip:hover { border-color:#1a1714; color:#1a1714; }
+  .search-divider { height:1px; background:#f0ede9; margin:0 14px; }
+  .search-item { display:flex; align-items:center; gap:10px; padding:9px 14px; cursor:pointer; transition:background .12s; }
+  .search-item:hover { background:#f6f5f3; }
+  .search-thumb { width:34px; height:34px; border-radius:8px; background:#f0ede9; overflow:hidden; flex-shrink:0; }
+  .search-thumb img { width:100%; height:100%; object-fit:cover; }
+  .search-item-name { font-size:12px; font-weight:600; color:#1a1714; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .search-item-cat  { font-size:11px; color:#9e9890; margin-top:1px; }
+  .search-item-price { font-size:12px; font-weight:700; color:#1a1714; flex-shrink:0; }
+  .search-footer { padding:10px 14px; display:flex; align-items:center; justify-content:center; gap:6px; cursor:pointer; font-size:11px; font-weight:700; color:#9e9890; transition:color .15s; }
+  .search-footer:hover { color:#1a1714; }
+
+  /* Icon buttons */
+  .nav-icon-btn {
+    position:relative; width:36px; height:36px; display:flex; align-items:center; justify-content:center;
+    border:none; background:transparent; border-radius:11px; cursor:pointer; color:#6b6760; transition:color .18s, background .18s;
+  }
+  .nav-icon-btn:hover { color:#1a1714; background:rgba(26,23,20,.06); }
+  .nav-badge {
+    position:absolute; top:4px; right:4px; min-width:16px; height:16px; padding:0 4px;
+    background:#1a1714; color:#f6f5f3; font-size:9px; font-weight:800; line-height:16px;
+    border-radius:99px; text-align:center; border:1.5px solid rgba(246,245,243,.9);
+  }
+  .nav-badge.red { background:#dc2626; }
+  .nav-badge.pulse { animation:nb-pulse 2s ease-in-out infinite; }
+  @keyframes nb-pulse { 0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.4)} 50%{box-shadow:0 0 0 4px rgba(220,38,38,0)} }
+  .nav-divider { width:1px; height:20px; background:#e8e4de; margin:0 2px; flex-shrink:0; }
+
+  /* Profile button */
+  .nav-profile-btn {
+    display:flex; align-items:center; gap:8px; padding:3px 4px 3px 10px;
+    border:1.5px solid #e8e4de; border-radius:13px; background:#fff;
+    cursor:pointer; transition:all .2s; margin-left:2px;
+  }
+  .nav-profile-btn:hover, .nav-profile-btn.open { border-color:#1a1714; box-shadow:0 2px 12px rgba(0,0,0,.08); }
+  .nav-profile-name { font-size:12px; font-weight:700; color:#1a1714; letter-spacing:-0.02em; white-space:nowrap; }
+  .nav-avatar { width:28px; height:28px; border-radius:9px; overflow:hidden; flex-shrink:0; background:#1a1714; display:flex; align-items:center; justify-content:center; color:#fff; font-size:12px; font-weight:700; }
+  .nav-avatar img { width:100%; height:100%; object-fit:cover; display:block; }
+
+  /* Profile dropdown */
+  .nav-profile-drop {
+    position:absolute; top:calc(100% + 10px); right:0; width:234px;
+    background:#fff; border:1.5px solid #e8e4de; border-radius:16px; overflow:hidden;
+    box-shadow:0 16px 48px rgba(26,23,20,.14);
+    animation:drop-in .24s cubic-bezier(.16,1,.3,1) forwards; z-index:200;
+  }
+  .pdrop-header { padding:14px 16px 12px; border-bottom:1px solid #f0ede9; background:#f6f5f3; }
+  .pdrop-name  { font-size:13px; font-weight:800; color:#1a1714; letter-spacing:-0.03em; line-height:1.2; }
+  .pdrop-email { font-size:11px; color:#9e9890; margin-top:2px; }
+  .pdrop-role  { display:inline-flex; align-items:center; margin-top:8px; padding:3px 9px; background:#1a1714; color:#f6f5f3; font-size:9px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; border-radius:99px; line-height:1.4; }
+  .pdrop-role.seller { background:#0284c7; }
+  .pdrop-role.admin  { background:#7c3aed; }
+  .pdrop-role.user   { background:#6b6760; }
+  .pdrop-section { padding:6px 0; }
+  .pdrop-item {
+    display:flex; align-items:center; gap:10px; padding:9px 16px;
+    font-size:12px; font-weight:600; color:#1a1714; cursor:pointer;
+    transition:background .12s; border:none; background:transparent;
+    width:100%; text-align:left; letter-spacing:-0.01em; text-decoration:none;
+    font-family:'Sora',sans-serif;
+  }
+  .pdrop-item:hover { background:#f6f5f3; }
+  .pdrop-item .pdrop-ico { color:#9e9890; flex-shrink:0; display:flex; transition:color .15s; }
+  .pdrop-item:hover .pdrop-ico { color:#1a1714; }
+  .pdrop-divider { height:1px; background:#f0ede9; }
+  .pdrop-signout { color:#c0392b !important; }
+  .pdrop-signout .pdrop-ico { color:#e07070 !important; }
+  .pdrop-signout:hover { background:#fdf0f0 !important; }
+
+  /* Mobile hamburger */
+  .nav-mobile-btn {
+    display:none; width:38px; height:38px; align-items:center; justify-content:center;
+    border:none; background:transparent; border-radius:12px; cursor:pointer; color:#1a1714;
+    transition:background .18s; flex-shrink:0;
+  }
+  .nav-mobile-btn:hover { background:rgba(26,23,20,.06); }
+  .drawer-close-btn {
+    display:flex; align-items:center; justify-content:center;
+    width:38px; height:38px; border:none; background:rgba(26,23,20,0.07);
+    border-radius:12px; cursor:pointer; color:#1a1714; flex-shrink:0; transition:background .18s;
+  }
+  .drawer-close-btn:hover { background:rgba(26,23,20,0.13); }
+
+  /* Mobile drawer */
+  .nav-drawer { position:fixed; inset:0; z-index:9998; pointer-events:none; }
+  .nav-drawer-backdrop { position:absolute; inset:0; background:rgba(26,23,20,0); transition:background 0.4s ease; }
+  .nav-drawer.open .nav-drawer-backdrop { background:rgba(26,23,20,0.4); pointer-events:all; backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); }
+  .nav-drawer-panel {
+    position:absolute; top:0; left:0; right:0;
+    background:#f6f5f3; border-bottom:1.5px solid #e8e4de;
+    border-radius:0 0 28px 28px; padding:0 0 28px;
+    transform:translateY(-110%);
+    transition:transform 0.48s cubic-bezier(0.16,1,0.3,1);
+    box-shadow:0 24px 80px rgba(26,23,20,0.18);
+  }
+  .nav-drawer.open .nav-drawer-panel { transform:translateY(0); pointer-events:all; }
+
+  .drawer-topbar { height:66px; display:flex; align-items:center; justify-content:space-between; padding:0 20px 0 10px; border-bottom:1px solid #ede9e3; }
+  .drawer-search-wrap {
+    margin:18px 20px 8px; display:flex; align-items:center; gap:10px;
+    background:#fff; border:1.5px solid #e8e4de; border-radius:13px;
+    padding:0 14px; height:46px; transition:border-color .2s, box-shadow .2s;
+  }
+  .drawer-search-wrap:focus-within { border-color:#1a1714; box-shadow:0 0 0 3px rgba(26,23,20,.07); }
+  .drawer-search-ico { color:#9e9890; display:flex; flex-shrink:0; transition:color .2s; }
+  .drawer-search-wrap:focus-within .drawer-search-ico { color:#1a1714; }
+  .drawer-search-input { flex:1; border:none; background:transparent; outline:none; font-size:14px; font-weight:500; color:#1a1714; font-family:'Sora',sans-serif; }
+  .drawer-search-input::placeholder { color:#b8b3ad; }
+  .drawer-chips-wrap { padding:6px 20px 14px; display:flex; flex-wrap:wrap; gap:7px; }
+  .drawer-chip { padding:5px 13px; font-size:11px; font-weight:700; color:#6b6760; background:#fff; border:1.5px solid #e8e4de; border-radius:99px; cursor:pointer; font-family:'Sora',sans-serif; transition:all .15s; }
+  .drawer-chip:hover { border-color:#1a1714; color:#1a1714; }
+
+  .drawer-links { padding:4px 12px; }
+  .drawer-link {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 12px; font-size:18px; font-weight:700; color:#1a1714;
+    text-decoration:none; border-radius:14px; border:none; background:transparent;
+    cursor:pointer; width:100%; letter-spacing:-0.04em;
+    opacity:0; transform:translateY(10px);
+    transition:background .15s, opacity .0s, transform .0s;
+  }
+  .nav-drawer.open .drawer-link {
+    opacity:1; transform:translateY(0);
+    transition:background .15s, opacity .4s cubic-bezier(0.16,1,0.3,1), transform .4s cubic-bezier(0.16,1,0.3,1);
+  }
+  .nav-drawer.open .drawer-link:nth-child(1) { transition-delay:0.08s,0.08s,0.08s; }
+  .nav-drawer.open .drawer-link:nth-child(2) { transition-delay:0.13s,0.13s,0.13s; }
+  .nav-drawer.open .drawer-link:nth-child(3) { transition-delay:0.18s,0.18s,0.18s; }
+  .nav-drawer.open .drawer-link:nth-child(4) { transition-delay:0.23s,0.23s,0.23s; }
+  .nav-drawer.open .drawer-link:nth-child(5) { transition-delay:0.28s,0.28s,0.28s; }
+  .nav-drawer.open .drawer-link:nth-child(6) { transition-delay:0.33s,0.33s,0.33s; }
+  .drawer-link:hover { background:rgba(26,23,20,.05); }
+  .drawer-link.sell { color:#9e9890; font-size:15px; font-weight:600; }
+  .drawer-link-right { display:flex; align-items:center; gap:8px; }
+  .drawer-divider { height:1px; background:#ede9e3; margin:4px 12px 8px; }
+
+  .drawer-profile-row {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:12px 12px; border-radius:14px; cursor:pointer;
+    text-decoration:none; width:100%;
+    opacity:0; transform:translateY(10px);
+    transition:background .15s, opacity .0s, transform .0s;
+  }
+  .nav-drawer.open .drawer-profile-row {
+    opacity:1; transform:translateY(0);
+    transition:background .15s, opacity .4s cubic-bezier(0.16,1,0.3,1) .38s, transform .4s cubic-bezier(0.16,1,0.3,1) .38s;
+  }
+  .drawer-profile-row:hover { background:rgba(26,23,20,.05); }
+
+  .drawer-bottom {
+    display:flex; align-items:center; gap:8px; margin:8px 20px 0;
+    opacity:0; transform:translateY(8px); transition:opacity .0s, transform .0s;
+  }
+  .nav-drawer.open .drawer-bottom {
+    opacity:1; transform:translateY(0);
+    transition:opacity .4s cubic-bezier(.16,1,.3,1) .44s, transform .4s cubic-bezier(.16,1,.3,1) .44s;
+  }
+
+  /* Responsive */
+  @media (max-width: 960px) {
+    .nav-center { display:none; }
+    .nav-profile-name { display:none; }
+    .nav-search-wrap { display:none; }
+    .nav-mobile-btn { display:flex; }
+    .nav-bell-btn { display:none; }
+    .nav-cart-btn { display:none; }
+    .nav-divider { display:none; }
+    .nav-profile-btn { display:none; }
+    .nav-bar { justify-content:space-between; }
+    .nav-brand { margin-right:0; }
+  }
+  @media (max-width: 768px) { .nav-bar { top:12px; width:calc(100% - 24px); } }
+  @media (max-width: 600px) {
+    .nav-bar { height:56px; top:10px; width:calc(100% - 20px); padding:0 6px 0 4px; border-radius:16px; }
+    .nav-logo-img { height:46px; }
+    .drawer-topbar { height:56px; padding:0 14px 0 6px; }
+    .drawer-topbar .nav-logo-img { height:44px; }
+    .nav-drawer-panel { border-radius:0; min-height:100dvh; padding-bottom:env(safe-area-inset-bottom,24px); }
+    .drawer-links { padding:4px 10px; }
+    .drawer-link { font-size:22px; padding:13px 12px; }
+    .drawer-link.sell { font-size:15px; }
+    .drawer-search-wrap { margin:14px 16px 6px; height:48px; }
+    .drawer-chips-wrap { padding:4px 16px 10px; }
+    .drawer-bottom { margin:10px 16px 0; }
+    .drawer-profile-row { padding:13px 12px; }
+  }
+  @media (max-width: 390px) {
+    .nav-bar { height:52px; border-radius:14px; }
+    .nav-logo-img { height:42px; }
+    .nav-icon-btn { width:32px; height:32px; }
+    .nav-mobile-btn { width:34px; height:34px; }
+    .drawer-topbar { height:52px; }
+    .drawer-link { font-size:20px; padding:11px 12px; }
+    .drawer-search-wrap { height:44px; }
+    .drawer-search-input { font-size:13px; }
+  }
+`;
+
+// ── Icons ─────────────────────────────────────────────────────────────────────
 const Ico = {
   Search: ({ size = 16 }: { size?: number }) => (
     <svg
@@ -537,6 +510,20 @@ const Ico = {
       <line x1="21" y1="12" x2="9" y2="12" />
     </svg>
   ),
+  User: () => (
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+    >
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </svg>
+  ),
   Menu: ({ open }: { open: boolean }) => (
     <svg
       width="22"
@@ -582,8 +569,15 @@ export default function Navbar() {
   const [query, setQuery] = useState("");
   const [mobileQuery, setMobileQuery] = useState("");
 
+  // ── Real logic from old navbar ──────────────────────────────────────────────
+  const [user, setUser] = useState<UserData | null>(null);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [toastNotification, setToastNotification] = useState<any>(null);
+  const { getCartCount } = useCart();
+  const cartCount = getCartCount();
+
   const inputRef = useRef<HTMLInputElement>(null);
-  const mobileInputRef = useRef<HTMLInputElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
 
@@ -637,6 +631,84 @@ export default function Navbar() {
     return () => document.removeEventListener("mousedown", h);
   }, [profileOpen]);
 
+  // ── Auth + session ──────────────────────────────────────────────────────────
+  useEffect(() => {
+    loadUser();
+    window.addEventListener("userLoggedIn", loadUser);
+    return () => window.removeEventListener("userLoggedIn", loadUser);
+  }, []);
+
+  const loadUser = async () => {
+    const s = localStorage.getItem("yog_user");
+    if (!s) return;
+    const stored = JSON.parse(s);
+    setUser(stored);
+    try {
+      const res = await fetch("/api/auth/refresh", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: stored.email }),
+      });
+      const data = await res.json();
+      if (res.ok && data.user) {
+        localStorage.setItem("yog_user", JSON.stringify(data.user));
+        setUser(data.user);
+      }
+    } catch {}
+  };
+
+  // ── Notification polling ────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!user) return;
+    const poll = async () => {
+      const userStr = localStorage.getItem("yog_user");
+      if (!userStr) return;
+      try {
+        const res = await fetch("/api/notifications", {
+          headers: { "x-user-data": userStr },
+        });
+        const data = await res.json();
+        if (data.unreadCount !== undefined) {
+          setUnreadCount(data.unreadCount);
+          let shownIds: string[] = [];
+          try {
+            const s = localStorage.getItem("yog_shown_notifications");
+            if (s) shownIds = JSON.parse(s);
+          } catch {}
+          if (data.notifications?.length) {
+            const newest = data.notifications.find(
+              (n: any) => !n.read && !shownIds.includes(n.id),
+            );
+            if (newest) {
+              setToastNotification(newest);
+              localStorage.setItem(
+                "yog_shown_notifications",
+                JSON.stringify([...shownIds, newest.id]),
+              );
+            }
+          }
+        }
+      } catch {}
+    };
+    poll();
+    const iv = setInterval(poll, 60000);
+    return () => clearInterval(iv);
+  }, [user]);
+
+  const handleSignOut = () => {
+    localStorage.removeItem("yog_user");
+    setUser(null);
+    setProfileOpen(false);
+    window.location.href = "/";
+  };
+
+  const roleClass =
+    user?.role === "SELLER"
+      ? "seller"
+      : user?.role === "ADMIN"
+        ? "admin"
+        : "user";
+
   return (
     <div className="nav-root">
       <style>{NAV_STYLES}</style>
@@ -648,7 +720,7 @@ export default function Navbar() {
           <img src={LOGO_URL} alt="Yog Fashion" className="nav-logo-img" />
         </a>
 
-        {/* Center links — shifts LEFT when search opens, stays visible */}
+        {/* Center links */}
         <div className={`nav-center${searchOpen ? " search-open" : ""}`}>
           <div className="nav-links">
             {LINKS.map((l) => (
@@ -665,13 +737,25 @@ export default function Navbar() {
                 {l.badge && <span className="nav-link-badge">{l.badge}</span>}
               </a>
             ))}
-            <a href="/sell" className="nav-sell">
+            {user && (
+              <a href="/following" className="nav-link">
+                Following
+              </a>
+            )}
+            <a
+              href={
+                user?.role === "SELLER" || user?.role === "ADMIN"
+                  ? "/seller/dashboard"
+                  : "/seller/apply"
+              }
+              className="nav-sell"
+            >
               <Ico.Tag /> Sell
             </a>
           </div>
         </div>
 
-        {/* Right — never moves */}
+        {/* Right cluster */}
         <div className="nav-right">
           {/* Search */}
           <div
@@ -772,62 +856,124 @@ export default function Navbar() {
             )}
           </div>
 
-          <button className="nav-icon-btn nav-bell-btn">
-            <Ico.Bell />
-            <span className="nav-badge pulse">3</span>
-          </button>
-          <button className="nav-icon-btn nav-cart-btn">
-            <Ico.Cart />
-            <span className="nav-badge">2</span>
-          </button>
-          <div className="nav-divider" />
-
-          {/* Profile */}
-          <div ref={profileRef} style={{ position: "relative" }}>
+          {/* Bell — opens real NotificationCenter */}
+          {user && (
             <button
-              className={`nav-profile-btn${profileOpen ? " open" : ""}`}
-              onClick={() => setProfileOpen((o) => !o)}
+              className="nav-icon-btn nav-bell-btn"
+              onClick={() => setShowNotifications(true)}
             >
-              <span className="nav-profile-name">Yog Admin</span>
-              <div className="nav-avatar">
-                <img src={LOGO_URL} alt="" />
-              </div>
+              <Ico.Bell />
+              {unreadCount > 0 && (
+                <span
+                  className={`nav-badge red${unreadCount > 0 ? " pulse" : ""}`}
+                >
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
             </button>
-            {profileOpen && (
-              <div className="nav-profile-drop">
-                <div className="pdrop-header">
-                  <div className="pdrop-name">Yog Admin</div>
-                  <div className="pdrop-email">aa31noah@outlook.com</div>
-                  <div className="pdrop-role">Admin</div>
-                </div>
-                <div className="pdrop-section">
-                  <a href="/account" className="pdrop-item">
-                    <span className="pdrop-ico">
-                      <Ico.Settings />
-                    </span>
-                    Account Settings
-                  </a>
-                  <a href="/seller-dashboard" className="pdrop-item">
-                    <span className="pdrop-ico">
-                      <Ico.Store />
-                    </span>
-                    Seller Dashboard
-                  </a>
-                </div>
-                <div className="pdrop-divider" />
-                <div className="pdrop-section">
-                  <button className="pdrop-item pdrop-signout">
-                    <span className="pdrop-ico">
-                      <Ico.SignOut />
-                    </span>
-                    Sign Out
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+          )}
 
-          {/* Mobile hamburger */}
+          {/* Cart — real count */}
+          <Link href="/cart" className="nav-icon-btn nav-cart-btn">
+            <Ico.Cart />
+            {cartCount > 0 && (
+              <span className="nav-badge">
+                {cartCount > 99 ? "99+" : cartCount}
+              </span>
+            )}
+          </Link>
+
+          {user && <div className="nav-divider" />}
+
+          {/* Profile — real user */}
+          {user ? (
+            <div ref={profileRef} style={{ position: "relative" }}>
+              <button
+                className={`nav-profile-btn${profileOpen ? " open" : ""}`}
+                onClick={() => setProfileOpen((o) => !o)}
+              >
+                <span className="nav-profile-name">{user.name}</span>
+                <div className="nav-avatar">
+                  {user.image ? (
+                    <img src={user.image} alt={user.name} />
+                  ) : (
+                    user.name[0].toUpperCase()
+                  )}
+                </div>
+              </button>
+              {profileOpen && (
+                <div className="nav-profile-drop">
+                  <div className="pdrop-header">
+                    <div className="pdrop-name">{user.name}</div>
+                    <div className="pdrop-email">{user.email}</div>
+                    <div className={`pdrop-role ${roleClass}`}>{user.role}</div>
+                  </div>
+                  <div className="pdrop-section">
+                    <a
+                      href="/account"
+                      className="pdrop-item"
+                      onClick={() => setProfileOpen(false)}
+                    >
+                      <span className="pdrop-ico">
+                        <Ico.User />
+                      </span>{" "}
+                      Account Settings
+                    </a>
+                    {user.role === "SELLER" && (
+                      <a
+                        href="/seller/dashboard"
+                        className="pdrop-item"
+                        onClick={() => setProfileOpen(false)}
+                      >
+                        <span className="pdrop-ico">
+                          <Ico.Store />
+                        </span>{" "}
+                        Seller Dashboard
+                      </a>
+                    )}
+                    {user.role === "ADMIN" && (
+                      <a
+                        href="/admin/sellers"
+                        className="pdrop-item"
+                        onClick={() => setProfileOpen(false)}
+                      >
+                        <span className="pdrop-ico">
+                          <Ico.Settings />
+                        </span>{" "}
+                        Admin Panel
+                      </a>
+                    )}
+                  </div>
+                  <div className="pdrop-divider" />
+                  <div className="pdrop-section">
+                    <button
+                      className="pdrop-item pdrop-signout"
+                      onClick={handleSignOut}
+                    >
+                      <span className="pdrop-ico">
+                        <Ico.SignOut />
+                      </span>{" "}
+                      Sign Out
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div
+              className="nav-bell-btn"
+              style={{ display: "flex", alignItems: "center", gap: 6 }}
+            >
+              <a href="/login" className="nav-link" style={{ fontSize: 12 }}>
+                Log In
+              </a>
+              <a href="/signup" className="nav-link" style={{ fontSize: 12 }}>
+                Sign Up
+              </a>
+            </div>
+          )}
+
+          {/* Hamburger */}
           <button
             className="nav-mobile-btn"
             onClick={() => setDrawerOpen((o) => !o)}
@@ -852,7 +998,6 @@ export default function Navbar() {
             <button
               className="drawer-close-btn"
               onClick={() => setDrawerOpen(false)}
-              aria-label="Close menu"
             >
               <svg
                 width="20"
@@ -875,7 +1020,6 @@ export default function Navbar() {
               <Ico.Search size={17} />
             </span>
             <input
-              ref={mobileInputRef}
               className="drawer-search-input"
               placeholder="Search clothes, brands, styles…"
               value={mobileQuery}
@@ -915,11 +1059,7 @@ export default function Navbar() {
             <div style={{ padding: "0 20px 12px" }}>
               {mobileResults.length === 0 ? (
                 <div
-                  style={{
-                    fontSize: "12px",
-                    color: "#9e9890",
-                    padding: "8px 0",
-                  }}
+                  style={{ fontSize: 12, color: "#9e9890", padding: "8px 0" }}
                 >
                   No products found
                 </div>
@@ -927,7 +1067,7 @@ export default function Navbar() {
                 mobileResults.map((p, i) => (
                   <div key={p.id}>
                     {i > 0 && (
-                      <div style={{ height: "1px", background: "#f0ede9" }} />
+                      <div style={{ height: 1, background: "#f0ede9" }} />
                     )}
                     <div
                       style={{
@@ -1001,34 +1141,29 @@ export default function Navbar() {
           {!mobileQuery && (
             <>
               <div className="drawer-links">
-                {LINKS.map((l) => (
+                {MOBILE_LINKS.map((l) => (
                   <a
-                    key={l.label}
-                    href={l.href}
+                    key={l}
+                    href={l === "Stores" ? "/stores" : `/${l.toLowerCase()}`}
                     className="drawer-link"
-                    onClick={() => {
-                      setActive(l.label);
-                      setDrawerOpen(false);
-                    }}
+                    onClick={() => setDrawerOpen(false)}
                   >
-                    <span>
-                      {l.label}
-                      {l.badge && (
-                        <span
-                          className="nav-link-badge"
-                          style={{ marginLeft: 8 }}
-                        >
-                          {l.badge}
-                        </span>
-                      )}
-                    </span>
+                    <span>{l}</span>
                     <span className="drawer-link-right">
                       <Ico.Chevron />
                     </span>
                   </a>
                 ))}
                 <div className="drawer-divider" />
-                <a href="/sell" className="drawer-link sell">
+                <a
+                  href={
+                    user?.role === "SELLER" || user?.role === "ADMIN"
+                      ? "/seller/dashboard"
+                      : "/seller/apply"
+                  }
+                  className="drawer-link sell"
+                  onClick={() => setDrawerOpen(false)}
+                >
                   <span
                     style={{ display: "flex", alignItems: "center", gap: 8 }}
                   >
@@ -1037,75 +1172,134 @@ export default function Navbar() {
                   <Ico.Chevron />
                 </a>
                 <div className="drawer-divider" />
-                {/* Profile row — always accessible on mobile */}
-                <a
-                  href="/account"
-                  className="drawer-profile-row"
-                  onClick={() => setDrawerOpen(false)}
-                >
-                  <span
-                    style={{ display: "flex", alignItems: "center", gap: 12 }}
+
+                {/* Profile row — real user */}
+                {user ? (
+                  <a
+                    href="/account"
+                    className="drawer-profile-row"
+                    onClick={() => setDrawerOpen(false)}
                   >
-                    <div
+                    <span
+                      style={{ display: "flex", alignItems: "center", gap: 12 }}
+                    >
+                      <div
+                        style={{
+                          width: 36,
+                          height: 36,
+                          borderRadius: 10,
+                          overflow: "hidden",
+                          background: "#1a1714",
+                          flexShrink: 0,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          color: "#fff",
+                          fontSize: 14,
+                          fontWeight: 700,
+                        }}
+                      >
+                        {user.image ? (
+                          <img
+                            src={user.image}
+                            alt={user.name}
+                            style={{
+                              width: "100%",
+                              height: "100%",
+                              objectFit: "cover",
+                            }}
+                          />
+                        ) : (
+                          user.name[0].toUpperCase()
+                        )}
+                      </div>
+                      <span
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "flex-start",
+                          gap: 2,
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontSize: 17,
+                            fontWeight: 700,
+                            color: "#1a1714",
+                            letterSpacing: "-0.03em",
+                            lineHeight: 1.1,
+                          }}
+                        >
+                          {user.name}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: 11,
+                            color: "#9e9890",
+                            fontWeight: 400,
+                          }}
+                        >
+                          {user.email}
+                        </span>
+                      </span>
+                    </span>
+                    <Ico.Chevron />
+                  </a>
+                ) : (
+                  <div
+                    style={{ display: "flex", gap: 10, padding: "12px 12px" }}
+                  >
+                    <a
+                      href="/login"
+                      onClick={() => setDrawerOpen(false)}
                       style={{
-                        width: 36,
-                        height: 36,
-                        borderRadius: 10,
-                        overflow: "hidden",
-                        background: "#1a1714",
-                        flexShrink: 0,
+                        flex: 1,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
+                        padding: "13px",
+                        borderRadius: 12,
+                        border: "1.5px solid #e8e4de",
+                        fontSize: 14,
+                        fontWeight: 700,
+                        color: "#1a1714",
+                        textDecoration: "none",
+                        background: "#fff",
                       }}
                     >
-                      <img
-                        src={LOGO_URL}
-                        alt=""
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          objectFit: "contain",
-                        }}
-                      />
-                    </div>
-                    <span
+                      Log In
+                    </a>
+                    <a
+                      href="/signup"
+                      onClick={() => setDrawerOpen(false)}
                       style={{
+                        flex: 1,
                         display: "flex",
-                        flexDirection: "column",
-                        alignItems: "flex-start",
-                        gap: 2,
+                        alignItems: "center",
+                        justifyContent: "center",
+                        padding: "13px",
+                        borderRadius: 12,
+                        fontSize: 14,
+                        fontWeight: 700,
+                        color: "#fff",
+                        textDecoration: "none",
+                        background: "#1a1714",
                       }}
                     >
-                      <span
-                        style={{
-                          fontSize: 17,
-                          fontWeight: 700,
-                          color: "#1a1714",
-                          letterSpacing: "-0.03em",
-                          lineHeight: 1.1,
-                        }}
-                      >
-                        Yog Admin
-                      </span>
-                      <span
-                        style={{
-                          fontSize: 11,
-                          color: "#9e9890",
-                          fontWeight: 400,
-                        }}
-                      >
-                        aa31noah@outlook.com
-                      </span>
-                    </span>
-                  </span>
-                  <Ico.Chevron />
-                </a>
+                      Sign Up
+                    </a>
+                  </div>
+                )}
               </div>
 
               <div className="drawer-bottom">
+                {/* Bell → real NotificationCenter */}
                 <button
                   className="nav-icon-btn"
+                  onClick={() => {
+                    setDrawerOpen(false);
+                    setShowNotifications(true);
+                  }}
                   style={{
                     background: "rgba(26,23,20,.05)",
                     borderRadius: 12,
@@ -1114,9 +1308,18 @@ export default function Navbar() {
                   }}
                 >
                   <Ico.Bell />
-                  <span className="nav-badge pulse">3</span>
+                  {unreadCount > 0 && (
+                    <span
+                      className={`nav-badge red${unreadCount > 0 ? " pulse" : ""}`}
+                    >
+                      {unreadCount > 9 ? "9+" : unreadCount}
+                    </span>
+                  )}
                 </button>
-                <button
+                {/* Cart → real count */}
+                <Link
+                  href="/cart"
+                  onClick={() => setDrawerOpen(false)}
                   className="nav-icon-btn"
                   style={{
                     background: "rgba(26,23,20,.05)",
@@ -1126,13 +1329,49 @@ export default function Navbar() {
                   }}
                 >
                   <Ico.Cart />
-                  <span className="nav-badge">2</span>
-                </button>
+                  {cartCount > 0 && (
+                    <span className="nav-badge">
+                      {cartCount > 99 ? "99+" : cartCount}
+                    </span>
+                  )}
+                </Link>
+                {/* Sign out shortcut if logged in */}
+                {user && (
+                  <button
+                    onClick={() => {
+                      setDrawerOpen(false);
+                      handleSignOut();
+                    }}
+                    className="nav-icon-btn"
+                    style={{
+                      background: "rgba(220,38,38,.07)",
+                      borderRadius: 12,
+                      width: 46,
+                      height: 46,
+                      color: "#dc2626",
+                      marginLeft: "auto",
+                    }}
+                  >
+                    <Ico.SignOut />
+                  </button>
+                )}
               </div>
             </>
           )}
         </div>
       </div>
+
+      {/* Real NotificationCenter + Toast */}
+      <NotificationCenter
+        isOpen={showNotifications}
+        onClose={() => setShowNotifications(false)}
+      />
+      {toastNotification && (
+        <NotificationToast
+          notification={toastNotification}
+          onClose={() => setToastNotification(null)}
+        />
+      )}
     </div>
   );
 }
