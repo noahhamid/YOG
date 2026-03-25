@@ -257,13 +257,15 @@ const NAV_STYLES = `
   .nav-drawer-backdrop { position:absolute; inset:0; background:rgba(26,23,20,0); transition:background 0.4s ease; }
   .nav-drawer.open .nav-drawer-backdrop { background:rgba(26,23,20,0.4); pointer-events:all; backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); }
   .nav-drawer-panel {
-    position:absolute; top:0; left:0; right:0;
-    background:#f6f5f3; border-bottom:1.5px solid #e8e4de;
-    border-radius:0 0 28px 28px; padding:0 0 28px;
-    transform:translateY(-110%);
-    transition:transform 0.48s cubic-bezier(0.16,1,0.3,1);
-    box-shadow:0 24px 80px rgba(26,23,20,0.18);
-  }
+  position:absolute; top:0; left:0; right:0;
+  background:#f6f5f3; border-bottom:1.5px solid #e8e4de;
+  border-radius:0 0 28px 28px; padding:0 0 28px;
+  transform:translateY(-110%);
+  transition:transform 0.48s cubic-bezier(0.16,1,0.3,1);
+  box-shadow:0 24px 80px rgba(26,23,20,0.18);
+  max-height:100dvh;
+  overflow-y:auto;
+}
   .nav-drawer.open .nav-drawer-panel { transform:translateY(0); pointer-events:all; }
 
   .drawer-topbar { height:66px; display:flex; align-items:center; justify-content:space-between; padding:0 20px 0 10px; border-bottom:1px solid #ede9e3; }
