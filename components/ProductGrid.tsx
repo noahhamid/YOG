@@ -46,12 +46,14 @@ const CSS = `
 /* ── Mobile sticky search bar ── */
 .pg-mobile-bar {
   display:none;
-  position:sticky; top:64px; z-index:30;
+  position:sticky; top:67px; z-index:30;
   background:var(--bg); border-bottom:1px solid var(--border);
   padding:10px 14px; gap:8px;
   align-items:center;
 }
 @media(max-width:768px){ .pg-mobile-bar { display:flex; } }
+@media(max-width:425px){ .pg-mobile-bar { top:53px; } }
+@media(max-width:375px){ .pg-mobile-bar { top:53px; } }
 
 .pg-mob-search {
   flex:1; position:relative;
@@ -89,34 +91,96 @@ const CSS = `
 /* ── Filter drawer (mobile) ── */
 @keyframes pg-drawer-in { from{transform:translateY(100%)} to{transform:translateY(0)} }
 @keyframes pg-backdrop-in { from{opacity:0} to{opacity:1} }
+
 .pg-drawer-backdrop {
-  position:fixed; inset:0; background:rgba(0,0,0,0.4);
-  z-index:100; backdrop-filter:blur(2px);
-  animation:pg-backdrop-in 0.2s ease;
+  position:fixed; inset:0;
+  background:rgba(26,23,20,0.5);
+  z-index:100;
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+  animation:pg-backdrop-in 0.25s ease;
 }
+
 .pg-drawer {
   position:fixed; bottom:0; left:0; right:0; z-index:101;
-  background:var(--bg); border-radius:20px 20px 0 0;
-  max-height:88vh; overflow-y:auto;
-  animation:pg-drawer-in 0.32s cubic-bezier(0.22,1,0.36,1);
-  padding-bottom:env(safe-area-inset-bottom);
+  width:100%;
+  background:#f6f5f3;
+  border-radius:24px 24px 0 0;
+  max-height:88vh;
+  display:flex;
+  flex-direction:column;
+  animation:pg-drawer-in 0.36s cubic-bezier(0.22,1,0.36,1);
+  box-shadow:0 -8px 40px rgba(26,23,20,0.14);
 }
+
 .pg-drawer-handle {
-  display:flex; justify-content:center; padding:12px 0 4px;
+  display:flex; justify-content:center;
+  padding:14px 0 0; flex-shrink:0;
 }
 .pg-drawer-handle span {
-  width:36px; height:4px; border-radius:2px; background:#d1cdc7;
+  width:40px; height:4px; border-radius:2px; background:#d1cdc7;
 }
+
 .pg-drawer-header {
   display:flex; align-items:center; justify-content:space-between;
-  padding:0 16px 12px; border-bottom:1px solid var(--border);
+  padding:14px 20px; flex-shrink:0;
+  border-bottom:1.5px solid #e8e4de;
 }
-.pg-drawer-title { font-size:15px; font-weight:800; color:var(--text); }
+.pg-drawer-title {
+  font-size:16px; font-weight:800; color:#1a1714; letter-spacing:-0.03em;
+}
+.pg-drawer-header-right {
+  display:flex; align-items:center; gap:8px;
+}
+.pg-drawer-clear {
+  padding:6px 12px; border-radius:8px;
+  border:1.5px solid #e8e4de; background:#fff;
+  font-family:'Sora',sans-serif; font-size:11px; font-weight:700;
+  color:#9e9890; cursor:pointer; transition:all 0.15s;
+}
+.pg-drawer-clear:hover { border-color:#1a1714; color:#1a1714; }
 .pg-drawer-close {
-  width:32px; height:32px; border-radius:8px; border:1.5px solid var(--border);
-  background:var(--card); cursor:pointer; display:flex; align-items:center;
-  justify-content:center; color:var(--muted);
+  width:34px; height:34px; border-radius:10px;
+  border:1.5px solid #e8e4de; background:#fff;
+  cursor:pointer; display:flex; align-items:center;
+  justify-content:center; color:#9e9890; transition:all 0.15s;
+  flex-shrink:0;
 }
+.pg-drawer-close:hover { background:#1a1714; color:#fff; border-color:#1a1714; }
+
+/* Single scroll body — this is the ONLY scrollable area */
+.pg-drawer-body {
+  flex:1;
+  overflow-y:auto;
+  overflow-x:hidden;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  padding:0 0 8px;
+}
+
+/* Force FilterSidebar to be full width with no internal scroll */
+.pg-drawer-body > * {
+  width:100% !important;
+  max-width:100% !important;
+  overflow:visible !important;
+}
+.pg-drawer-body > * > * {
+  overflow:visible !important;
+}
+
+.pg-drawer-footer {
+  padding:12px 20px calc(12px + env(safe-area-inset-bottom, 0px));
+  flex-shrink:0;
+  border-top:1.5px solid #e8e4de;
+  background:#f6f5f3;
+}
+.pg-drawer-apply {
+  width:100%; padding:14px; border-radius:12px; border:none;
+  background:#1a1714; color:#fff;
+  font-family:'Sora',sans-serif; font-size:13px; font-weight:700;
+  cursor:pointer; transition:background 0.15s; letter-spacing:-0.01em;
+}
+.pg-drawer-apply:hover { background:#333; }
 
 /* ── Desktop layout ── */
 .pg-layout {
@@ -967,19 +1031,47 @@ export default function ProductGrid({
             onClick={() => setShowDrawer(false)}
           />
           <div className="pg-drawer">
+            {/* Drag handle */}
             <div className="pg-drawer-handle">
               <span />
             </div>
+
+            {/* Header */}
             <div className="pg-drawer-header">
-              <span className="pg-drawer-title">Filters</span>
+              <span className="pg-drawer-title">
+                Filters
+                {activeFiltersCount > 0 ? ` (${activeFiltersCount})` : ""}
+              </span>
+              <div className="pg-drawer-header-right">
+                {activeFiltersCount > 0 && (
+                  <button className="pg-drawer-clear" onClick={clearFilters}>
+                    Clear all
+                  </button>
+                )}
+                <button
+                  className="pg-drawer-close"
+                  onClick={() => setShowDrawer(false)}
+                >
+                  <XIco />
+                </button>
+              </div>
+            </div>
+
+            {/* Single scrollable body — full width */}
+            <div className="pg-drawer-body">
+              <FilterSidebar {...sharedSidebarProps} />
+            </div>
+
+            {/* Pinned footer */}
+            <div className="pg-drawer-footer">
               <button
-                className="pg-drawer-close"
+                className="pg-drawer-apply"
                 onClick={() => setShowDrawer(false)}
               >
-                <XIco />
+                Show {displayedProducts.length} result
+                {displayedProducts.length !== 1 ? "s" : ""}
               </button>
             </div>
-            <FilterSidebar {...sharedSidebarProps} />
           </div>
         </>
       )}
