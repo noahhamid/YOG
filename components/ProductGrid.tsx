@@ -52,7 +52,7 @@ const CSS = `
   align-items:center;
 }
 @media(max-width:768px){ .pg-mobile-bar { display:flex; } }
-@media(max-width:425px){ .pg-mobile-bar { top:5px; } }
+@media(max-width:425px){ .pg-mobile-bar { top:53px; } }
 @media(max-width:375px){ .pg-mobile-bar { top:53px; } }
 
 .pg-mob-search {
