@@ -10,7 +10,6 @@ import Navbar from "@/components/Navbar";
 
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&display=swap');
-  @keyframes pd-fade { from{opacity:0} to{opacity:1} }
 
   .pd-page { min-height:100vh; background:#f6f5f3; font-family:'Sora',sans-serif; }
 
@@ -46,28 +45,28 @@ const CSS = `
   }
   @media(max-width:900px){ .pd-main-grid { grid-template-columns:1fr; gap:24px; } }
 
-  /* Image col sticky — only navbar above it now (72px) */
-  .pd-col-image { position:sticky; top:88px; }
+  /* Image col sticky — no animation, no stacking context */
+  .pd-col-image { position:sticky; top:88px; z-index:0; }
   @media(max-width:900px){ .pd-col-image { position:static; } }
 
   .pd-col-info { display:flex; flex-direction:column; gap:18px; }
 
+  /* NO animation on info cards — animations create stacking contexts
+     that trap modals even at z-index:99999 */
+  .pd-info-card { opacity:1; }
+
   .pd-desc-card {
     background:#fff; border:1px solid #e8e4de; border-radius:16px;
-    padding:22px 24px; animation:pd-fade 0.4s ease both 0.15s;
+    padding:22px 24px;
   }
   .pd-desc-title { font-size:14px; font-weight:800; color:#1a1714; letter-spacing:-0.2px; margin:0 0 10px; }
   .pd-desc-text  { font-size:13px; color:#6b6560; line-height:1.85; white-space:pre-line; margin:0; }
 
   .pd-reviews-section {
     background:#fff; border:1px solid #e8e4de; border-radius:20px;
-    padding:28px 28px 32px; animation:pd-fade 0.4s ease both 0.2s;
+    padding:28px 28px 32px;
   }
   @media(max-width:640px){ .pd-reviews-section { padding:20px 16px 24px; border-radius:16px; } }
-
-  .pd-info-card { animation:pd-fade 0.35s ease both; }
-  .pd-info-card:nth-child(2) { animation-delay:0.06s; }
-  .pd-info-card:nth-child(3) { animation-delay:0.12s; }
 `;
 
 const BackIco = () => (

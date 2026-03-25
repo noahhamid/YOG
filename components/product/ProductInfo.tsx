@@ -2,15 +2,15 @@
 import { useState } from "react";
 import { useCart } from "@/context/CartContext";
 import OrderModal from "./OrderModal";
+import { toast } from "@/components/ToastProvider";
 
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&display=swap');
-  @keyframes pi-fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
   .pi-wrap { font-family:'Sora',sans-serif; display:flex; flex-direction:column; gap:20px; }
   .pi-brand { font-size:11px; font-weight:700; color:#9e9890; text-transform:uppercase; letter-spacing:0.8px; margin:0; }
   .pi-title { font-size:26px; font-weight:800; color:#1a1714; letter-spacing:-0.7px; line-height:1.2; margin:4px 0 10px; }
 
-  .pi-rating-row { display:flex; align-items:center; gap:8px; }
+  .pi-rating-row { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
   .pi-stars { display:flex; gap:2px; color:#eab308; }
   .pi-rating-val { font-size:13px; font-weight:700; color:#1a1714; }
   .pi-rating-count { font-size:12px; color:#9e9890; }
@@ -18,7 +18,7 @@ const CSS = `
   .pi-sold { font-size:12px; color:#9e9890; font-weight:500; }
   .pi-no-reviews { font-size:12px; color:#9e9890; }
 
-  .pi-price-row { display:flex; align-items:baseline; gap:10px; }
+  .pi-price-row { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
   .pi-price { font-size:30px; font-weight:800; color:#1a1714; letter-spacing:-1px; }
   .pi-compare { font-size:16px; color:#c4bfb8; text-decoration:line-through; }
   .pi-discount-tag { font-size:11px; font-weight:700; background:#fef2f2; color:#dc2626; padding:3px 8px; border-radius:6px; }
@@ -27,10 +27,24 @@ const CSS = `
   .pi-stock-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
   .pi-stock-label { font-size:12px; font-weight:600; }
 
-  .pi-section-label { font-size:11px; font-weight:700; color:#9e9890; text-transform:uppercase; letter-spacing:0.6px; margin-bottom:10px; }
+  .pi-section-label {
+    font-size:11px; font-weight:700; color:#9e9890;
+    text-transform:uppercase; letter-spacing:0.6px;
+    margin-bottom:10px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  }
   .pi-section-label span { color:#1a1714; font-weight:700; text-transform:none; letter-spacing:0; }
 
-  /* Colors */
+  .pi-size-error {
+    color:#dc2626; font-size:11px; font-weight:600;
+    text-transform:none; letter-spacing:0;
+    display:flex; align-items:center; gap:4px;
+  }
+  @keyframes pi-error-in { from{opacity:0;transform:translateX(-4px)} to{opacity:1;transform:none} }
+  .pi-size-error { animation:pi-error-in 0.2s ease; }
+
+  @keyframes pi-flash { 0%,100%{border-color:#e8e4de} 50%{border-color:#dc2626; box-shadow:0 0 0 3px rgba(220,38,38,0.12);} }
+  .pi-sizes.flash .pi-size-btn:not(:disabled) { animation:pi-flash 0.4s ease 2; }
+
   .pi-colors { display:flex; gap:8px; flex-wrap:wrap; }
   .pi-color-btn {
     width:32px; height:32px; border-radius:50%; border:2px solid #e8e4de;
@@ -39,7 +53,6 @@ const CSS = `
   .pi-color-btn.active { border-color:#1a1714; border-width:2.5px; box-shadow:0 0 0 3px rgba(26,23,20,0.12); }
   .pi-color-btn:hover:not(.active) { border-color:#9e9890; transform:scale(1.1); }
 
-  /* Sizes */
   .pi-sizes { display:flex; gap:8px; flex-wrap:wrap; }
   .pi-size-btn {
     padding:7px 16px; border-radius:20px; border:1.5px solid #e8e4de;
@@ -50,7 +63,6 @@ const CSS = `
   .pi-size-btn.active { background:#1a1714; color:#fff; border-color:#1a1714; }
   .pi-size-btn:disabled { border-color:#f0ede8; color:#d1cdc7; cursor:not-allowed; text-decoration:line-through; }
 
-  /* Quantity */
   .pi-qty-row { display:flex; align-items:center; gap:0; background:#f5f3f0; border-radius:22px; width:fit-content; border:1px solid #e8e4de; overflow:hidden; }
   .pi-qty-btn {
     width:36px; height:36px; border:none; background:transparent; font-size:18px;
@@ -61,7 +73,6 @@ const CSS = `
   .pi-qty-btn:disabled { color:#c4bfb8; cursor:not-allowed; }
   .pi-qty-val { min-width:36px; text-align:center; font-size:14px; font-weight:700; color:#1a1714; }
 
-  /* Buttons */
   .pi-actions { display:flex; flex-direction:column; gap:10px; }
   .pi-btn-primary {
     width:100%; padding:14px; border-radius:12px; border:none;
@@ -130,6 +141,22 @@ const CartIco = () => (
     <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
   </svg>
 );
+const WarnIco = () => (
+  <svg
+    width="12"
+    height="12"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="12" cy="12" r="10" />
+    <line x1="12" y1="8" x2="12" y2="12" />
+    <line x1="12" y1="16" x2="12.01" y2="16" />
+  </svg>
+);
 
 export default function ProductInfo({ product }: { product: any }) {
   const { addToCart } = useCart();
@@ -139,10 +166,22 @@ export default function ProductInfo({ product }: { product: any }) {
   );
   const [quantity, setQuantity] = useState(1);
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
+  const [showSizeError, setShowSizeError] = useState(false);
+  const [sizeFlash, setSizeFlash] = useState(false);
+
+  const triggerSizeError = () => {
+    setShowSizeError(true);
+    setSizeFlash(true);
+    document
+      .getElementById("pi-size-section")
+      ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    setTimeout(() => setSizeFlash(false), 900);
+    setTimeout(() => setShowSizeError(false), 4000);
+  };
 
   const handleAddToCart = () => {
     if (!selectedSize) {
-      alert("Please select a size");
+      triggerSizeError();
       return;
     }
     addToCart({
@@ -157,29 +196,29 @@ export default function ProductInfo({ product }: { product: any }) {
       sellerId: product.seller.id,
       sellerName: product.seller.name,
     });
-    alert("✅ Added to cart!");
+    toast.cart(
+      "Added to cart",
+      `${product.title} · Size ${selectedSize} · Qty ${quantity}`,
+    );
   };
 
   const handleOrderNow = () => {
     if (!selectedSize) {
-      alert("Please select a size");
+      triggerSizeError();
       return;
     }
     setIsOrderModalOpen(true);
   };
 
-  const canOrder = product.inStock && selectedSize;
+  const canOrder = product.inStock;
 
   return (
     <>
       <style>{CSS}</style>
       <div className="pi-wrap">
-        {/* Title */}
         <div>
           {product.brand && <p className="pi-brand">{product.brand}</p>}
           <h1 className="pi-title">{product.title}</h1>
-
-          {/* Rating */}
           {product.reviewCount > 0 ? (
             <div className="pi-rating-row">
               <div className="pi-stars">
@@ -213,7 +252,6 @@ export default function ProductInfo({ product }: { product: any }) {
 
         <hr className="pi-divider" />
 
-        {/* Price */}
         <div className="pi-price-row">
           <span className="pi-price">{product.price.toLocaleString()} ETB</span>
           {product.compareAtPrice && product.compareAtPrice > product.price && (
@@ -234,7 +272,6 @@ export default function ProductInfo({ product }: { product: any }) {
           )}
         </div>
 
-        {/* Stock */}
         <div className="pi-stock-row">
           <div
             className="pi-stock-dot"
@@ -252,7 +289,6 @@ export default function ProductInfo({ product }: { product: any }) {
 
         <hr className="pi-divider" />
 
-        {/* Color */}
         {product.colors.length > 0 && (
           <div>
             <p className="pi-section-label">
@@ -282,19 +318,28 @@ export default function ProductInfo({ product }: { product: any }) {
           </div>
         )}
 
-        {/* Size */}
         {product.sizes.length > 0 && (
-          <div>
+          <div id="pi-size-section">
             <p className="pi-section-label">
               Size: <span>{selectedSize || "Select"}</span>
+              {showSizeError && (
+                <span className="pi-size-error">
+                  <WarnIco /> Please select a size first
+                </span>
+              )}
             </p>
-            <div className="pi-sizes">
+            <div className={`pi-sizes${sizeFlash ? " flash" : ""}`}>
               {product.sizes.map((s: any) => (
                 <button
                   key={s.value}
                   className={`pi-size-btn ${selectedSize === s.value ? "active" : ""}`}
                   disabled={!s.available}
-                  onClick={() => s.available && setSelectedSize(s.value)}
+                  onClick={() => {
+                    if (s.available) {
+                      setSelectedSize(s.value);
+                      setShowSizeError(false);
+                    }
+                  }}
                 >
                   {s.value}
                 </button>
@@ -303,7 +348,6 @@ export default function ProductInfo({ product }: { product: any }) {
           </div>
         )}
 
-        {/* Quantity */}
         <div>
           <p className="pi-section-label">Quantity</p>
           <div className="pi-qty-row">
@@ -327,7 +371,6 @@ export default function ProductInfo({ product }: { product: any }) {
           </div>
         </div>
 
-        {/* Actions */}
         <div className="pi-actions">
           <button
             className="pi-btn-primary"

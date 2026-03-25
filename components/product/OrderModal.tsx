@@ -1,28 +1,34 @@
 "use client";
 import { useState } from "react";
+import { toast } from "@/components/ToastProvider";
 
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&display=swap');
   @keyframes om-in { from{opacity:0;transform:translateY(24px) scale(0.97)} to{opacity:1;transform:none} }
   @keyframes om-spin { to{transform:rotate(360deg)} }
+
   .om-backdrop {
-    position:fixed; inset:0; background:rgba(0,0,0,0.48); z-index:9999;
+    position:fixed; inset:0; background:rgba(0,0,0,0.52); z-index:99999;
     display:flex; align-items:flex-end; justify-content:center; padding:0;
-    backdrop-filter:blur(3px);
+    backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);
   }
-  @media(min-width:640px){.om-backdrop{align-items:center;padding:20px;}}
+  @media(min-width:640px){ .om-backdrop { align-items:center; padding:20px; } }
+
   .om-modal {
     background:#fff; width:100%; max-width:560px; max-height:92vh;
-    overflow-y:auto; border-radius:24px 24px 0 0; font-family:'Sora',sans-serif;
+    overflow-y:auto; border-radius:24px 24px 0 0;
+    font-family:'Sora',sans-serif;
     animation:om-in 0.28s cubic-bezier(0.22,1,0.36,1);
+    position:relative; z-index:99999;
   }
-  @media(min-width:640px){.om-modal{border-radius:24px;}}
+  @media(min-width:640px){ .om-modal { border-radius:24px; } }
+
   .om-header {
     display:flex; align-items:center; justify-content:space-between;
     padding:22px 24px 18px; border-bottom:1px solid #e8e4de;
-    position:sticky; top:0; background:#fff; z-index:10; border-radius:24px 24px 0 0;
+    position:sticky; top:0; background:#fff; z-index:10;
+    border-radius:24px 24px 0 0;
   }
-  @media(min-width:640px){.om-header{border-radius:24px 24px 0 0;}}
   .om-title { font-size:18px; font-weight:800; color:#1a1714; letter-spacing:-0.5px; margin:0; }
   .om-close {
     width:34px; height:34px; border-radius:50%; border:1.5px solid #e8e4de;
@@ -30,9 +36,9 @@ const CSS = `
     justify-content:center; color:#9e9890; transition:all 0.15s;
   }
   .om-close:hover { border-color:#1a1714; color:#1a1714; }
+
   .om-body { padding:20px 24px 28px; display:flex; flex-direction:column; gap:18px; }
 
-  /* Product summary */
   .om-product {
     display:flex; gap:14px; background:#f5f3f0; border-radius:14px;
     padding:14px; border:1px solid #e8e4de;
@@ -44,7 +50,6 @@ const CSS = `
   .om-product-meta { font-size:12px; color:#9e9890; margin:0 0 3px; }
   .om-product-price { font-size:16px; font-weight:800; color:#1a1714; margin:6px 0 0; letter-spacing:-0.3px; }
 
-  /* Form */
   .om-field { display:flex; flex-direction:column; gap:6px; }
   .om-label { font-size:12px; font-weight:700; color:#1a1714; display:flex; align-items:center; gap:6px; }
   .om-required { color:#dc2626; }
@@ -58,7 +63,6 @@ const CSS = `
   .om-input::placeholder, .om-textarea::placeholder { color:#c4bfb8; }
   .om-textarea { resize:none; }
 
-  /* Delivery method */
   .om-delivery-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
   .om-delivery-btn {
     padding:14px 12px; border:1.5px solid #e8e4de; border-radius:12px;
@@ -67,12 +71,14 @@ const CSS = `
   }
   .om-delivery-btn:hover:not(.active) { border-color:#9e9890; background:#f5f3f0; }
   .om-delivery-btn.active { border-color:#1a1714; background:#1a1714; color:#fff; }
-  .om-delivery-icon { width:36px; height:36px; border-radius:9px; background:rgba(255,255,255,0.15); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .om-delivery-icon {
+    width:36px; height:36px; border-radius:9px; background:rgba(255,255,255,0.15);
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
   .om-delivery-btn:not(.active) .om-delivery-icon { background:#f5f3f0; }
   .om-delivery-name { font-size:13px; font-weight:700; }
   .om-delivery-sub { font-size:11px; opacity:0.7; margin-top:1px; }
 
-  /* Order summary */
   .om-summary { background:#f5f3f0; border-radius:14px; padding:16px; border:1px solid #e8e4de; }
   .om-summary-row { display:flex; justify-content:space-between; align-items:center; font-size:13px; margin-bottom:8px; }
   .om-summary-row:last-child { margin-bottom:0; padding-top:10px; border-top:1px solid #e8e4de; }
@@ -81,7 +87,6 @@ const CSS = `
   .om-total-label { font-size:14px; font-weight:700; color:#1a1714; }
   .om-total-val { font-size:20px; font-weight:800; color:#1a1714; letter-spacing:-0.5px; }
 
-  /* Submit */
   .om-submit {
     width:100%; padding:14px; border-radius:12px; border:none;
     background:#1a1714; color:#fff; font-size:14px; font-weight:700;
@@ -244,11 +249,14 @@ export default function OrderModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.customerName || !form.customerPhone) {
-      alert("Please fill in all required fields");
+      toast.error(
+        "Missing information",
+        "Please fill in your name and phone number.",
+      );
       return;
     }
     if (form.deliveryMethod === "DELIVERY" && !form.deliveryAddress) {
-      alert("Please provide a delivery address");
+      toast.error("Missing address", "Please provide a delivery address.");
       return;
     }
     setIsSubmitting(true);
@@ -276,7 +284,6 @@ export default function OrderModal({
       });
       const data = await res.json();
       if (res.ok) {
-        alert(`✅ Order placed! Order #${data.orderNumber}`);
         onClose();
         setForm({
           customerName: "",
@@ -286,11 +293,24 @@ export default function OrderModal({
           deliveryAddress: "",
           notes: "",
         });
+        // Show success toast after modal closes
+        setTimeout(() => {
+          toast.success(
+            "Order placed!",
+            `Order #${data.orderNumber} · ${product.title}`,
+          );
+        }, 150);
       } else {
-        alert(data.error || "Failed to place order");
+        toast.error(
+          "Order failed",
+          data.error || "Something went wrong. Please try again.",
+        );
       }
     } catch {
-      alert("Failed to place order. Please try again.");
+      toast.error(
+        "Order failed",
+        "Network error. Please check your connection.",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -299,7 +319,7 @@ export default function OrderModal({
   return (
     <>
       <style>{CSS}</style>
-      <div className="om-backdrop " onClick={onClose}>
+      <div className="om-backdrop" onClick={onClose}>
         <div className="om-modal" onClick={(e) => e.stopPropagation()}>
           <div className="om-header">
             <h2 className="om-title">Place Order</h2>
@@ -309,7 +329,7 @@ export default function OrderModal({
           </div>
 
           <div className="om-body">
-            {/* Product */}
+            {/* Product summary */}
             <div className="om-product">
               <div className="om-product-img">
                 <img src={product.image} alt={product.title} />
@@ -326,7 +346,7 @@ export default function OrderModal({
               </div>
             </div>
 
-            {/* Form */}
+            {/* Full Name */}
             <div className="om-field">
               <label className="om-label">
                 <UserIcon /> Full Name <span className="om-required">*</span>
@@ -343,6 +363,7 @@ export default function OrderModal({
               />
             </div>
 
+            {/* Phone */}
             <div className="om-field">
               <label className="om-label">
                 <PhoneIcon /> Phone Number{" "}
@@ -360,6 +381,7 @@ export default function OrderModal({
               />
             </div>
 
+            {/* Email */}
             <div className="om-field">
               <label className="om-label">
                 <PackageIcon /> Email{" "}
@@ -386,7 +408,7 @@ export default function OrderModal({
               <div className="om-delivery-grid">
                 <button
                   type="button"
-                  className={`om-delivery-btn ${form.deliveryMethod === "DELIVERY" ? "active" : ""}`}
+                  className={`om-delivery-btn${form.deliveryMethod === "DELIVERY" ? " active" : ""}`}
                   onClick={() =>
                     setForm({ ...form, deliveryMethod: "DELIVERY" })
                   }
@@ -401,7 +423,7 @@ export default function OrderModal({
                 </button>
                 <button
                   type="button"
-                  className={`om-delivery-btn ${form.deliveryMethod === "MEETUP" ? "active" : ""}`}
+                  className={`om-delivery-btn${form.deliveryMethod === "MEETUP" ? " active" : ""}`}
                   onClick={() => setForm({ ...form, deliveryMethod: "MEETUP" })}
                 >
                   <div className="om-delivery-icon">
@@ -415,6 +437,7 @@ export default function OrderModal({
               </div>
             </div>
 
+            {/* Address */}
             {form.deliveryMethod === "DELIVERY" && (
               <div className="om-field">
                 <label className="om-label">
@@ -434,6 +457,7 @@ export default function OrderModal({
               </div>
             )}
 
+            {/* Notes */}
             <div className="om-field">
               <label className="om-label">
                 Notes{" "}
@@ -472,6 +496,7 @@ export default function OrderModal({
               </div>
             </div>
 
+            {/* Submit */}
             <button
               className="om-submit"
               onClick={handleSubmit}
@@ -479,8 +504,7 @@ export default function OrderModal({
             >
               {isSubmitting ? (
                 <>
-                  <div className="om-spinner" />
-                  Placing order…
+                  <div className="om-spinner" /> Placing order…
                 </>
               ) : (
                 <>
