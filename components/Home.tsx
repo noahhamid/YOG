@@ -71,14 +71,13 @@ const KEYFRAMES = `
     padding-top: 18px;
   }
   .hm-mobile-slide {
-    position: absolute;
-    left: 50%; transform: translateX(-50%);
-    overflow: hidden; border-radius: 9999px 9999px 0 0;
-    opacity: 0; transition: opacity 0.65s cubic-bezier(0.4,0,0.2,1);
-    pointer-events: none;
-    /* default (>400px) */
-    bottom: -40px;
-  }
+  position: absolute;
+  left: 50%; transform: translateX(-50%);
+  bottom: 0;
+  overflow: hidden; border-radius: 9999px 9999px 0 0;
+  opacity: 0; transition: opacity 0.65s cubic-bezier(0.4,0,0.2,1);
+  pointer-events: none;
+}
   .hm-mobile-slide.active { opacity: 1; }
   .hm-mobile-slide img { width:100%; height:100%; object-fit:cover; object-position:top; display:block; }
 
@@ -105,7 +104,7 @@ const KEYFRAMES = `
     .hm-h1   { font-size: clamp(26px, 10vw, 40px); }
     .hm-btns { gap: 8px; }
     .hm-btn-primary, .hm-btn-ghost { padding: 8px 14px; font-size: 10px; }
-    .hm-mobile-slide { bottom: -20px; }
+    
   }
 
   /* 375px */
@@ -114,7 +113,7 @@ const KEYFRAMES = `
     .hm-h1   { font-size: clamp(26px, 10vw, 40px); }
     .hm-btns { gap: 8px; }
     .hm-btn-primary, .hm-btn-ghost { padding: 8px 14px; font-size: 10px; }
-    .hm-mobile-slide { bottom: -30px; }
+    
   }
 
   /* 425px and above mobile — -40px already set as default above 400px */
@@ -212,9 +211,8 @@ export default function Home() {
   const H = Math.round(safeVh * 0.5);
   const gapX = 290;
 
-  const mobileW = Math.round(safeVw * 0.72);
-  // ✅ 425px+ gets taller image to show more content, smaller screens stay compact
-  const mobileH = Math.round(safeVh * 0.52);
+  const mobileW = Math.round(safeVw * (safeVw <= 340 ? 0.72 : 0.62));
+  const mobileH = Math.round(safeVh * (safeVw <= 340 ? 0.48 : 0.45));
 
   return (
     <>
