@@ -175,7 +175,7 @@ export default function NotificationToast({
           animate={{ y: 0, opacity: 1, scale: 1 }}
           exit={{ y: -80, opacity: 0, scale: 0.95 }}
           transition={{ type: "spring", damping: 22, stiffness: 340 }}
-          className="fixed top-5 right-5 z-[60] w-[380px] max-w-[calc(100vw-2rem)]"
+          className="fixed top-5 right-5 z-[600] w-[380px] max-w-[calc(100vw-2rem)]"
           style={{ fontFamily: "'Sora', sans-serif" }}
           onMouseEnter={() => setPaused(true)}
           onMouseLeave={() => setPaused(false)}

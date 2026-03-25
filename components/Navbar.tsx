@@ -333,8 +333,8 @@ const NAV_STYLES = `
     .nav-profile-name { display:none; }
     .nav-search-wrap { display:none; }
     .nav-mobile-btn { display:flex; }
-    .nav-bell-btn { display:none; }
-    .nav-cart-btn { display:none; }
+    .nav-bell-btn { display:flex; }
+    .nav-cart-btn { display:flex; }
     .nav-divider { display:none; }
     .nav-profile-btn { display:none; }
     .nav-bar { justify-content:space-between; }
@@ -610,6 +610,10 @@ export default function Navbar() {
 
   useEffect(() => {
     if (!drawerOpen) setMobileQuery("");
+    document.body.style.overflow = drawerOpen ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [drawerOpen]);
 
   useEffect(() => {
@@ -737,11 +741,7 @@ export default function Navbar() {
                 {l.badge && <span className="nav-link-badge">{l.badge}</span>}
               </a>
             ))}
-            {user && (
-              <a href="/following" className="nav-link">
-                Following
-              </a>
-            )}
+
             <a
               href={
                 user?.role === "SELLER" || user?.role === "ADMIN"
@@ -919,16 +919,26 @@ export default function Navbar() {
                       </span>{" "}
                       Account Settings
                     </a>
+                    <a
+                      href="/following"
+                      className="pdrop-item"
+                      onClick={() => setProfileOpen(false)}
+                    >
+                      <span className="pdrop-ico">
+                        <Ico.Chevron />
+                      </span>{" "}
+                      Following
+                    </a>
                     {user.role === "SELLER" && (
                       <a
-                        href="/seller/dashboard"
+                        href="/seller/profile"
                         className="pdrop-item"
                         onClick={() => setProfileOpen(false)}
                       >
                         <span className="pdrop-ico">
                           <Ico.Store />
                         </span>{" "}
-                        Seller Dashboard
+                        Store Profile
                       </a>
                     )}
                     {user.role === "ADMIN" && (
@@ -1174,77 +1184,156 @@ export default function Navbar() {
                 <div className="drawer-divider" />
 
                 {/* Profile row — real user */}
+                {/* Profile row — real user */}
                 {user ? (
-                  <a
-                    href="/account"
-                    className="drawer-profile-row"
-                    onClick={() => setDrawerOpen(false)}
-                  >
-                    <span
-                      style={{ display: "flex", alignItems: "center", gap: 12 }}
+                  <>
+                    <a
+                      href="/account"
+                      className="drawer-profile-row"
+                      onClick={() => setDrawerOpen(false)}
                     >
-                      <div
-                        style={{
-                          width: 36,
-                          height: 36,
-                          borderRadius: 10,
-                          overflow: "hidden",
-                          background: "#1a1714",
-                          flexShrink: 0,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          color: "#fff",
-                          fontSize: 14,
-                          fontWeight: 700,
-                        }}
-                      >
-                        {user.image ? (
-                          <img
-                            src={user.image}
-                            alt={user.name}
-                            style={{
-                              width: "100%",
-                              height: "100%",
-                              objectFit: "cover",
-                            }}
-                          />
-                        ) : (
-                          user.name[0].toUpperCase()
-                        )}
-                      </div>
                       <span
                         style={{
                           display: "flex",
-                          flexDirection: "column",
-                          alignItems: "flex-start",
-                          gap: 2,
+                          alignItems: "center",
+                          gap: 12,
                         }}
                       >
-                        <span
+                        <div
                           style={{
-                            fontSize: 17,
+                            width: 36,
+                            height: 36,
+                            borderRadius: 10,
+                            overflow: "hidden",
+                            background: "#1a1714",
+                            flexShrink: 0,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            color: "#fff",
+                            fontSize: 14,
                             fontWeight: 700,
-                            color: "#1a1714",
-                            letterSpacing: "-0.03em",
-                            lineHeight: 1.1,
                           }}
                         >
-                          {user.name}
-                        </span>
+                          {user.image ? (
+                            <img
+                              src={user.image}
+                              alt={user.name}
+                              style={{
+                                width: "100%",
+                                height: "100%",
+                                objectFit: "cover",
+                              }}
+                            />
+                          ) : (
+                            user.name[0].toUpperCase()
+                          )}
+                        </div>
                         <span
                           style={{
-                            fontSize: 11,
-                            color: "#9e9890",
-                            fontWeight: 400,
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "flex-start",
+                            gap: 2,
                           }}
                         >
-                          {user.email}
+                          <span
+                            style={{
+                              fontSize: 17,
+                              fontWeight: 700,
+                              color: "#1a1714",
+                              letterSpacing: "-0.03em",
+                              lineHeight: 1.1,
+                            }}
+                          >
+                            {user.name}
+                          </span>
+                          <span
+                            style={{
+                              fontSize: 11,
+                              color: "#9e9890",
+                              fontWeight: 400,
+                            }}
+                          >
+                            {user.email}
+                          </span>
                         </span>
                       </span>
-                    </span>
-                    <Ico.Chevron />
-                  </a>
+                      <Ico.Chevron />
+                    </a>
+
+                    {/* Account sub-links */}
+                    <div style={{ padding: "0 12px 4px" }}>
+                      <a
+                        href="/account"
+                        className="pdrop-item"
+                        onClick={() => setDrawerOpen(false)}
+                        style={{ borderRadius: 10 }}
+                      >
+                        <span className="pdrop-ico">
+                          <Ico.User />
+                        </span>{" "}
+                        Account Settings
+                      </a>
+                      <a
+                        href="/following"
+                        className="pdrop-item"
+                        onClick={() => setDrawerOpen(false)}
+                        style={{ borderRadius: 10 }}
+                      >
+                        <span className="pdrop-ico">
+                          <Ico.Chevron />
+                        </span>{" "}
+                        Following
+                      </a>
+                      {user.role === "SELLER" && (
+                        <a
+                          href="/seller/profile"
+                          className="pdrop-item"
+                          onClick={() => setDrawerOpen(false)}
+                          style={{ borderRadius: 10 }}
+                        >
+                          <span className="pdrop-ico">
+                            <Ico.Store />
+                          </span>{" "}
+                          Store Profile
+                        </a>
+                      )}
+                      {user.role === "ADMIN" && (
+                        <a
+                          href="/admin/sellers"
+                          className="pdrop-item"
+                          onClick={() => setDrawerOpen(false)}
+                          style={{ borderRadius: 10 }}
+                        >
+                          <span className="pdrop-ico">
+                            <Ico.Settings />
+                          </span>{" "}
+                          Admin Panel
+                        </a>
+                      )}
+                      <div
+                        style={{
+                          height: 1,
+                          background: "#ede9e3",
+                          margin: "4px 0",
+                        }}
+                      />
+                      <button
+                        className="pdrop-item pdrop-signout"
+                        onClick={() => {
+                          handleSignOut();
+                          setDrawerOpen(false);
+                        }}
+                        style={{ borderRadius: 10, width: "100%" }}
+                      >
+                        <span className="pdrop-ico">
+                          <Ico.SignOut />
+                        </span>{" "}
+                        Sign Out
+                      </button>
+                    </div>
+                  </>
                 ) : (
                   <div
                     style={{ display: "flex", gap: 10, padding: "12px 12px" }}
@@ -1289,71 +1378,6 @@ export default function Navbar() {
                       Sign Up
                     </a>
                   </div>
-                )}
-              </div>
-
-              <div className="drawer-bottom">
-                {/* Bell → real NotificationCenter */}
-                <button
-                  className="nav-icon-btn"
-                  onClick={() => {
-                    setDrawerOpen(false);
-                    setShowNotifications(true);
-                  }}
-                  style={{
-                    background: "rgba(26,23,20,.05)",
-                    borderRadius: 12,
-                    width: 46,
-                    height: 46,
-                  }}
-                >
-                  <Ico.Bell />
-                  {unreadCount > 0 && (
-                    <span
-                      className={`nav-badge red${unreadCount > 0 ? " pulse" : ""}`}
-                    >
-                      {unreadCount > 9 ? "9+" : unreadCount}
-                    </span>
-                  )}
-                </button>
-                {/* Cart → real count */}
-                <Link
-                  href="/cart"
-                  onClick={() => setDrawerOpen(false)}
-                  className="nav-icon-btn"
-                  style={{
-                    background: "rgba(26,23,20,.05)",
-                    borderRadius: 12,
-                    width: 46,
-                    height: 46,
-                  }}
-                >
-                  <Ico.Cart />
-                  {cartCount > 0 && (
-                    <span className="nav-badge">
-                      {cartCount > 99 ? "99+" : cartCount}
-                    </span>
-                  )}
-                </Link>
-                {/* Sign out shortcut if logged in */}
-                {user && (
-                  <button
-                    onClick={() => {
-                      setDrawerOpen(false);
-                      handleSignOut();
-                    }}
-                    className="nav-icon-btn"
-                    style={{
-                      background: "rgba(220,38,38,.07)",
-                      borderRadius: 12,
-                      width: 46,
-                      height: 46,
-                      color: "#dc2626",
-                      marginLeft: "auto",
-                    }}
-                  >
-                    <Ico.SignOut />
-                  </button>
                 )}
               </div>
             </>

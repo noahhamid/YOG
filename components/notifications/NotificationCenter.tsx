@@ -330,7 +330,7 @@ export default function NotificationCenter({
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: 420, opacity: 0 }}
             transition={{ type: "spring", damping: 28, stiffness: 320 }}
-            className="fixed top-0 right-0 h-full w-full max-w-[400px] z-50 flex flex-col"
+            className="fixed top-0 right-0 h-full w-full max-w-[400px] z-500 flex flex-col"
             style={{ background: "#f6f5f3", fontFamily: "'Sora', sans-serif" }}
             onClick={(e) => e.stopPropagation()}
           >
