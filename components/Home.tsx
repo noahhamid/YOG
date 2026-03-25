@@ -153,13 +153,14 @@ export default function Home() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    const update = () => {
-      setVh(window.innerHeight);
-      setVw(window.innerWidth);
-    };
-    update();
-    window.addEventListener("resize", update);
-    return () => window.removeEventListener("resize", update);
+    // Capture once — never update vh again so mobile browser
+    // chrome bar show/hide doesn't resize the image
+    setVh(window.innerHeight);
+    setVw(window.innerWidth);
+
+    const updateW = () => setVw(window.innerWidth);
+    window.addEventListener("resize", updateW);
+    return () => window.removeEventListener("resize", updateW);
   }, []);
 
   useEffect(() => {
