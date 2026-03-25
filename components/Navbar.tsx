@@ -72,7 +72,7 @@ const NAV_STYLES = `
 
   .nav-bar {
     position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
-    z-index: 9999;
+    z-index: 100;
     display: flex; align-items: center;
     width: calc(100% - 32px); max-width: 1200px;
     padding: 0 8px 0 6px; height: 66px; gap: 0;
@@ -253,7 +253,7 @@ const NAV_STYLES = `
   .drawer-close-btn:hover { background:rgba(26,23,20,0.13); }
 
   /* Mobile drawer */
-  .nav-drawer { position:fixed; inset:0; z-index:9998; pointer-events:none; }
+  .nav-drawer { position:fixed; inset:0; z-index:99; pointer-events:none; }
   .nav-drawer-backdrop { position:absolute; inset:0; background:rgba(26,23,20,0); transition:background 0.4s ease; }
   .nav-drawer.open .nav-drawer-backdrop { background:rgba(26,23,20,0.4); pointer-events:all; backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); }
   .nav-drawer-panel {
@@ -1386,10 +1386,26 @@ export default function Navbar() {
       </div>
 
       {/* Real NotificationCenter + Toast */}
-      <NotificationCenter
-        isOpen={showNotifications}
-        onClose={() => setShowNotifications(false)}
-      />
+      <>
+        {showNotifications && (
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: 9997,
+              backdropFilter: "blur(4px) saturate(140%)",
+              WebkitBackdropFilter: "blur(12px) saturate(140%)",
+              background: "rgba(246,245,243,0.15)",
+              transition: "all 0.3s ease",
+            }}
+            onClick={() => setShowNotifications(false)}
+          />
+        )}
+        <NotificationCenter
+          isOpen={showNotifications}
+          onClose={() => setShowNotifications(false)}
+        />
+      </>
       {toastNotification && (
         <NotificationToast
           notification={toastNotification}
