@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useCart } from "@/context/CartContext";
 import OrderModal from "./OrderModal";
 import { toast } from "@/components/ToastProvider";
@@ -34,15 +34,24 @@ const CSS = `
   }
   .pi-section-label span { color:#1a1714; font-weight:700; text-transform:none; letter-spacing:0; }
 
+  /* ── Size error — bold red pill ── */
   .pi-size-error {
-    color:#dc2626; font-size:11px; font-weight:600;
+    color:#dc2626; font-size:11px; font-weight:700;
     text-transform:none; letter-spacing:0;
-    display:flex; align-items:center; gap:4px;
+    display:inline-flex; align-items:center; gap:4px;
+    background:#fef2f2; padding:2px 8px; border-radius:20px;
+    border:1px solid #fecaca;
   }
-  @keyframes pi-error-in { from{opacity:0;transform:translateX(-4px)} to{opacity:1;transform:none} }
-  .pi-size-error { animation:pi-error-in 0.2s ease; }
+  @keyframes pi-error-in {
+    from { opacity:0; transform:translateX(-6px) scale(0.95); }
+    to   { opacity:1; transform:translateX(0) scale(1); }
+  }
+  .pi-size-error { animation:pi-error-in 0.22s cubic-bezier(0.22,1,0.36,1); }
 
-  @keyframes pi-flash { 0%,100%{border-color:#e8e4de} 50%{border-color:#dc2626; box-shadow:0 0 0 3px rgba(220,38,38,0.12);} }
+  @keyframes pi-flash {
+    0%,100% { border-color:#e8e4de; }
+    50% { border-color:#dc2626; box-shadow:0 0 0 3px rgba(220,38,38,0.12); }
+  }
   .pi-sizes.flash .pi-size-btn:not(:disabled) { animation:pi-flash 0.4s ease 2; }
 
   .pi-colors { display:flex; gap:8px; flex-wrap:wrap; }
@@ -73,6 +82,7 @@ const CSS = `
   .pi-qty-btn:disabled { color:#c4bfb8; cursor:not-allowed; }
   .pi-qty-val { min-width:36px; text-align:center; font-size:14px; font-weight:700; color:#1a1714; }
 
+  /* ── Original inline buttons — always rendered ── */
   .pi-actions { display:flex; flex-direction:column; gap:10px; }
   .pi-btn-primary {
     width:100%; padding:14px; border-radius:12px; border:none;
@@ -93,6 +103,54 @@ const CSS = `
   .pi-btn-ghost:disabled { border-color:#f0ede8; color:#c4bfb8; cursor:not-allowed; }
 
   .pi-divider { border:none; border-top:1px solid #e8e4de; margin:0; }
+
+  /* ── Sticky bottom bar ─────────────────────────────────────────────
+     Mobile only. Hidden by default via opacity+transform.
+     JS adds .visible when original buttons scroll out of view.
+  ── */
+  .pi-sticky-bar {
+    display: none;
+  }
+
+  @media(max-width:900px) {
+    .pi-sticky-bar {
+      display: flex;
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
+      background: rgba(246,245,243,0.96);
+      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      border-top: 1.5px solid #e8e4de;
+      padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+      gap: 10px; align-items: center;
+      /* invisible + slid down by default */
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(100%);
+      transition: opacity 0.28s cubic-bezier(0.22,1,0.36,1),
+                  transform 0.28s cubic-bezier(0.22,1,0.36,1);
+    }
+    .pi-sticky-bar.visible {
+      opacity: 1;
+      pointer-events: all;
+      transform: translateY(0);
+    }
+    .pi-sticky-cart {
+      width: 48px; height: 48px; flex-shrink: 0; border-radius: 12px;
+      border: 1.5px solid #e8e4de; background: #fff; display: flex;
+      align-items: center; justify-content: center; cursor: pointer;
+      color: #1a1714; transition: all 0.15s;
+    }
+    .pi-sticky-cart:hover:not(:disabled) { border-color: #1a1714; background: #f5f3f0; }
+    .pi-sticky-cart:disabled { border-color: #f0ede8; color: #c4bfb8; cursor: not-allowed; }
+    .pi-sticky-order {
+      flex: 1; padding: 14px; border-radius: 12px; border: none;
+      background: #1a1714; color: #fff; font-size: 14px; font-weight: 700;
+      cursor: pointer; transition: all 0.15s; display: flex;
+      align-items: center; justify-content: center; gap: 8px;
+      font-family: 'Sora', sans-serif;
+    }
+    .pi-sticky-order:hover:not(:disabled) { background: #333; }
+    .pi-sticky-order:disabled { background: #e8e4de; color: #9e9890; cursor: not-allowed; }
+  }
 `;
 
 const StarIco = ({ filled }: { filled?: boolean }) => (
@@ -143,8 +201,8 @@ const CartIco = () => (
 );
 const WarnIco = () => (
   <svg
-    width="12"
-    height="12"
+    width="11"
+    height="11"
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
@@ -168,6 +226,20 @@ export default function ProductInfo({ product }: { product: any }) {
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
   const [showSizeError, setShowSizeError] = useState(false);
   const [sizeFlash, setSizeFlash] = useState(false);
+  const [showSticky, setShowSticky] = useState(false);
+
+  // Watch the original action buttons — show sticky only when they leave the viewport
+  const actionsRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = actionsRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => setShowSticky(!entry.isIntersecting),
+      { threshold: 0, rootMargin: "0px 0px -10px 0px" },
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
 
   const triggerSizeError = () => {
     setShowSizeError(true);
@@ -216,6 +288,7 @@ export default function ProductInfo({ product }: { product: any }) {
     <>
       <style>{CSS}</style>
       <div className="pi-wrap">
+        {/* Title + rating */}
         <div>
           {product.brand && <p className="pi-brand">{product.brand}</p>}
           <h1 className="pi-title">{product.title}</h1>
@@ -252,6 +325,7 @@ export default function ProductInfo({ product }: { product: any }) {
 
         <hr className="pi-divider" />
 
+        {/* Price */}
         <div className="pi-price-row">
           <span className="pi-price">{product.price.toLocaleString()} ETB</span>
           {product.compareAtPrice && product.compareAtPrice > product.price && (
@@ -272,6 +346,7 @@ export default function ProductInfo({ product }: { product: any }) {
           )}
         </div>
 
+        {/* Stock */}
         <div className="pi-stock-row">
           <div
             className="pi-stock-dot"
@@ -289,6 +364,7 @@ export default function ProductInfo({ product }: { product: any }) {
 
         <hr className="pi-divider" />
 
+        {/* Color */}
         {product.colors.length > 0 && (
           <div>
             <p className="pi-section-label">
@@ -318,6 +394,7 @@ export default function ProductInfo({ product }: { product: any }) {
           </div>
         )}
 
+        {/* Size */}
         {product.sizes.length > 0 && (
           <div id="pi-size-section">
             <p className="pi-section-label">
@@ -348,6 +425,7 @@ export default function ProductInfo({ product }: { product: any }) {
           </div>
         )}
 
+        {/* Quantity */}
         <div>
           <p className="pi-section-label">Quantity</p>
           <div className="pi-qty-row">
@@ -371,7 +449,8 @@ export default function ProductInfo({ product }: { product: any }) {
           </div>
         </div>
 
-        <div className="pi-actions">
+        {/* ── Original buttons — always in page flow, observed by IntersectionObserver ── */}
+        <div className="pi-actions" ref={actionsRef}>
           <button
             className="pi-btn-primary"
             onClick={handleOrderNow}
@@ -387,6 +466,25 @@ export default function ProductInfo({ product }: { product: any }) {
             <CartIco /> Add to Cart
           </button>
         </div>
+      </div>
+
+      {/* ── Sticky bar — mobile only, slides up when original buttons leave viewport ── */}
+      <div className={`pi-sticky-bar${showSticky ? " visible" : ""}`}>
+        <button
+          className="pi-sticky-cart"
+          onClick={handleAddToCart}
+          disabled={!canOrder}
+          title="Add to cart"
+        >
+          <CartIco />
+        </button>
+        <button
+          className="pi-sticky-order"
+          onClick={handleOrderNow}
+          disabled={!canOrder}
+        >
+          <PackageIco /> Order Now
+        </button>
       </div>
 
       <OrderModal

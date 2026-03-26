@@ -3,8 +3,16 @@ import { useState } from "react";
 
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&display=swap');
-  .pg-wrap { display:flex; gap:12px; font-family:'Sora',sans-serif; }
-  .pg-thumbs { display:flex; flex-direction:column; gap:8px; width:76px; flex-shrink:0; }
+
+  /* ── Desktop layout: thumbs on left, main on right ── */
+  .pg-wrap {
+    display:flex; gap:12px; font-family:'Sora',sans-serif;
+    flex-direction:row;
+  }
+  .pg-thumbs {
+    display:flex; flex-direction:column; gap:8px;
+    width:76px; flex-shrink:0;
+  }
   .pg-thumb {
     width:76px; height:76px; border-radius:10px; overflow:hidden;
     border:1.5px solid #e8e4de; cursor:pointer; transition:all 0.15s;
@@ -13,14 +21,14 @@ const CSS = `
   .pg-thumb:hover { border-color:#9e9890; }
   .pg-thumb.active { border-color:#1a1714; border-width:2px; }
   .pg-thumb img { width:100%; height:100%; object-fit:cover; }
+
   .pg-main {
     flex:1; aspect-ratio:1; border-radius:16px; overflow:hidden;
     background:#f5f3f0; position:relative; border:1px solid #e8e4de;
   }
-  .pg-main-img {
-    width:100%; height:100%; transition:transform 0.1s;
-  }
+  .pg-main-img { width:100%; height:100%; transition:transform 0.1s; }
   .pg-main-img img { width:100%; height:100%; object-fit:cover; display:block; user-select:none; }
+
   .pg-discount {
     position:absolute; top:14px; left:14px; z-index:10;
     background:#dc2626; color:#fff; padding:4px 10px;
@@ -41,6 +49,26 @@ const CSS = `
     background:rgba(255,255,255,0.45); transition:all 0.15s; cursor:pointer;
   }
   .pg-dot.active { background:#fff; width:18px; border-radius:3px; }
+
+  /* ── Mobile: stack vertically — main image on top, thumbs on bottom ── */
+  @media(max-width:640px) {
+    .pg-wrap {
+      flex-direction:column; gap:10px;
+    }
+    /* reorder: main first, thumbs second */
+    .pg-main  { order:1; aspect-ratio:1; width:100%; border-radius:14px; }
+    .pg-thumbs {
+      order:2;
+      flex-direction:row; width:100%;
+      overflow-x:auto; padding-bottom:4px;
+      scrollbar-width:none;
+      -ms-overflow-style:none;
+    }
+    .pg-thumbs::-webkit-scrollbar { display:none; }
+    .pg-thumb {
+      width:64px; height:64px; flex-shrink:0; border-radius:9px;
+    }
+  }
 `;
 
 interface Props {
@@ -70,12 +98,12 @@ export default function ProductImageGallery({
     <>
       <style>{CSS}</style>
       <div className="pg-wrap">
-        {/* Thumbnails */}
+        {/* Thumbnails — left on desktop, bottom on mobile */}
         <div className="pg-thumbs">
           {images.map((img, i) => (
             <button
               key={i}
-              className={`pg-thumb ${current === i ? "active" : ""}`}
+              className={`pg-thumb${current === i ? " active" : ""}`}
               onClick={() => setCurrent(i)}
             >
               <img src={img} alt={`${title} ${i + 1}`} />
@@ -112,7 +140,7 @@ export default function ProductImageGallery({
               {images.map((_, i) => (
                 <div
                   key={i}
-                  className={`pg-dot ${current === i ? "active" : ""}`}
+                  className={`pg-dot${current === i ? " active" : ""}`}
                   onClick={() => setCurrent(i)}
                 />
               ))}

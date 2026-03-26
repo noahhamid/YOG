@@ -10,15 +10,24 @@ const CSS = `
   }
   .sc-card:hover { box-shadow:0 4px 18px rgba(0,0,0,0.07); border-color:rgba(0,0,0,0.1); }
   .sc-left { display:flex; align-items:center; gap:14px; min-width:0; }
+
+  /* ── Larger circle avatar ── */
   .sc-avatar {
-    width:52px; height:52px; border-radius:14px; overflow:hidden;
-    background:#f5f3f0; flex-shrink:0; border:1.5px solid #e8e4de;
+    width:64px; height:64px;
+    border-radius:50%;
+    overflow:hidden;
+    background:#f5f3f0;
+    flex-shrink:0;
+    border:2px solid #e8e4de;
   }
-  .sc-avatar img { width:100%; height:100%; object-fit:cover; }
+  .sc-avatar img { width:100%; height:100%; object-fit:cover; display:block; }
   .sc-avatar-fallback {
     width:100%; height:100%; display:flex; align-items:center;
-    justify-content:center; background:linear-gradient(135deg,#1a1714,#4a4540); color:#fff;
+    justify-content:center;
+    background:linear-gradient(135deg,#1a1714,#4a4540);
+    color:#fff;
   }
+
   .sc-info { min-width:0; }
   .sc-name-row { display:flex; align-items:center; gap:7px; margin-bottom:3px; }
   .sc-name { font-size:15px; font-weight:700; color:#1a1714; letter-spacing:-0.2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -40,8 +49,8 @@ const CSS = `
 
 const StoreIco = () => (
   <svg
-    width="20"
-    height="20"
+    width="22"
+    height="22"
     viewBox="0 0 24 24"
     fill="none"
     stroke="white"
@@ -100,11 +109,10 @@ export default function SellerCard({ seller }: { seller: any }) {
                 alt={seller.name}
                 onError={(e) => {
                   e.currentTarget.style.display = "none";
-                  (e.currentTarget.parentElement as HTMLElement).classList.add(
-                    "sc-avatar-fallback",
-                  );
-                  (e.currentTarget.parentElement as HTMLElement).innerHTML =
-                    '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.75"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>';
+                  const parent = e.currentTarget.parentElement as HTMLElement;
+                  parent.classList.add("sc-avatar-fallback");
+                  parent.innerHTML =
+                    '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.75"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>';
                 }}
               />
             ) : (
