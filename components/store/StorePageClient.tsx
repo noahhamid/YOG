@@ -31,7 +31,6 @@ const CalendarIco = (p: any) => (
     d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"
   />
 );
-const CheckIco = (p: any) => <Ico {...p} d="M20 6 9 17l-5-5" sw={2.5} />;
 const ShareIco = (p: any) => (
   <Ico
     {...p}
@@ -229,6 +228,7 @@ function AnimPackage({ size = 22, color = "currentColor" }: any) {
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&display=swap');
   :root{--bg:#f6f5f3;--card:#fff;--text:#1a1714;--muted:#9e9890;--border:#e8e4de;--hover:#f5f3f0;--divider:rgba(0,0,0,0.06);}
+
   @keyframes st-fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
   @keyframes st-star-pop{0%{transform:scale(1)}40%{transform:scale(1.45)}70%{transform:scale(0.9)}100%{transform:scale(1)}}
 
@@ -257,40 +257,80 @@ const CSS = `
   .st-stat:hover .st-i-pkg{animation:st-pkg-shake 0.5s ease-in-out infinite!important;animation-delay:0s!important;}
 
   .st-page{min-height:100vh;background:var(--bg);padding-top:72px;font-family:'Sora',sans-serif;}
-  .st-cover{position:relative;height:260px;background:#1a1714;overflow:hidden;}
+
+  /* ── Cover ── */
+  .st-cover{position:relative;height:240px;background:#1a1714;overflow:hidden;}
   .st-cover img{width:100%;height:100%;object-fit:cover;opacity:0.45;}
   .st-cover-fade{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.55) 0%,transparent 60%);}
-  .st-wrap{max-width:1280px;margin:0 auto;padding:0 24px 72px;}
-  .st-header-card{background:var(--card);border-radius:20px;border:1px solid var(--border);padding:28px 32px;margin-top:-64px;position:relative;z-index:10;box-shadow:0 8px 32px rgba(0,0,0,0.1);animation:st-fadeUp 0.3s ease;margin-bottom:24px;}
-  .st-header-inner{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;}
-  .st-logo-wrap{position:relative;flex-shrink:0;}
-  .st-logo{width:100px;height:100px;border-radius:18px;overflow:hidden;border:3px solid #fff;box-shadow:0 4px 16px rgba(0,0,0,0.12);background:var(--hover);}
-  .st-logo img{width:100%;height:100%;object-fit:cover;}
-  .st-verified-badge{position:absolute;bottom:-6px;right:-6px;width:26px;height:26px;background:#2563eb;color:#fff;border-radius:50%;border:3px solid #fff;display:flex;align-items:center;justify-content:center;}
+  @media(max-width:640px){ .st-cover{height:160px;} }
+
+  .st-wrap{max-width:1280px;margin:0 auto;padding:0 20px 72px;}
+
+  /* ── Header card ── */
+  .st-header-card{
+    background:var(--card);border-radius:20px;border:1px solid var(--border);
+    padding:24px 28px;margin-top:-56px;position:relative;z-index:10;
+    box-shadow:0 8px 32px rgba(0,0,0,0.10);animation:st-fadeUp 0.3s ease;margin-bottom:20px;
+  }
+  @media(max-width:640px){
+    .st-header-card{padding:18px 16px;margin-top:-44px;border-radius:16px;}
+  }
+
+  .st-header-inner{display:flex;gap:20px;align-items:flex-start;}
+  @media(max-width:640px){
+    .st-header-inner{flex-direction:column;gap:14px;}
+  }
+
+  /* ── Circle logo ── */
+  .st-logo-wrap{flex-shrink:0;}
+  .st-logo{
+    width:88px;height:88px;
+    border-radius:50%;
+    overflow:hidden;border:3px solid #fff;
+    box-shadow:0 4px 16px rgba(0,0,0,0.12);
+    background:var(--hover);
+  }
+  .st-logo img{width:100%;height:100%;object-fit:cover;display:block;}
+  @media(max-width:640px){
+    .st-logo{width:72px;height:72px;}
+  }
+
+  /* ── Info ── */
   .st-info{flex:1;min-width:0;}
-  .st-name{font-size:26px;font-weight:800;color:var(--text);letter-spacing:-0.7px;margin:0 0 10px;}
-  .st-meta-row{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:12px;}
-  .st-meta-item{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);font-weight:500;}
-  .st-meta-item a{color:#e4006d;text-decoration:none;display:flex;align-items:center;gap:4px;}
-  .st-meta-item a:hover{text-decoration:underline;}
-  .st-badges{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px;}
-  .st-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;border:1px solid;}
-  .st-actions{display:flex;gap:10px;align-items:flex-start;flex-shrink:0;}
-  .st-follow-btn{display:flex;align-items:center;gap:7px;padding:10px 20px;border-radius:11px;font-size:13px;font-weight:700;cursor:pointer;border:none;transition:all 0.15s;font-family:'Sora',sans-serif;}
+  .st-name-actions-row{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px;}
+  .st-name{font-size:24px;font-weight:800;color:var(--text);letter-spacing:-0.7px;margin:0;}
+  @media(max-width:640px){.st-name{font-size:20px;}}
+
+  .st-actions{display:flex;gap:8px;align-items:center;flex-shrink:0;}
+  .st-follow-btn{
+    display:flex;align-items:center;gap:7px;padding:9px 18px;
+    border-radius:11px;font-size:13px;font-weight:700;cursor:pointer;
+    border:none;transition:all 0.15s;font-family:'Sora',sans-serif;
+  }
   .st-follow-btn.following{background:var(--hover);color:var(--text);border:1.5px solid var(--border);}
   .st-follow-btn.following:hover{border-color:var(--text);}
   .st-follow-btn.not-following{background:var(--text);color:#fff;border:1.5px solid transparent;}
   .st-follow-btn.not-following:hover{background:#333;transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,0.16);}
-  .st-share-btn{width:40px;height:40px;border-radius:11px;border:1.5px solid var(--border);background:var(--card);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;}
+  .st-share-btn{
+    width:38px;height:38px;border-radius:11px;border:1.5px solid var(--border);
+    background:var(--card);color:var(--muted);cursor:pointer;
+    display:flex;align-items:center;justify-content:center;transition:all 0.15s;
+  }
   .st-share-btn:hover{border-color:var(--text);color:var(--text);}
+  @media(max-width:400px){
+    .st-follow-btn{padding:8px 14px;font-size:12px;}
+  }
 
-  /* ── Star rating row ── */
-  .st-rating-row{display:flex;align-items:center;gap:10px;margin-bottom:4px;flex-wrap:wrap;}
+  .st-meta-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:10px;}
+  .st-meta-item{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);font-weight:500;}
+  .st-meta-item a{color:#e4006d;text-decoration:none;display:flex;align-items:center;gap:4px;}
+  .st-meta-item a:hover{text-decoration:underline;}
+
+  /* ── Rating ── */
+  .st-rating-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;}
   .st-rating-avg{font-size:13px;font-weight:700;color:var(--text);}
   .st-rating-count{font-size:11px;color:var(--muted);}
   .st-rating-divider{width:1px;height:13px;background:var(--border);}
-
-  /* Interactive stars the user taps */
   .st-rate-area{display:flex;align-items:center;gap:3px;}
   .st-rate-label{font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap;min-width:68px;transition:color 0.15s;}
   .st-star-btn{background:none;border:none;padding:2px;cursor:pointer;line-height:0;transition:transform 0.18s cubic-bezier(0.34,1.56,0.64,1),filter 0.15s;will-change:transform;transform-origin:center bottom;}
@@ -298,23 +338,36 @@ const CSS = `
   .st-star-btn:active{transform:translateY(0) scale(0.92);}
   .st-star-btn.popped{animation:st-star-pop 0.38s cubic-bezier(0.34,1.56,0.64,1) both;}
   .st-star-saving{font-size:10px;color:var(--muted);font-style:italic;transition:opacity 0.2s;}
-  /* X / clear button */
   .st-clear-btn{background:none;border:none;cursor:pointer;padding:3px 5px;border-radius:6px;font-size:11px;font-weight:700;color:#c4bfb8;line-height:1;transition:color 0.15s,background 0.15s,transform 0.15s;margin-left:1px;}
   .st-clear-btn:hover{color:#dc2626;background:#fef2f2;transform:rotate(90deg);}
 
-  .st-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;}
+  /* ── Badges ── */
+  .st-badges{display:flex;gap:7px;flex-wrap:wrap;}
+  .st-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;border:1px solid;}
+
+  /* ── Stats ── */
+  .st-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
   @media(max-width:900px){.st-stats{grid-template-columns:repeat(2,1fr);}}
-  @media(max-width:500px){.st-stats{grid-template-columns:1fr 1fr;gap:10px;}}
-  .st-stat{background:var(--card);border-radius:16px;border:1px solid var(--border);padding:20px 22px;display:flex;align-items:center;gap:14px;cursor:default;transition:box-shadow 0.2s,transform 0.2s,border-color 0.2s;}
+  @media(max-width:480px){.st-stats{grid-template-columns:1fr 1fr;gap:10px;}}
+  .st-stat{background:var(--card);border-radius:16px;border:1px solid var(--border);padding:18px 20px;display:flex;align-items:center;gap:12px;cursor:default;transition:box-shadow 0.2s,transform 0.2s,border-color 0.2s;}
   .st-stat:hover{box-shadow:0 6px 20px rgba(0,0,0,0.08);transform:translateY(-2px);border-color:rgba(0,0,0,0.1);}
-  .st-stat-icon{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:visible;}
-  .st-stat-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin:0 0 3px;}
-  .st-stat-val{font-size:22px;font-weight:800;color:var(--text);letter-spacing:-0.5px;margin:0;}
-  .st-tabs{display:flex;gap:2px;border-bottom:1.5px solid var(--border);margin-bottom:24px;}
-  .st-tab{padding:11px 18px;font-size:13px;font-weight:600;color:var(--muted);background:none;border:none;cursor:pointer;position:relative;font-family:'Sora',sans-serif;transition:color 0.15s;text-transform:capitalize;}
+  .st-stat-icon{width:48px;height:48px;border-radius:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:visible;}
+  .st-stat-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin:0 0 3px;}
+  .st-stat-val{font-size:20px;font-weight:800;color:var(--text);letter-spacing:-0.5px;margin:0;}
+  @media(max-width:480px){
+    .st-stat{padding:14px 14px;}
+    .st-stat-icon{width:40px;height:40px;border-radius:10px;}
+    .st-stat-val{font-size:18px;}
+  }
+
+  /* ── Tabs ── */
+  .st-tabs{display:flex;gap:2px;border-bottom:1.5px solid var(--border);margin-bottom:20px;overflow-x:auto;}
+  .st-tab{padding:10px 16px;font-size:13px;font-weight:600;color:var(--muted);background:none;border:none;cursor:pointer;position:relative;font-family:'Sora',sans-serif;transition:color 0.15s;text-transform:capitalize;white-space:nowrap;}
   .st-tab:hover{color:var(--text);}
   .st-tab.active{color:var(--text);}
   .st-tab.active::after{content:'';position:absolute;bottom:-1.5px;left:0;right:0;height:2px;background:var(--text);border-radius:2px 2px 0 0;}
+
+  /* ── Product grid ── */
   .st-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
   @media(max-width:1100px){.st-grid{grid-template-columns:repeat(3,1fr);}}
   @media(max-width:760px){.st-grid{grid-template-columns:repeat(2,1fr);gap:10px;}}
@@ -333,9 +386,7 @@ const CSS = `
   .st-badge-img.new{background:#16a34a;color:#fff;}
   .st-badge-img.oos{background:rgba(26,23,20,0.75);color:#fff;backdrop-filter:blur(4px);}
   .st-product-body{padding:12px 13px 14px;display:flex;flex-direction:column;}
-  .st-product-seller-row{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:3px;}
-  .st-product-seller-name{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;}
-  .st-product-verified{display:inline-flex;align-items:center;gap:3px;flex-shrink:0;padding:2px 6px;border-radius:20px;font-size:9px;font-weight:700;letter-spacing:0.2px;background:#e0f2fe;color:#0284c7;border:1px solid #bae6fd;}
+  .st-product-seller-name{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .st-product-name{font-size:13px;font-weight:700;color:var(--text);margin:0 0 7px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
   .st-product-meta{display:flex;align-items:center;gap:5px;margin-bottom:7px;flex-wrap:wrap;}
   .st-product-cat{padding:2px 7px;border-radius:20px;font-size:9px;font-weight:600;color:var(--muted);background:var(--hover);border:1px solid var(--border);}
@@ -354,14 +405,19 @@ const CSS = `
   .st-product-sizes{display:flex;gap:3px;flex-wrap:wrap;justify-content:flex-end;}
   .st-product-size{padding:2px 5px;border-radius:4px;border:1px solid var(--border);font-size:8px;font-weight:700;color:var(--muted);letter-spacing:0.2px;transition:border-color 0.15s;}
   .st-product-card:hover .st-product-size{border-color:#c4bfb8;}
+
+  /* ── Empty ── */
   .st-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 24px;background:var(--card);border-radius:18px;border:1.5px dashed var(--border);text-align:center;}
   .st-empty-icon{width:64px;height:64px;background:var(--hover);border-radius:18px;display:flex;align-items:center;justify-content:center;color:var(--muted);margin-bottom:18px;}
   .st-empty-title{font-size:17px;font-weight:700;color:var(--text);margin:0 0 8px;}
   .st-empty-sub{font-size:13px;color:var(--muted);margin:0;}
-  .st-about-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;}
+
+  /* ── About ── */
+  .st-about-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
   @media(max-width:640px){.st-about-grid{grid-template-columns:1fr;}}
-  .st-about-card{background:var(--card);border-radius:16px;border:1px solid var(--border);padding:24px;}
-  .st-about-desc{font-size:14px;color:#4a4540;line-height:1.75;margin:0 0 24px;}
+  .st-about-card{background:var(--card);border-radius:16px;border:1px solid var(--border);padding:22px;}
+  @media(max-width:640px){.st-about-card{padding:16px;}}
+  .st-about-desc{font-size:14px;color:#4a4540;line-height:1.75;margin:0 0 22px;}
   .st-about-section-title{font-size:13px;font-weight:700;color:var(--text);letter-spacing:-0.2px;margin:0 0 14px;}
   .st-about-row{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--muted);margin-bottom:10px;}
   .st-perf-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--divider);font-size:13px;}
@@ -440,8 +496,6 @@ export default function StorePageClient({
   const [isFollowing, setIsFollowing] = useState(false);
   const [followerCount, setFollowerCount] = useState(seller.followers);
   const [activeTab, setActiveTab] = useState<"products" | "about">("products");
-
-  // ── Star rating state ──
   const [avgRating, setAvgRating] = useState(seller.rating);
   const [totalRatings, setTotalRatings] = useState(seller.totalReviews);
   const [myRating, setMyRating] = useState(0);
@@ -449,18 +503,15 @@ export default function StorePageClient({
   const [saving, setSaving] = useState(false);
   const [poppedStar, setPoppedStar] = useState(0);
 
-  // ── Load follow + my rating ──
   useEffect(() => {
     const u = localStorage.getItem("yog_user");
     if (!u) return;
-    // follow status
     fetch(`/api/stores/follow?sellerId=${seller.id}`, {
       headers: { "x-user-data": u },
     })
       .then((r) => r.json())
       .then((d) => setIsFollowing(d.isFollowing))
       .catch(() => {});
-    // my rating
     fetch(`/api/stores/rating?sellerId=${seller.id}`, {
       headers: { "x-user-data": u },
     })
@@ -479,17 +530,11 @@ export default function StorePageClient({
       router.push("/login?redirect=/store/" + seller.slug);
       return;
     }
-
-    // If clicking the same star → remove rating
     const newRating = myRating === star ? 0 : star;
-
     setPoppedStar(newRating);
     setSaving(true);
-    const prevMy = myRating;
-    const prevAvg = avgRating;
-    const prevTotal = totalRatings;
+    const [prevMy, prevAvg, prevTotal] = [myRating, avgRating, totalRatings];
     setMyRating(newRating);
-
     try {
       let res: Response;
       if (newRating === 0) {
@@ -525,7 +570,6 @@ export default function StorePageClient({
   const handleFollow = async () => {
     const u = localStorage.getItem("yog_user");
     if (!u) {
-      alert("Please sign in to follow stores");
       router.push("/login?redirect=/store/" + seller.slug);
       return;
     }
@@ -600,27 +644,42 @@ export default function StorePageClient({
       <style>{CSS}</style>
       <Navbar />
       <main className="st-page">
+        {/* Cover */}
         <div className="st-cover">
           <img src={seller.coverImage} alt={seller.name} />
           <div className="st-cover-fade" />
         </div>
+
         <div className="st-wrap">
           {/* ── Header card ── */}
           <div className="st-header-card">
             <div className="st-header-inner">
+              {/* Circle logo */}
               <div className="st-logo-wrap">
                 <div className="st-logo">
                   <img src={seller.logo} alt={seller.name} />
                 </div>
-                {seller.verified && (
-                  <div className="st-verified-badge">
-                    <CheckIco size={12} sw={3} />
-                  </div>
-                )}
               </div>
 
+              {/* Info */}
               <div className="st-info">
-                <h1 className="st-name">{seller.name}</h1>
+                {/* Name + action buttons on same row */}
+                <div className="st-name-actions-row">
+                  <h1 className="st-name">{seller.name}</h1>
+                  <div className="st-actions">
+                    <button
+                      className={`st-follow-btn ${isFollowing ? "following" : "not-following"}`}
+                      onClick={handleFollow}
+                    >
+                      <HeartIco size={15} filled={isFollowing} />
+                      {isFollowing ? "Following" : "Follow"}
+                    </button>
+                    <button className="st-share-btn" onClick={handleShare}>
+                      <ShareIco size={15} />
+                    </button>
+                  </div>
+                </div>
+
                 <div className="st-meta-row">
                   {seller.location && (
                     <span className="st-meta-item">
@@ -644,9 +703,8 @@ export default function StorePageClient({
                   )}
                 </div>
 
-                {/* ── Rating row ── */}
+                {/* Rating row */}
                 <div className="st-rating-row">
-                  {/* Avg display */}
                   <StarDisplay rating={avgRating} size={14} />
                   {avgRating > 0 && (
                     <span className="st-rating-avg">
@@ -658,11 +716,7 @@ export default function StorePageClient({
                       ? `(${totalRatings} ${totalRatings === 1 ? "rating" : "ratings"})`
                       : "No ratings yet"}
                   </span>
-
-                  {/* Divider */}
                   <div className="st-rating-divider" />
-
-                  {/* Interactive rate-this-store stars */}
                   <div
                     className="st-rate-area"
                     onMouseLeave={() => setHoverRating(0)}
@@ -671,7 +725,7 @@ export default function StorePageClient({
                       {hoverRating
                         ? STAR_LABELS[hoverRating]
                         : myRating
-                          ? `Your rating`
+                          ? "Your rating"
                           : "Rate store:"}
                     </span>
                     {[1, 2, 3, 4, 5].map((s) => (
@@ -699,19 +753,8 @@ export default function StorePageClient({
                   </div>
                 </div>
 
+                {/* Badges — no verified badge */}
                 <div className="st-badges">
-                  {seller.verified && (
-                    <span
-                      className="st-badge"
-                      style={{
-                        background: "#eff6ff",
-                        color: "#2563eb",
-                        borderColor: "#bfdbfe",
-                      }}
-                    >
-                      <AwardIco size={10} /> Verified Seller
-                    </span>
-                  )}
                   {avgRating >= 4.5 && totalRatings >= 3 && (
                     <span
                       className="st-badge"
@@ -737,19 +780,6 @@ export default function StorePageClient({
                     </span>
                   )}
                 </div>
-              </div>
-
-              <div className="st-actions">
-                <button
-                  className={`st-follow-btn ${isFollowing ? "following" : "not-following"}`}
-                  onClick={handleFollow}
-                >
-                  <HeartIco size={15} filled={isFollowing} />
-                  {isFollowing ? "Following" : "Follow"}
-                </button>
-                <button className="st-share-btn" onClick={handleShare}>
-                  <ShareIco size={15} />
-                </button>
               </div>
             </div>
           </div>
@@ -884,28 +914,9 @@ export default function StorePageClient({
                             </button>
                           </div>
                           <div className="st-product-body">
-                            <div className="st-product-seller-row">
-                              <span className="st-product-seller-name">
-                                {seller.name}
-                              </span>
-                              {seller.verified && (
-                                <span className="st-product-verified">
-                                  <svg
-                                    width="8"
-                                    height="8"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="3"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                  >
-                                    <polyline points="20 6 9 17 4 12" />
-                                  </svg>
-                                  Verified
-                                </span>
-                              )}
-                            </div>
+                            <p className="st-product-seller-name">
+                              {seller.name}
+                            </p>
                             <p className="st-product-name">{product.title}</p>
                             <div className="st-product-meta">
                               {categoryLabel && (
