@@ -44,12 +44,6 @@ const HeartIco = ({ filled, ...p }: any) => (
     fill={filled ? "currentColor" : "none"}
   />
 );
-const AwardIco = (p: any) => (
-  <Ico
-    {...p}
-    d="M12 15a7 7 0 1 0 0-14 7 7 0 0 0 0 14z M8.21 13.89 7 23l5-3 5 3-1.21-9.12"
-  />
-);
 const InstaIco = (p: any) => (
   <Ico
     {...p}
@@ -262,7 +256,7 @@ const CSS = `
   .st-cover{position:relative;height:240px;background:#1a1714;overflow:hidden;}
   .st-cover img{width:100%;height:100%;object-fit:cover;opacity:0.45;}
   .st-cover-fade{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.55) 0%,transparent 60%);}
-  @media(max-width:640px){ .st-cover{height:160px;} }
+  @media(max-width:640px){.st-cover{height:160px;}}
 
   .st-wrap{max-width:1280px;margin:0 auto;padding:0 20px 72px;}
 
@@ -272,28 +266,20 @@ const CSS = `
     padding:24px 28px;margin-top:-56px;position:relative;z-index:10;
     box-shadow:0 8px 32px rgba(0,0,0,0.10);animation:st-fadeUp 0.3s ease;margin-bottom:20px;
   }
-  @media(max-width:640px){
-    .st-header-card{padding:18px 16px;margin-top:-44px;border-radius:16px;}
-  }
+  @media(max-width:640px){.st-header-card{padding:18px 16px;margin-top:-44px;border-radius:16px;}}
 
   .st-header-inner{display:flex;gap:20px;align-items:flex-start;}
-  @media(max-width:640px){
-    .st-header-inner{flex-direction:column;gap:14px;}
-  }
+  @media(max-width:640px){.st-header-inner{flex-direction:column;gap:14px;}}
 
   /* ── Circle logo ── */
   .st-logo-wrap{flex-shrink:0;}
   .st-logo{
-    width:88px;height:88px;
-    border-radius:50%;
+    width:88px;height:88px;border-radius:50%;
     overflow:hidden;border:3px solid #fff;
-    box-shadow:0 4px 16px rgba(0,0,0,0.12);
-    background:var(--hover);
+    box-shadow:0 4px 16px rgba(0,0,0,0.12);background:var(--hover);
   }
   .st-logo img{width:100%;height:100%;object-fit:cover;display:block;}
-  @media(max-width:640px){
-    .st-logo{width:72px;height:72px;}
-  }
+  @media(max-width:640px){.st-logo{width:72px;height:72px;}}
 
   /* ── Info ── */
   .st-info{flex:1;min-width:0;}
@@ -302,42 +288,42 @@ const CSS = `
   @media(max-width:640px){.st-name{font-size:20px;}}
 
   .st-actions{display:flex;gap:8px;align-items:center;flex-shrink:0;}
-  .st-follow-btn{
-    display:flex;align-items:center;gap:7px;padding:9px 18px;
-    border-radius:11px;font-size:13px;font-weight:700;cursor:pointer;
-    border:none;transition:all 0.15s;font-family:'Sora',sans-serif;
-  }
+  .st-follow-btn{display:flex;align-items:center;gap:7px;padding:9px 18px;border-radius:11px;font-size:13px;font-weight:700;cursor:pointer;border:none;transition:all 0.15s;font-family:'Sora',sans-serif;}
   .st-follow-btn.following{background:var(--hover);color:var(--text);border:1.5px solid var(--border);}
   .st-follow-btn.following:hover{border-color:var(--text);}
   .st-follow-btn.not-following{background:var(--text);color:#fff;border:1.5px solid transparent;}
   .st-follow-btn.not-following:hover{background:#333;transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,0.16);}
-  .st-share-btn{
-    width:38px;height:38px;border-radius:11px;border:1.5px solid var(--border);
-    background:var(--card);color:var(--muted);cursor:pointer;
-    display:flex;align-items:center;justify-content:center;transition:all 0.15s;
-  }
+  .st-share-btn{width:38px;height:38px;border-radius:11px;border:1.5px solid var(--border);background:var(--card);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;}
   .st-share-btn:hover{border-color:var(--text);color:var(--text);}
-  @media(max-width:400px){
-    .st-follow-btn{padding:8px 14px;font-size:12px;}
-  }
+  @media(max-width:400px){.st-follow-btn{padding:8px 14px;font-size:12px;}}
 
   .st-meta-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:10px;}
   .st-meta-item{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);font-weight:500;}
   .st-meta-item a{color:#e4006d;text-decoration:none;display:flex;align-items:center;gap:4px;}
   .st-meta-item a:hover{text-decoration:underline;}
 
-  /* ── Rating ── */
+  /* ── Rating row ── */
   .st-rating-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;}
   .st-rating-avg{font-size:13px;font-weight:700;color:var(--text);}
   .st-rating-count{font-size:11px;color:var(--muted);}
-  .st-rating-divider{width:1px;height:13px;background:var(--border);}
-  .st-rate-area{display:flex;align-items:center;gap:3px;}
+  .st-rating-divider{width:1px;height:13px;background:var(--border);flex-shrink:0;}
+  .st-rate-area{display:flex;align-items:center;gap:3px;flex-wrap:wrap;}
   .st-rate-label{font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap;min-width:68px;transition:color 0.15s;}
   .st-star-btn{background:none;border:none;padding:2px;cursor:pointer;line-height:0;transition:transform 0.18s cubic-bezier(0.34,1.56,0.64,1),filter 0.15s;will-change:transform;transform-origin:center bottom;}
   .st-star-btn:hover{transform:translateY(-3px);filter:drop-shadow(0 2px 4px rgba(234,179,8,0.45));}
   .st-star-btn:active{transform:translateY(0) scale(0.92);}
   .st-star-btn.popped{animation:st-star-pop 0.38s cubic-bezier(0.34,1.56,0.64,1) both;}
-  .st-star-saving{font-size:10px;color:var(--muted);font-style:italic;transition:opacity 0.2s;}
+  .st-star-saving{font-size:10px;color:var(--muted);font-style:italic;}
+
+  /* ── Self-rate error pill ── */
+  @keyframes st-pill-in{from{opacity:0;transform:translateX(-6px) scale(0.95);}to{opacity:1;transform:translateX(0) scale(1);}}
+  .st-self-rate-msg{
+    font-size:11px;font-weight:700;color:#dc2626;
+    background:#fef2f2;border:1px solid #fecaca;
+    padding:2px 9px;border-radius:20px;white-space:nowrap;
+    animation:st-pill-in 0.22s cubic-bezier(0.22,1,0.36,1);
+  }
+
   .st-clear-btn{background:none;border:none;cursor:pointer;padding:3px 5px;border-radius:6px;font-size:11px;font-weight:700;color:#c4bfb8;line-height:1;transition:color 0.15s,background 0.15s,transform 0.15s;margin-left:1px;}
   .st-clear-btn:hover{color:#dc2626;background:#fef2f2;transform:rotate(90deg);}
 
@@ -355,13 +341,37 @@ const CSS = `
   .st-stat-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin:0 0 3px;}
   .st-stat-val{font-size:20px;font-weight:800;color:var(--text);letter-spacing:-0.5px;margin:0;}
   @media(max-width:480px){
-    .st-stat{padding:14px 14px;}
+    .st-stat{padding:14px;}
     .st-stat-icon{width:40px;height:40px;border-radius:10px;}
     .st-stat-val{font-size:18px;}
   }
 
-  /* ── Tabs ── */
-  .st-tabs{display:flex;gap:2px;border-bottom:1.5px solid var(--border);margin-bottom:20px;overflow-x:auto;}
+  /* ── Tabs — sticky on mobile ── */
+  .st-tabs{
+    display:flex;gap:2px;
+    border-bottom:1.5px solid var(--border);
+    margin-bottom:20px;
+    overflow-x:auto;
+    scrollbar-width:none;
+  }
+  .st-tabs::-webkit-scrollbar{display:none;}
+  @media(max-width:900px){
+    .st-tabs{
+      position:sticky;
+      top:56px;
+      z-index:50;
+      background:rgba(246,245,243,0.96);
+      backdrop-filter:blur(16px);
+      -webkit-backdrop-filter:blur(16px);
+      margin-left:-20px;
+      margin-right:-20px;
+      padding:0 20px;
+      border-bottom:1.5px solid var(--border);
+    }
+  }
+  @media(max-width:600px){.st-tabs{top:52px;}}
+  @media(max-width:390px){.st-tabs{top:48px;}}
+
   .st-tab{padding:10px 16px;font-size:13px;font-weight:600;color:var(--muted);background:none;border:none;cursor:pointer;position:relative;font-family:'Sora',sans-serif;transition:color 0.15s;text-transform:capitalize;white-space:nowrap;}
   .st-tab:hover{color:var(--text);}
   .st-tab.active{color:var(--text);}
@@ -502,6 +512,7 @@ export default function StorePageClient({
   const [hoverRating, setHoverRating] = useState(0);
   const [saving, setSaving] = useState(false);
   const [poppedStar, setPoppedStar] = useState(0);
+  const [selfRateMsg, setSelfRateMsg] = useState(false); // ← new
 
   useEffect(() => {
     const u = localStorage.getItem("yog_user");
@@ -530,6 +541,17 @@ export default function StorePageClient({
       router.push("/login?redirect=/store/" + seller.slug);
       return;
     }
+
+    // ── Block store owners from rating their own store ──
+    try {
+      const parsed = JSON.parse(u);
+      if (parsed.id === seller.id) {
+        setSelfRateMsg(true);
+        setTimeout(() => setSelfRateMsg(false), 3000);
+        return;
+      }
+    } catch {}
+
     const newRating = myRating === star ? 0 : star;
     setPoppedStar(newRating);
     setSaving(true);
@@ -636,7 +658,6 @@ export default function StorePageClient({
     },
   ];
 
-  const displayRating = hoverRating || myRating || avgRating;
   const activeStars = hoverRating || myRating;
 
   return (
@@ -654,7 +675,7 @@ export default function StorePageClient({
           {/* ── Header card ── */}
           <div className="st-header-card">
             <div className="st-header-inner">
-              {/* Circle logo */}
+              {/* Circle logo — no badge */}
               <div className="st-logo-wrap">
                 <div className="st-logo">
                   <img src={seller.logo} alt={seller.name} />
@@ -663,7 +684,7 @@ export default function StorePageClient({
 
               {/* Info */}
               <div className="st-info">
-                {/* Name + action buttons on same row */}
+                {/* Name + actions on same row */}
                 <div className="st-name-actions-row">
                   <h1 className="st-name">{seller.name}</h1>
                   <div className="st-actions">
@@ -750,10 +771,16 @@ export default function StorePageClient({
                         ✕
                       </button>
                     )}
+                    {/* ── Self-rate error message ── */}
+                    {selfRateMsg && (
+                      <span className="st-self-rate-msg">
+                        Can't rate your own store
+                      </span>
+                    )}
                   </div>
                 </div>
 
-                {/* Badges — no verified badge */}
+                {/* Badges — no verified */}
                 <div className="st-badges">
                   {avgRating >= 4.5 && totalRatings >= 3 && (
                     <span
@@ -809,7 +836,7 @@ export default function StorePageClient({
             ))}
           </div>
 
-          {/* ── Tabs ── */}
+          {/* ── Tabs — sticky on mobile ── */}
           <div className="st-tabs">
             {(["products", "about"] as const).map((tab) => (
               <button
