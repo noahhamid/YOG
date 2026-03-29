@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import Link from "next/link";
@@ -322,6 +322,7 @@ const CSS = `
     background:#fef2f2;border:1px solid #fecaca;
     padding:2px 9px;border-radius:20px;white-space:nowrap;
     animation:st-pill-in 0.22s cubic-bezier(0.22,1,0.36,1);
+    display:inline-flex;align-items:center;gap:4px;
   }
 
   .st-clear-btn{background:none;border:none;cursor:pointer;padding:3px 5px;border-radius:6px;font-size:11px;font-weight:700;color:#c4bfb8;line-height:1;transition:color 0.15s,background 0.15s,transform 0.15s;margin-left:1px;}
@@ -512,7 +513,7 @@ export default function StorePageClient({
   const [hoverRating, setHoverRating] = useState(0);
   const [saving, setSaving] = useState(false);
   const [poppedStar, setPoppedStar] = useState(0);
-  const [selfRateMsg, setSelfRateMsg] = useState(false); // ← new
+  const [selfRateMsg, setSelfRateMsg] = useState(false);
 
   useEffect(() => {
     const u = localStorage.getItem("yog_user");
@@ -542,21 +543,18 @@ export default function StorePageClient({
       return;
     }
 
-    // ── Block store owners from rating their own store ──
-    try {
-      const parsed = JSON.parse(u);
-      if (parsed.id === seller.id) {
-        setSelfRateMsg(true);
-        setTimeout(() => setSelfRateMsg(false), 3000);
-        return;
-      }
-    } catch {}
-
     const newRating = myRating === star ? 0 : star;
+
+    // Snapshot current state for rollback
+    const prevMy = myRating;
+    const prevAvg = avgRating;
+    const prevTotal = totalRatings;
+
+    // Optimistic update
     setPoppedStar(newRating);
     setSaving(true);
-    const [prevMy, prevAvg, prevTotal] = [myRating, avgRating, totalRatings];
     setMyRating(newRating);
+
     try {
       let res: Response;
       if (newRating === 0) {
@@ -571,6 +569,26 @@ export default function StorePageClient({
           body: JSON.stringify({ sellerId: seller.id, rating: newRating }),
         });
       }
+
+      // ── API blocked the request (e.g. own store) — roll back and show message ──
+      if (res.status === 403) {
+        setMyRating(prevMy);
+        setAvgRating(prevAvg);
+        setTotalRatings(prevTotal);
+        setSelfRateMsg(true);
+        setTimeout(() => setSelfRateMsg(false), 3500);
+        return;
+      }
+
+      // ── Any other non-ok — silently roll back ──
+      if (!res.ok) {
+        setMyRating(prevMy);
+        setAvgRating(prevAvg);
+        setTotalRatings(prevTotal);
+        return;
+      }
+
+      // ── Success — update with fresh server values ──
       const data = (await res.json()) as {
         avg: number;
         total: number;
@@ -580,6 +598,7 @@ export default function StorePageClient({
       setTotalRatings(data.total);
       setMyRating(data.myRating);
     } catch {
+      // Network error — roll back
       setMyRating(prevMy);
       setAvgRating(prevAvg);
       setTotalRatings(prevTotal);
@@ -675,7 +694,7 @@ export default function StorePageClient({
           {/* ── Header card ── */}
           <div className="st-header-card">
             <div className="st-header-inner">
-              {/* Circle logo — no badge */}
+              {/* Circle logo */}
               <div className="st-logo-wrap">
                 <div className="st-logo">
                   <img src={seller.logo} alt={seller.name} />
@@ -684,7 +703,7 @@ export default function StorePageClient({
 
               {/* Info */}
               <div className="st-info">
-                {/* Name + actions on same row */}
+                {/* Name + actions */}
                 <div className="st-name-actions-row">
                   <h1 className="st-name">{seller.name}</h1>
                   <div className="st-actions">
@@ -701,6 +720,7 @@ export default function StorePageClient({
                   </div>
                 </div>
 
+                {/* Meta */}
                 <div className="st-meta-row">
                   {seller.location && (
                     <span className="st-meta-item">
@@ -737,7 +757,10 @@ export default function StorePageClient({
                       ? `(${totalRatings} ${totalRatings === 1 ? "rating" : "ratings"})`
                       : "No ratings yet"}
                   </span>
+
                   <div className="st-rating-divider" />
+
+                  {/* Interactive stars */}
                   <div
                     className="st-rate-area"
                     onMouseLeave={() => setHoverRating(0)}
@@ -771,9 +794,24 @@ export default function StorePageClient({
                         ✕
                       </button>
                     )}
-                    {/* ── Self-rate error message ── */}
+
+                    {/* ── Self-rate error — shown when API returns 403 ── */}
                     {selfRateMsg && (
                       <span className="st-self-rate-msg">
+                        <svg
+                          width="11"
+                          height="11"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <circle cx="12" cy="12" r="10" />
+                          <line x1="12" y1="8" x2="12" y2="12" />
+                          <line x1="12" y1="16" x2="12.01" y2="16" />
+                        </svg>
                         Can't rate your own store
                       </span>
                     )}
