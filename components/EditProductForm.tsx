@@ -470,6 +470,12 @@ export default function EditProductForm({
     "3XL",
   ].map((s) => ({ value: s, label: s }));
 
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    document.body.classList.add("epf-open");
+    return () => document.body.classList.remove("epf-open");
+  }, []);
+
   useEffect(() => {
     const userStr = localStorage.getItem("yog_user");
     if (userStr) {
@@ -592,10 +598,12 @@ export default function EditProductForm({
       from { opacity:0; transform:translateY(16px) scale(0.98); }
       to   { opacity:1; transform:none; }
     }
-    .epf-overlay {
+.epf-overlay {
       position:fixed;inset:0;background:rgba(15,12,9,0.55);backdrop-filter:blur(6px);
       display:flex;align-items:center;justify-content:center;padding:16px;z-index:9999;
+      overflow:hidden;touch-action:none;
     }
+    body.epf-open { overflow:hidden !important; }
     .epf-modal {
       background:var(--card);border-radius:20px;width:100%;max-width:1100px;
       max-height:92vh;overflow:hidden;display:flex;flex-direction:column;
