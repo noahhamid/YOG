@@ -693,11 +693,17 @@ export default function EditProductForm({
       border-radius:10px;margin-bottom:4px;
     }
     @media(max-width:768px) {
-      .epf-modal { max-width:100%;max-height:100vh;border-radius:0; }
+      .epf-overlay { padding:0;align-items:flex-start; }
+      .epf-modal { max-width:100%;max-height:100vh;border-radius:16px 16px 0 0;margin-top:16px; }
       .epf-body { flex-direction:column; }
       .epf-sidebar { display:none; }
       .epf-main { padding:18px 16px;gap:24px; }
-      .epf-header { padding:14px 16px; }
+      .epf-header { padding:12px 16px;flex-wrap:wrap;gap:8px; }
+      .epf-header-left { flex:1;min-width:0; }
+      .epf-header-left > div > div:first-child { flex-wrap:wrap; }
+      .epf-header-left span { font-size:15px !important; }
+      .epf-header-right { width:100%;justify-content:space-between; }
+      .epf-save-btn { flex:1;justify-content:center; }
       .epf-grid-2 { grid-template-columns:1fr;gap:12px; }
       .epf-images-grid { grid-template-columns:repeat(3,1fr);gap:8px; }
       .epf-variant-header { display:none; }
