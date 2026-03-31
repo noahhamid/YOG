@@ -656,8 +656,6 @@ export default function AddProductForm({
       cursor:pointer;transition:all 0.15s;white-space:nowrap;flex-shrink:0;
     }
     .apf-org-btn:hover { border-color:var(--text); }
-    /* mobile organize section - inline in form on mobile */
-    .apf-mobile-organize { display:none; }
 
     /* ── Body ── */
     .apf-body { display:flex;flex:1;overflow:hidden;position:relative; }
@@ -695,10 +693,6 @@ export default function AddProductForm({
 
     /* variant row */
     .apf-variant-row { display:grid;grid-template-columns:100px 1fr 80px 36px;gap:8px;align-items:center; }
-    /* variant header - desktop only */
-    .apf-variant-header { display:grid;grid-template-columns:100px 1fr 80px 36px;gap:8px;margin-bottom:-2px; }
-    /* mobile variant labels */
-    .apf-variant-label { display:none;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:4px; }
 
     /* images grid */
     .apf-images-grid { display:grid;grid-template-columns:repeat(5,1fr);gap:10px; }
@@ -770,17 +764,10 @@ export default function AddProductForm({
       .apf-main     { padding:18px 16px; gap:22px; }
       .apf-grid-2   { grid-template-columns:1fr; gap:12px; }
       .apf-images-grid { grid-template-columns:repeat(3,1fr); gap:8px; }
-      /* variant header hidden on mobile */
-      .apf-variant-header { display:none; }
-      /* variant row: stack vertically */
-      .apf-variant-row { grid-template-columns:1fr;gap:0; }
-      .apf-variant-field { display:flex;flex-direction:column;margin-bottom:10px; }
-      .apf-variant-label { display:block; }
-      .apf-variant-actions { display:flex;justify-content:flex-end;margin-top:4px; }
-      /* hide organize button from header on mobile */
-      .apf-org-btn { display:none !important; }
-      /* show mobile organize section */
-      .apf-mobile-organize { display:block; }
+      /* variant row: stack size+color on one line, qty+remove on same */
+      .apf-variant-row { grid-template-columns:1fr 1fr;gap:7px; }
+      .apf-variant-row > *:nth-child(3) { grid-column:1; }
+      .apf-variant-row > *:nth-child(4) { grid-column:2; }
     }
 
     @media(max-width:420px) {
@@ -1197,7 +1184,10 @@ export default function AddProductForm({
                   <div
                     style={{ display: "flex", flexDirection: "column", gap: 9 }}
                   >
-                    <div className="apf-variant-header">
+                    <div
+                      className="apf-variant-row"
+                      style={{ marginBottom: -2 }}
+                    >
                       {["Size", "Color", "Qty", ""].map((h, i) => (
                         <span
                           key={i}
@@ -1226,82 +1216,72 @@ export default function AddProductForm({
                           padding: "8px 10px",
                         }}
                       >
-                        <div className="apf-variant-field">
-                          <span className="apf-variant-label">Size</span>
-                          <input
-                            value={v.size}
-                            onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                              const n = [...variants];
-                              n[i].size = e.target.value;
-                              setVariants(n);
-                            }}
-                            placeholder="e.g. M"
-                            style={{ ...inputStyle(false), fontSize: 13 }}
-                            onFocus={applyFocus}
-                            onBlur={applyBlur}
-                          />
-                        </div>
-                        <div className="apf-variant-field">
-                          <span className="apf-variant-label">Color</span>
-                          <input
-                            value={v.color}
-                            onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                              const n = [...variants];
-                              n[i].color = e.target.value;
-                              setVariants(n);
-                            }}
-                            placeholder="e.g. Black"
-                            style={{ ...inputStyle(false), fontSize: 13 }}
-                            onFocus={applyFocus}
-                            onBlur={applyBlur}
-                          />
-                        </div>
-                        <div className="apf-variant-field">
-                          <span className="apf-variant-label">Quantity</span>
-                          <input
-                            type="number"
-                            value={v.quantity}
-                            min={0}
-                            onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                              const n = [...variants];
-                              n[i].quantity = parseInt(e.target.value) || 0;
-                              setVariants(n);
-                            }}
-                            placeholder="0"
+                        <input
+                          value={v.size}
+                          onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                            const n = [...variants];
+                            n[i].size = e.target.value;
+                            setVariants(n);
+                          }}
+                          placeholder="e.g. M"
+                          style={{ ...inputStyle(false), fontSize: 13 }}
+                          onFocus={applyFocus}
+                          onBlur={applyBlur}
+                        />
+                        <input
+                          value={v.color}
+                          onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                            const n = [...variants];
+                            n[i].color = e.target.value;
+                            setVariants(n);
+                          }}
+                          placeholder="e.g. Black"
+                          style={{ ...inputStyle(false), fontSize: 13 }}
+                          onFocus={applyFocus}
+                          onBlur={applyBlur}
+                        />
+                        <input
+                          type="number"
+                          value={v.quantity}
+                          min={0}
+                          onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                            const n = [...variants];
+                            n[i].quantity = parseInt(e.target.value) || 0;
+                            setVariants(n);
+                          }}
+                          placeholder="0"
+                          style={{
+                            ...inputStyle(false),
+                            fontSize: 13,
+                            textAlign: "center",
+                          }}
+                          onFocus={applyFocus}
+                          onBlur={applyBlur}
+                        />
+                        {variants.length > 1 ? (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setVariants(variants.filter((_, j) => j !== i))
+                            }
                             style={{
-                              ...inputStyle(false),
-                              fontSize: 13,
+                              width: 32,
+                              height: 32,
+                              background: "#fee2e2",
+                              color: "#dc2626",
+                              border: "none",
+                              borderRadius: 8,
+                              cursor: "pointer",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
                             }}
-                            onFocus={applyFocus}
-                            onBlur={applyBlur}
-                          />
-                        </div>
-                        <div className="apf-variant-actions">
-                          {variants.length > 1 ? (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setVariants(variants.filter((_, j) => j !== i))
-                              }
-                              style={{
-                                width: 32,
-                                height: 32,
-                                background: "#fee2e2",
-                                color: "#dc2626",
-                                border: "none",
-                                borderRadius: 8,
-                                cursor: "pointer",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                              }}
-                            >
-                              <MinusIcon size={13} />
-                            </button>
-                          ) : (
-                            <div style={{ width: 32, height: 32 }} />
-                          )}
-                        </div>
+                          >
+                            <MinusIcon size={13} />
+                          </button>
+                        ) : (
+                          <div />
+                        )}
                       </motion.div>
                     ))}
                   </div>
@@ -1442,19 +1422,6 @@ export default function AddProductForm({
                       <AlertIcon size={11} /> {errors.images}
                     </p>
                   )}
-                </div>
-
-                {/* Mobile organize section - shown inline on mobile */}
-                <div className="apf-mobile-organize">
-                  <hr
-                    className="apf-section-divider"
-                    style={{ marginTop: 24 }}
-                  />
-                  <SectionHead
-                    title="Organization"
-                    sub="Category, type, occasion & material"
-                  />
-                  <SidebarContent />
                 </div>
               </form>
             </div>

@@ -285,11 +285,10 @@ const CSS = `
   .sd-i-bag{transform-origin:bottom center;animation:sd-bag-bounce 0.7s cubic-bezier(0.34,1.56,0.64,1) both;animation-delay:0.1s;}
   .sd-stat:hover .sd-i-bag{animation:sd-bag-rock 0.46s ease-in-out infinite!important;animation-delay:0s!important;transform-origin:bottom center;}
 
-@keyframes sd-coin-pop{0%{transform:scale(0);}55%{transform:scale(1.20);}75%{transform:scale(0.91);}88%{transform:scale(1.06);}100%{transform:scale(1);}}
-  @keyframes sd-coin-pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.15);}}
-  @keyframes sd-coin-glow{0%,100%{filter:drop-shadow(0 0 0 transparent);}50%{filter:drop-shadow(0 0 8px rgba(124,58,237,0.5));}}
+  @keyframes sd-coin-pop{0%{transform:scale(0);}55%{transform:scale(1.20);}75%{transform:scale(0.91);}88%{transform:scale(1.06);}100%{transform:scale(1);}}
+  @keyframes sd-coin-spin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
   .sd-i-coin{transform-origin:center;animation:sd-coin-pop 0.6s cubic-bezier(0.34,1.56,0.64,1) both;animation-delay:0.15s;}
-  .sd-stat:hover .sd-i-coin{animation:sd-coin-pulse 0.6s ease-in-out infinite, sd-coin-glow 0.6s ease-in-out infinite!important;animation-delay:0s!important;}
+  .sd-stat:hover .sd-i-coin{animation:sd-coin-spin 0.55s linear infinite!important;animation-delay:0s!important;}
 
   @keyframes sd-u-left{from{transform:translateX(-11px);}to{transform:translateX(0);}}
   @keyframes sd-u-right{from{transform:translateX(11px);}to{transform:translateX(0);}}
@@ -318,7 +317,7 @@ const CSS = `
   .sd-stat-icon{width:48px;height:48px;border-radius:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:visible;}
   .sd-stat-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px;margin:0 0 4px;}
   .sd-stat-value{font-size:24px;font-weight:800;color:var(--text);letter-spacing:-0.8px;margin:0;}
-  .sd-tabs{display:flex;gap:2px;border-bottom:1.5px solid var(--border);margin-bottom:28px;position:sticky;top:72px;background:var(--bg);z-index:50;padding-top:8px;}
+  .sd-tabs{display:flex;gap:2px;border-bottom:1.5px solid var(--border);margin-bottom:28px;}
   .sd-tab{padding:12px 20px;font-size:13px;font-weight:600;color:var(--muted);background:none;border:none;cursor:pointer;position:relative;font-family:'Sora',sans-serif;transition:color 0.15s;white-space:nowrap;}
   .sd-tab:hover{color:var(--text);}
   .sd-tab.active{color:var(--text);}
@@ -329,10 +328,10 @@ const CSS = `
   .sd-toolbar-meta{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
   .sd-meta-chip{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--muted);padding:5px 10px;background:var(--card);border:1px solid var(--border);border-radius:8px;}
   .sd-meta-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
-.sd-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;}
+  .sd-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;}
   @media(max-width:1200px){.sd-grid{grid-template-columns:repeat(3,1fr);}}
-  @media(max-width:860px){.sd-grid{grid-template-columns:repeat(2,1fr);gap:12px;}}
-  @media(max-width:540px){.sd-grid{grid-template-columns:repeat(2,1fr);gap:10px;}}
+  @media(max-width:860px){.sd-grid{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:540px){.sd-grid{grid-template-columns:1fr;}}
   .sd-product-card{background:var(--card);border-radius:16px;overflow:hidden;border:1px solid var(--border);transition:all 0.2s;animation:fadeUp 0.35s ease both;}
   .sd-product-card:hover{box-shadow:0 8px 28px rgba(0,0,0,0.09);transform:translateY(-2px);}
   .sd-product-img{position:relative;aspect-ratio:1;background:var(--hover);overflow:hidden;}
@@ -362,27 +361,7 @@ const CSS = `
   .sd-status-title{font-size:22px;font-weight:800;color:var(--text);margin:0 0 12px;letter-spacing:-0.5px;}
   .sd-status-body{font-size:13px;color:var(--muted);line-height:1.7;margin:0 0 20px;}
   .sd-status-box{border-radius:12px;padding:14px 16px;text-align:left;margin-bottom:24px;}
-.sd-status-date{font-size:11px;color:var(--muted);margin-top:16px;}
-  @media(max-width:540px){
-    .sd-header{flex-direction:column;align-items:flex-start;}
-    .sd-header-actions{width:100%;justify-content:space-between;}
-    .sd-header-title{font-size:22px;}
-    .sd-product-body{padding:10px 12px;}
-    .sd-product-name{font-size:12px;margin-bottom:3px;}
-    .sd-product-desc{font-size:10px;margin-bottom:10px;-webkit-line-clamp:1;}
-    .sd-product-price{font-size:14px;}
-    .sd-product-compare{font-size:9px;}
-    .sd-product-stock-label{font-size:8px;}
-    .sd-product-stock-val{font-size:12px;}
-    .sd-product-actions{gap:5px;}
-    .sd-action-btn{padding:6px;font-size:10px;gap:4px;}
-    .sd-badge-pill{font-size:8px;padding:2px 6px;}
-    .sd-toolbar{flex-direction:column;align-items:flex-start;}
-    .sd-toolbar-meta{flex-wrap:wrap;}
-    .sd-meta-chip{font-size:10px;padding:4px 8px;}
-    .sd-btn-primary{padding:8px 14px;font-size:12px;}
-    .sd-btn-ghost{padding:8px 12px;font-size:12px;}
-  }
+  .sd-status-date{font-size:11px;color:var(--muted);margin-top:16px;}
 `;
 
 // ─── ProductCard ──────────────────────────────────────────────────────────────
