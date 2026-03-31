@@ -634,9 +634,12 @@ export default function EditProductForm({
       padding:24px 20px;display:flex;flex-direction:column;gap:24px;
       border-left:1px solid var(--divider);
     }
-    .epf-divider     { border:none;border-top:1px solid var(--divider);margin:0 0 20px; }
+.epf-divider     { border:none;border-top:1px solid var(--divider);margin:0 0 20px; }
     .epf-grid-2      { display:grid;grid-template-columns:1fr 1fr;gap:16px; }
     .epf-variant-row { display:grid;grid-template-columns:110px 1fr 90px 36px;gap:10px;align-items:center; }
+    .epf-variant-header { display:grid;grid-template-columns:110px 1fr 90px 36px;gap:10px;margin-bottom:-2px; }
+    .epf-variant-label { display:none;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:4px; }
+    .epf-mobile-organize { display:none; }
     .epf-images-grid { display:grid;grid-template-columns:repeat(5,1fr);gap:10px; }
     .epf-img-thumb {
       aspect-ratio:1;border-radius:10px;overflow:hidden;position:relative;
@@ -684,10 +687,25 @@ export default function EditProductForm({
       border-radius:20px;font-size:11px;font-weight:600;
     }
     .epf-dot { width:6px;height:6px;border-radius:50%; }
-    .epf-edit-banner {
+.epf-edit-banner {
       display:flex;align-items:center;gap:8px;padding:10px 14px;
       background:var(--warn-soft);border:1px solid rgba(245,158,11,0.2);
       border-radius:10px;margin-bottom:4px;
+    }
+    @media(max-width:768px) {
+      .epf-modal { max-width:100%;max-height:100vh;border-radius:0; }
+      .epf-body { flex-direction:column; }
+      .epf-sidebar { display:none; }
+      .epf-main { padding:18px 16px;gap:24px; }
+      .epf-header { padding:14px 16px; }
+      .epf-grid-2 { grid-template-columns:1fr;gap:12px; }
+      .epf-images-grid { grid-template-columns:repeat(3,1fr);gap:8px; }
+      .epf-variant-header { display:none; }
+      .epf-variant-row { grid-template-columns:1fr;gap:0; }
+      .epf-variant-field { display:flex;flex-direction:column;margin-bottom:10px; }
+      .epf-variant-label { display:block; }
+      .epf-variant-actions { display:flex;justify-content:flex-end;margin-top:4px; }
+      .epf-mobile-organize { display:block; }
     }
   `;
 
@@ -929,10 +947,7 @@ export default function EditProductForm({
                   <div
                     style={{ display: "flex", flexDirection: "column", gap: 9 }}
                   >
-                    <div
-                      className="epf-variant-row"
-                      style={{ marginBottom: -2 }}
-                    >
+                    <div className="epf-variant-header">
                       {["Size", "Color", "Qty", ""].map((h, i) => (
                         <span
                           key={i}
@@ -960,70 +975,80 @@ export default function EditProductForm({
                           padding: "8px 10px",
                         }}
                       >
-                        <Dropdown
-                          options={sizes}
-                          value={v.size}
-                          onChange={(val) => {
-                            const n = [...variants];
-                            n[i].size = val;
-                            setVariants(n);
-                          }}
-                          placeholder="Size"
-                        />
-                        <input
-                          value={v.color}
-                          onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                            const n = [...variants];
-                            n[i].color = e.target.value;
-                            setVariants(n);
-                          }}
-                          placeholder="e.g. Midnight Black"
-                          style={{ ...inputStyle(false), fontSize: 13 }}
-                          onFocus={applyFocus}
-                          onBlur={applyBlur}
-                        />
-                        <input
-                          type="number"
-                          value={v.quantity}
-                          min={0}
-                          onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                            const n = [...variants];
-                            n[i].quantity = parseInt(e.target.value) || 0;
-                            setVariants(n);
-                          }}
-                          placeholder="0"
-                          style={{
-                            ...inputStyle(false),
-                            fontSize: 13,
-                            textAlign: "center",
-                          }}
-                          onFocus={applyFocus}
-                          onBlur={applyBlur}
-                        />
-                        {variants.length > 1 ? (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setVariants(variants.filter((_, j) => j !== i))
-                            }
-                            style={{
-                              width: 32,
-                              height: 32,
-                              background: "#fee2e2",
-                              color: "#dc2626",
-                              border: "none",
-                              borderRadius: 8,
-                              cursor: "pointer",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
+                        <div className="epf-variant-field">
+                          <span className="epf-variant-label">Size</span>
+                          <Dropdown
+                            options={sizes}
+                            value={v.size}
+                            onChange={(val) => {
+                              const n = [...variants];
+                              n[i].size = val;
+                              setVariants(n);
                             }}
-                          >
-                            <MinusIcon size={13} />
-                          </button>
-                        ) : (
-                          <div />
-                        )}
+                            placeholder="Size"
+                          />
+                        </div>
+                        <div className="epf-variant-field">
+                          <span className="epf-variant-label">Color</span>
+                          <input
+                            value={v.color}
+                            onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                              const n = [...variants];
+                              n[i].color = e.target.value;
+                              setVariants(n);
+                            }}
+                            placeholder="e.g. Midnight Black"
+                            style={{ ...inputStyle(false), fontSize: 13 }}
+                            onFocus={applyFocus}
+                            onBlur={applyBlur}
+                          />
+                        </div>
+                        <div className="epf-variant-field">
+                          <span className="epf-variant-label">Quantity</span>
+                          <input
+                            type="number"
+                            value={v.quantity}
+                            min={0}
+                            onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                              const n = [...variants];
+                              n[i].quantity = parseInt(e.target.value) || 0;
+                              setVariants(n);
+                            }}
+                            placeholder="0"
+                            style={{
+                              ...inputStyle(false),
+                              fontSize: 13,
+                            }}
+                            onFocus={applyFocus}
+                            onBlur={applyBlur}
+                          />
+                        </div>
+                        <div className="epf-variant-actions">
+                          {variants.length > 1 ? (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setVariants(variants.filter((_, j) => j !== i))
+                              }
+                              style={{
+                                width: 32,
+                                height: 32,
+                                background: "#fee2e2",
+                                color: "#dc2626",
+                                border: "none",
+                                borderRadius: 8,
+                                cursor: "pointer",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                              }}
+                            >
+                              <MinusIcon size={13} />
+                            </button>
+                          ) : (
+                            <div style={{ width: 32, height: 32 }} />
+                          )}
+                        </div>
                       </motion.div>
                     ))}
                   </div>
@@ -1139,6 +1164,82 @@ export default function EditProductForm({
                       <AlertIcon size={11} /> {errors.images}
                     </p>
                   )}
+                </div>
+
+                {/* Mobile organize section - shown inline on mobile */}
+                <div className="epf-mobile-organize">
+                  <hr className="epf-divider" style={{ marginTop: 28 }} />
+                  <SectionHead
+                    title="Organization"
+                    sub="Category, type, occasion & material"
+                  />
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 14,
+                    }}
+                  >
+                    <Field label="Status">
+                      <Dropdown
+                        options={statusOptions}
+                        value={formData.status}
+                        onChange={(v) =>
+                          setFormData((p) => ({ ...p, status: v }))
+                        }
+                        placeholder="Select status"
+                      />
+                    </Field>
+                    <Field label="Category" required error={errors.category}>
+                      <Dropdown
+                        options={categoryOptions}
+                        value={formData.category}
+                        onChange={(v) => {
+                          setFormData((p) => ({ ...p, category: v }));
+                          setErrors((p) => ({ ...p, category: "" }));
+                        }}
+                        placeholder="Select category"
+                        error={!!errors.category}
+                      />
+                    </Field>
+                    <Field
+                      label="Clothing Type"
+                      required
+                      error={errors.clothingType}
+                    >
+                      <Dropdown
+                        options={clothingTypeOptions}
+                        value={formData.clothingType}
+                        onChange={(v) => {
+                          setFormData((p) => ({ ...p, clothingType: v }));
+                          setErrors((p) => ({ ...p, clothingType: "" }));
+                        }}
+                        placeholder="Select type"
+                        error={!!errors.clothingType}
+                      />
+                    </Field>
+                    <Field label="Occasion">
+                      <Dropdown
+                        options={occasionOptions}
+                        value={formData.occasion}
+                        onChange={(v) =>
+                          setFormData((p) => ({ ...p, occasion: v }))
+                        }
+                        placeholder="Select occasion"
+                      />
+                    </Field>
+                    <Field label="Material">
+                      <input
+                        name="material"
+                        value={formData.material}
+                        onChange={handleInput}
+                        placeholder="e.g. 100% Cotton"
+                        style={inputStyle(false)}
+                        onFocus={applyFocus}
+                        onBlur={applyBlur}
+                      />
+                    </Field>
+                  </div>
                 </div>
               </form>
             </div>

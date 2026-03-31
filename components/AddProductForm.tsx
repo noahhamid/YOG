@@ -191,6 +191,7 @@ function Dropdown({
           fontSize: 14,
           transition: "border-color 0.15s, box-shadow 0.15s",
           boxShadow: open ? "0 0 0 3px var(--accent-soft)" : "none",
+          fontFamily: "inherit",
         }}
       >
         <span>{label ?? placeholder}</span>
@@ -246,6 +247,7 @@ function Dropdown({
                     flexDirection: "column",
                     gap: 1,
                     transition: "background 0.1s",
+                    fontFamily: "inherit",
                   }}
                   onMouseEnter={(e) => {
                     if (!isActive)
@@ -406,6 +408,7 @@ export default function AddProductForm({
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false); // mobile sidebar toggle
   const fileRef = useRef<HTMLInputElement>(null);
 
   const categoryOptions: DropdownOption[] = [
@@ -460,7 +463,6 @@ export default function AddProductForm({
     { value: "ARCHIVED", label: "Archived", description: "No longer sold" },
   ];
 
-  // ── handlers ────────────────────────────────────────────────────────────────
   const handleInput = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
@@ -605,6 +607,11 @@ export default function AddProductForm({
       from { opacity:0; transform:translateY(16px) scale(0.98); }
       to   { opacity:1; transform:none; }
     }
+    @keyframes sidebarSlideIn {
+      from { transform:translateX(100%); }
+      to   { transform:translateX(0); }
+    }
+
     .apf-overlay {
       position:fixed;inset:0;background:rgba(15,12,9,0.55);backdrop-filter:blur(6px);
       display:flex;align-items:center;justify-content:center;padding:16px;z-index:9999;
@@ -616,42 +623,86 @@ export default function AddProductForm({
       animation:fadeSlideIn 0.28s cubic-bezier(0.16,1,0.3,1);
       font-family:'Sora',sans-serif;
     }
+
+    /* ── Header ── */
     .apf-header {
       display:flex;align-items:center;justify-content:space-between;
-      padding:18px 28px;border-bottom:1px solid var(--divider);
+      padding:16px 24px;border-bottom:1px solid var(--divider);
       background:var(--card);position:sticky;top:0;z-index:10;flex-shrink:0;
+      gap:10px;
     }
-    .apf-header-left  { display:flex;align-items:center;gap:12px; }
-    .apf-header-right { display:flex;align-items:center;gap:10px; }
+    .apf-header-left  { display:flex;align-items:center;gap:10px;min-width:0; }
+    .apf-header-right { display:flex;align-items:center;gap:8px;flex-shrink:0; }
     .apf-icon-btn {
       width:36px;height:36px;border-radius:10px;border:1px solid var(--border);
       background:transparent;cursor:pointer;display:flex;align-items:center;
-      justify-content:center;color:var(--muted);transition:all 0.15s;
+      justify-content:center;color:var(--muted);transition:all 0.15s;flex-shrink:0;
     }
     .apf-icon-btn:hover { background:var(--hover);color:var(--text); }
     .apf-publish-btn {
-      display:flex;align-items:center;gap:7px;padding:9px 20px;
+      display:flex;align-items:center;gap:7px;padding:9px 18px;
       background:var(--text);color:#fff;border:none;border-radius:10px;
       font-family:'Sora',sans-serif;font-size:13px;font-weight:600;
-      cursor:pointer;transition:all 0.15s;letter-spacing:-0.1px;
+      cursor:pointer;transition:all 0.15s;letter-spacing:-0.1px;white-space:nowrap;
     }
-    .apf-publish-btn:hover   { background:#333;transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,0.18); }
-    .apf-publish-btn:disabled{ opacity:0.5;cursor:not-allowed;transform:none;box-shadow:none; }
-    .apf-body { display:flex;flex:1;overflow:hidden; }
+    .apf-publish-btn:hover    { background:#333;transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,0.18); }
+    .apf-publish-btn:disabled { opacity:0.5;cursor:not-allowed;transform:none;box-shadow:none; }
+
+    /* mobile organise button */
+    .apf-org-btn {
+      display:none;align-items:center;gap:5px;padding:8px 12px;
+      border:1.5px solid var(--border);background:var(--card);border-radius:10px;
+      font-family:'Sora',sans-serif;font-size:12px;font-weight:600;color:var(--text);
+      cursor:pointer;transition:all 0.15s;white-space:nowrap;flex-shrink:0;
+    }
+    .apf-org-btn:hover { border-color:var(--text); }
+    /* mobile organize section - inline in form on mobile */
+    .apf-mobile-organize { display:none; }
+
+    /* ── Body ── */
+    .apf-body { display:flex;flex:1;overflow:hidden;position:relative; }
+
+    /* ── Main scroll area ── */
     .apf-main {
-      flex:1;overflow-y:auto;padding:28px 32px;
-      display:flex;flex-direction:column;gap:32px;
+      flex:1;overflow-y:auto;padding:24px 28px;
+      display:flex;flex-direction:column;gap:28px;
     }
+
+    /* ── Desktop sidebar ── */
     .apf-sidebar {
-      width:268px;flex-shrink:0;background:var(--sidebar);overflow-y:auto;
-      padding:24px 20px;display:flex;flex-direction:column;gap:24px;
+      width:260px;flex-shrink:0;background:var(--sidebar);overflow-y:auto;
+      padding:20px 18px;display:flex;flex-direction:column;gap:20px;
       border-left:1px solid var(--divider);
     }
+
+    /* ── Mobile sidebar overlay ── */
+    .apf-sidebar-backdrop {
+      display:none;position:absolute;inset:0;background:rgba(0,0,0,0.35);
+      z-index:40;backdrop-filter:blur(2px);
+    }
+    .apf-sidebar-mobile {
+      display:none;position:absolute;top:0;right:0;bottom:0;width:min(300px,85vw);
+      background:var(--sidebar);overflow-y:auto;padding:20px 18px;
+      flex-direction:column;gap:20px;border-left:1px solid var(--divider);
+      z-index:41;animation:sidebarSlideIn 0.28s cubic-bezier(0.16,1,0.3,1);
+    }
+
     .apf-section         { display:flex;flex-direction:column;gap:0; }
     .apf-section-divider { border:none;border-top:1px solid var(--divider);margin:0 0 20px; }
-    .apf-grid-2          { display:grid;grid-template-columns:1fr 1fr;gap:16px; }
-    .apf-variant-row     { display:grid;grid-template-columns:110px 1fr 90px 36px;gap:10px;align-items:center; }
-    .apf-images-grid     { display:grid;grid-template-columns:repeat(5,1fr);gap:10px; }
+
+    /* grid helpers */
+    .apf-grid-2 { display:grid;grid-template-columns:1fr 1fr;gap:16px; }
+
+    /* variant row */
+    .apf-variant-row { display:grid;grid-template-columns:100px 1fr 80px 36px;gap:8px;align-items:center; }
+    /* variant header - desktop only */
+    .apf-variant-header { display:grid;grid-template-columns:100px 1fr 80px 36px;gap:8px;margin-bottom:-2px; }
+    /* mobile variant labels */
+    .apf-variant-label { display:none;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:4px; }
+
+    /* images grid */
+    .apf-images-grid { display:grid;grid-template-columns:repeat(5,1fr);gap:10px; }
+
     .apf-img-thumb {
       aspect-ratio:1;border-radius:10px;overflow:hidden;position:relative;
       border:1.5px solid var(--border);background:var(--hover);
@@ -680,7 +731,7 @@ export default function AddProductForm({
     .apf-url-input {
       flex:1;padding:9px 12px;font-size:13px;background:var(--input-bg);
       border:1.5px solid var(--border);border-radius:9px;color:var(--text);
-      outline:none;font-family:'Sora',sans-serif;transition:all 0.15s;
+      outline:none;font-family:'Sora',sans-serif;transition:all 0.15s;min-width:0;
     }
     .apf-url-input:focus { border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft); }
     .apf-url-add {
@@ -700,6 +751,44 @@ export default function AddProductForm({
       border-radius:20px;font-size:11px;font-weight:600;
     }
     .apf-dot { width:6px;height:6px;border-radius:50%; }
+
+    /* ── Responsive ── */
+    @media(max-width:900px) {
+      .apf-overlay  { padding:0; align-items:flex-end; }
+      .apf-modal    { border-radius:20px 20px 0 0; max-height:96vh; max-width:100%; }
+      /* hide desktop sidebar */
+      .apf-sidebar  { display:none; }
+      /* show mobile sidebar toggle */
+      .apf-org-btn  { display:flex; }
+      /* show mobile sidebar when open */
+      .apf-sidebar-backdrop.open { display:block; }
+      .apf-sidebar-mobile.open   { display:flex; }
+    }
+
+    @media(max-width:640px) {
+      .apf-header   { padding:12px 16px; }
+      .apf-main     { padding:18px 16px; gap:22px; }
+      .apf-grid-2   { grid-template-columns:1fr; gap:12px; }
+      .apf-images-grid { grid-template-columns:repeat(3,1fr); gap:8px; }
+      /* variant header hidden on mobile */
+      .apf-variant-header { display:none; }
+      /* variant row: stack vertically */
+      .apf-variant-row { grid-template-columns:1fr;gap:0; }
+      .apf-variant-field { display:flex;flex-direction:column;margin-bottom:10px; }
+      .apf-variant-label { display:block; }
+      .apf-variant-actions { display:flex;justify-content:flex-end;margin-top:4px; }
+      /* hide organize button from header on mobile */
+      .apf-org-btn { display:none !important; }
+      /* show mobile organize section */
+      .apf-mobile-organize { display:block; }
+    }
+
+    @media(max-width:420px) {
+      .apf-images-grid { grid-template-columns:repeat(3,1fr); gap:6px; }
+      .apf-url-row { flex-direction:column; }
+      .apf-url-add { width:100%; text-align:center; }
+      .apf-publish-btn span { display:none; } /* hide label, keep icon */
+    }
   `;
 
   const statusColor = (s: string) => ({
@@ -718,23 +807,152 @@ export default function AddProductForm({
     ["Variant", variants.length > 0],
   ];
 
+  // Sidebar content (shared between desktop sidebar and mobile drawer)
+  const SidebarContent = () => (
+    <>
+      {/* Status */}
+      <div>
+        <p className="apf-sidebar-label">Status</p>
+        <Dropdown
+          options={statusOptions}
+          value={formData.status}
+          onChange={(v) => setFormData((p) => ({ ...p, status: v }))}
+          placeholder="Select status"
+        />
+        {formData.status &&
+          (() => {
+            const sc = statusColor(formData.status);
+            return (
+              <div style={{ marginTop: 8 }}>
+                <span
+                  className="apf-status-badge"
+                  style={{ background: sc.bg, color: sc.txt }}
+                >
+                  <span className="apf-dot" style={{ background: sc.dot }} />
+                  {
+                    statusOptions.find((o) => o.value === formData.status)
+                      ?.label
+                  }
+                </span>
+              </div>
+            );
+          })()}
+      </div>
+
+      <div style={{ height: 1, background: "var(--divider)" }} />
+
+      {/* Organisation */}
+      <div>
+        <p className="apf-sidebar-label">Organization</p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <Field label="Category" required error={errors.category}>
+            <Dropdown
+              options={categoryOptions}
+              value={formData.category}
+              onChange={(v) => {
+                setFormData((p) => ({ ...p, category: v }));
+                setErrors((p) => ({ ...p, category: "" }));
+              }}
+              placeholder="Select category"
+              error={!!errors.category}
+            />
+          </Field>
+          <Field label="Clothing Type" required error={errors.clothingType}>
+            <Dropdown
+              options={clothingTypeOptions}
+              value={formData.clothingType}
+              onChange={(v) => {
+                setFormData((p) => ({ ...p, clothingType: v }));
+                setErrors((p) => ({ ...p, clothingType: "" }));
+              }}
+              placeholder="Select type"
+              error={!!errors.clothingType}
+            />
+          </Field>
+          <Field label="Occasion">
+            <Dropdown
+              options={occasionOptions}
+              value={formData.occasion}
+              onChange={(v) => setFormData((p) => ({ ...p, occasion: v }))}
+              placeholder="Select occasion"
+            />
+          </Field>
+          <Field label="Material">
+            <input
+              name="material"
+              value={formData.material}
+              onChange={handleInput}
+              placeholder="e.g. 100% Cotton"
+              style={inputStyle(false)}
+              onFocus={applyFocus}
+              onBlur={applyBlur}
+            />
+          </Field>
+        </div>
+      </div>
+
+      <div style={{ height: 1, background: "var(--divider)" }} />
+
+      {/* Checklist */}
+      <div>
+        <p className="apf-sidebar-label">Checklist</p>
+        {checklist.map(([lbl, done]) => (
+          <div
+            key={lbl}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              marginBottom: 8,
+            }}
+          >
+            <span
+              style={{
+                width: 18,
+                height: 18,
+                borderRadius: 5,
+                flexShrink: 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                background: done ? "var(--text)" : "var(--border)",
+                transition: "background 0.2s",
+              }}
+            >
+              {done && <CheckIcon size={10} stroke="#fff" strokeWidth={3} />}
+            </span>
+            <span
+              style={{
+                fontSize: 12,
+                color: done ? "var(--text)" : "var(--muted)",
+                fontWeight: done ? 600 : 400,
+              }}
+            >
+              {lbl}
+            </span>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+
   return (
     <>
       <style>{css}</style>
       <div className="apf-overlay">
         <div className="apf-modal">
-          {/* ── Header ─────────────────────────────────────────────────────── */}
+          {/* ── Header ── */}
           <div className="apf-header">
             <div className="apf-header-left">
               <button className="apf-icon-btn" onClick={onClose} type="button">
                 <ArrowLeftIcon size={16} />
               </button>
-              <div>
+              <div style={{ minWidth: 0 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <SparkleIcon size={16} />
                   <span
                     style={{
-                      fontSize: 18,
+                      fontSize: 17,
                       fontWeight: 800,
                       color: "var(--text)",
                       letterSpacing: -0.6,
@@ -756,6 +974,31 @@ export default function AddProductForm({
               </div>
             </div>
             <div className="apf-header-right">
+              {/* Mobile: Organize button opens sidebar drawer */}
+              <button
+                className="apf-org-btn"
+                type="button"
+                onClick={() => setSidebarOpen(true)}
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <line x1="8" y1="6" x2="21" y2="6" />
+                  <line x1="8" y1="12" x2="21" y2="12" />
+                  <line x1="8" y1="18" x2="21" y2="18" />
+                  <line x1="3" y1="6" x2="3.01" y2="6" />
+                  <line x1="3" y1="12" x2="3.01" y2="12" />
+                  <line x1="3" y1="18" x2="3.01" y2="18" />
+                </svg>
+                Organize
+              </button>
               <button
                 className="apf-publish-btn"
                 type="submit"
@@ -767,7 +1010,7 @@ export default function AddProductForm({
                 ) : (
                   <CheckIcon size={14} />
                 )}
-                {isSubmitting ? "Publishing…" : "Publish"}
+                <span>{isSubmitting ? "Publishing…" : "Publish"}</span>
               </button>
               <button className="apf-icon-btn" onClick={onClose} type="button">
                 <XIcon size={15} />
@@ -775,7 +1018,7 @@ export default function AddProductForm({
             </div>
           </div>
 
-          {/* ── Body ───────────────────────────────────────────────────────── */}
+          {/* ── Body ── */}
           <div className="apf-body">
             {/* Main scroll area */}
             <div className="apf-main">
@@ -826,7 +1069,7 @@ export default function AddProductForm({
                   </div>
                 </div>
 
-                <hr className="apf-section-divider" style={{ marginTop: 28 }} />
+                <hr className="apf-section-divider" style={{ marginTop: 24 }} />
 
                 {/* Pricing */}
                 <div className="apf-section">
@@ -908,7 +1151,7 @@ export default function AddProductForm({
                   </div>
                 </div>
 
-                <hr className="apf-section-divider" style={{ marginTop: 28 }} />
+                <hr className="apf-section-divider" style={{ marginTop: 24 }} />
 
                 {/* Variants */}
                 <div className="apf-section">
@@ -954,10 +1197,7 @@ export default function AddProductForm({
                   <div
                     style={{ display: "flex", flexDirection: "column", gap: 9 }}
                   >
-                    <div
-                      className="apf-variant-row"
-                      style={{ marginBottom: -2 }}
-                    >
+                    <div className="apf-variant-header">
                       {["Size", "Color", "Qty", ""].map((h, i) => (
                         <span
                           key={i}
@@ -986,72 +1226,82 @@ export default function AddProductForm({
                           padding: "8px 10px",
                         }}
                       >
-                        <input
-                          value={v.size}
-                          onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                            const n = [...variants];
-                            n[i].size = e.target.value;
-                            setVariants(n);
-                          }}
-                          placeholder="e.g. M, 41, 5Y"
-                          style={{ ...inputStyle(false), fontSize: 13 }}
-                          onFocus={applyFocus}
-                          onBlur={applyBlur}
-                        />
-                        <input
-                          value={v.color}
-                          onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                            const n = [...variants];
-                            n[i].color = e.target.value;
-                            setVariants(n);
-                          }}
-                          placeholder="e.g. Midnight Black"
-                          style={{ ...inputStyle(false), fontSize: 13 }}
-                          onFocus={applyFocus}
-                          onBlur={applyBlur}
-                        />
-                        <input
-                          type="number"
-                          value={v.quantity}
-                          min={0}
-                          onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                            const n = [...variants];
-                            n[i].quantity = parseInt(e.target.value) || 0;
-                            setVariants(n);
-                          }}
-                          placeholder="0"
-                          style={{
-                            ...inputStyle(false),
-                            fontSize: 13,
-                            textAlign: "center",
-                          }}
-                          onFocus={applyFocus}
-                          onBlur={applyBlur}
-                        />
-                        {variants.length > 1 ? (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setVariants(variants.filter((_, j) => j !== i))
-                            }
-                            style={{
-                              width: 32,
-                              height: 32,
-                              background: "#fee2e2",
-                              color: "#dc2626",
-                              border: "none",
-                              borderRadius: 8,
-                              cursor: "pointer",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
+                        <div className="apf-variant-field">
+                          <span className="apf-variant-label">Size</span>
+                          <input
+                            value={v.size}
+                            onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                              const n = [...variants];
+                              n[i].size = e.target.value;
+                              setVariants(n);
                             }}
-                          >
-                            <MinusIcon size={13} />
-                          </button>
-                        ) : (
-                          <div />
-                        )}
+                            placeholder="e.g. M"
+                            style={{ ...inputStyle(false), fontSize: 13 }}
+                            onFocus={applyFocus}
+                            onBlur={applyBlur}
+                          />
+                        </div>
+                        <div className="apf-variant-field">
+                          <span className="apf-variant-label">Color</span>
+                          <input
+                            value={v.color}
+                            onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                              const n = [...variants];
+                              n[i].color = e.target.value;
+                              setVariants(n);
+                            }}
+                            placeholder="e.g. Black"
+                            style={{ ...inputStyle(false), fontSize: 13 }}
+                            onFocus={applyFocus}
+                            onBlur={applyBlur}
+                          />
+                        </div>
+                        <div className="apf-variant-field">
+                          <span className="apf-variant-label">Quantity</span>
+                          <input
+                            type="number"
+                            value={v.quantity}
+                            min={0}
+                            onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                              const n = [...variants];
+                              n[i].quantity = parseInt(e.target.value) || 0;
+                              setVariants(n);
+                            }}
+                            placeholder="0"
+                            style={{
+                              ...inputStyle(false),
+                              fontSize: 13,
+                            }}
+                            onFocus={applyFocus}
+                            onBlur={applyBlur}
+                          />
+                        </div>
+                        <div className="apf-variant-actions">
+                          {variants.length > 1 ? (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setVariants(variants.filter((_, j) => j !== i))
+                              }
+                              style={{
+                                width: 32,
+                                height: 32,
+                                background: "#fee2e2",
+                                color: "#dc2626",
+                                border: "none",
+                                borderRadius: 8,
+                                cursor: "pointer",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                              }}
+                            >
+                              <MinusIcon size={13} />
+                            </button>
+                          ) : (
+                            <div style={{ width: 32, height: 32 }} />
+                          )}
+                        </div>
                       </motion.div>
                     ))}
                   </div>
@@ -1072,7 +1322,7 @@ export default function AddProductForm({
                   )}
                 </div>
 
-                <hr className="apf-section-divider" style={{ marginTop: 28 }} />
+                <hr className="apf-section-divider" style={{ marginTop: 24 }} />
 
                 {/* Images */}
                 <div className="apf-section">
@@ -1193,148 +1443,59 @@ export default function AddProductForm({
                     </p>
                   )}
                 </div>
+
+                {/* Mobile organize section - shown inline on mobile */}
+                <div className="apf-mobile-organize">
+                  <hr
+                    className="apf-section-divider"
+                    style={{ marginTop: 24 }}
+                  />
+                  <SectionHead
+                    title="Organization"
+                    sub="Category, type, occasion & material"
+                  />
+                  <SidebarContent />
+                </div>
               </form>
             </div>
 
-            {/* ── Sidebar ──────────────────────────────────────────────────── */}
+            {/* ── Desktop sidebar ── */}
             <div className="apf-sidebar">
-              {/* Status */}
-              <div>
-                <p className="apf-sidebar-label">Status</p>
-                <Dropdown
-                  options={statusOptions}
-                  value={formData.status}
-                  onChange={(v) => setFormData((p) => ({ ...p, status: v }))}
-                  placeholder="Select status"
-                />
-                {formData.status &&
-                  (() => {
-                    const sc = statusColor(formData.status);
-                    return (
-                      <div style={{ marginTop: 8 }}>
-                        <span
-                          className="apf-status-badge"
-                          style={{ background: sc.bg, color: sc.txt }}
-                        >
-                          <span
-                            className="apf-dot"
-                            style={{ background: sc.dot }}
-                          />
-                          {
-                            statusOptions.find(
-                              (o) => o.value === formData.status,
-                            )?.label
-                          }
-                        </span>
-                      </div>
-                    );
-                  })()}
-              </div>
+              <SidebarContent />
+            </div>
 
-              <div style={{ height: 1, background: "var(--divider)" }} />
-
-              {/* Organisation */}
-              <div>
-                <p className="apf-sidebar-label">Organization</p>
-                <div
-                  style={{ display: "flex", flexDirection: "column", gap: 14 }}
+            {/* ── Mobile sidebar drawer ── */}
+            <div
+              className={`apf-sidebar-backdrop${sidebarOpen ? " open" : ""}`}
+              onClick={() => setSidebarOpen(false)}
+            />
+            <div className={`apf-sidebar-mobile${sidebarOpen ? " open" : ""}`}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: 4,
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 700,
+                    color: "var(--text)",
+                  }}
                 >
-                  <Field label="Category" required error={errors.category}>
-                    <Dropdown
-                      options={categoryOptions}
-                      value={formData.category}
-                      onChange={(v) => {
-                        setFormData((p) => ({ ...p, category: v }));
-                        setErrors((p) => ({ ...p, category: "" }));
-                      }}
-                      placeholder="Select category"
-                      error={!!errors.category}
-                    />
-                  </Field>
-                  <Field
-                    label="Clothing Type"
-                    required
-                    error={errors.clothingType}
-                  >
-                    <Dropdown
-                      options={clothingTypeOptions}
-                      value={formData.clothingType}
-                      onChange={(v) => {
-                        setFormData((p) => ({ ...p, clothingType: v }));
-                        setErrors((p) => ({ ...p, clothingType: "" }));
-                      }}
-                      placeholder="Select type"
-                      error={!!errors.clothingType}
-                    />
-                  </Field>
-                  <Field label="Occasion">
-                    <Dropdown
-                      options={occasionOptions}
-                      value={formData.occasion}
-                      onChange={(v) =>
-                        setFormData((p) => ({ ...p, occasion: v }))
-                      }
-                      placeholder="Select occasion"
-                    />
-                  </Field>
-                  <Field label="Material">
-                    <input
-                      name="material"
-                      value={formData.material}
-                      onChange={handleInput}
-                      placeholder="e.g. 100% Cotton"
-                      style={inputStyle(false)}
-                      onFocus={applyFocus}
-                      onBlur={applyBlur}
-                    />
-                  </Field>
-                </div>
+                  Organize
+                </span>
+                <button
+                  className="apf-icon-btn"
+                  type="button"
+                  onClick={() => setSidebarOpen(false)}
+                >
+                  <XIcon size={15} />
+                </button>
               </div>
-
-              <div style={{ height: 1, background: "var(--divider)" }} />
-
-              {/* Checklist */}
-              <div>
-                <p className="apf-sidebar-label">Checklist</p>
-                {checklist.map(([lbl, done]) => (
-                  <div
-                    key={lbl}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 8,
-                      marginBottom: 8,
-                    }}
-                  >
-                    <span
-                      style={{
-                        width: 18,
-                        height: 18,
-                        borderRadius: 5,
-                        flexShrink: 0,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        background: done ? "var(--text)" : "var(--border)",
-                        transition: "background 0.2s",
-                      }}
-                    >
-                      {done && (
-                        <CheckIcon size={10} stroke="#fff" strokeWidth={3} />
-                      )}
-                    </span>
-                    <span
-                      style={{
-                        fontSize: 12,
-                        color: done ? "var(--text)" : "var(--muted)",
-                        fontWeight: done ? 600 : 400,
-                      }}
-                    >
-                      {lbl}
-                    </span>
-                  </div>
-                ))}
-              </div>
+              <SidebarContent />
             </div>
           </div>
         </div>

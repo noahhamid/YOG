@@ -59,7 +59,7 @@ const CSS = `
   .pr-skel { height:100px; background:linear-gradient(90deg,#f5f3f0 25%,#ede9e4 50%,#f5f3f0 75%); background-size:200% 100%; border-radius:14px; animation:pr-pulse 1.4s ease-in-out infinite; }
 
   /* Modal */
-  .pr-modal-backdrop { position:fixed; inset:0; background:rgba(0,0,0,0.48); z-index:0; display:flex; align-items:center; justify-content:center; padding:20px; backdrop-filter:blur(3px); }
+  .pr-modal-backdrop { position:fixed; inset:0; background:rgba(0,0,0,0.48); z-index:200; display:flex; align-items:center; justify-content:center; padding:20px; backdrop-filter:blur(3px); }
   .pr-modal { background:#fff; border-radius:20px; max-width:420px; width:100%; padding:28px; animation:pr-in 0.25s cubic-bezier(0.22,1,0.36,1); }
   .pr-modal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:22px; }
   .pr-modal-title { font-size:18px; font-weight:800; color:#1a1714; margin:0; letter-spacing:-0.4px; }
