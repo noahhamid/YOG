@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useCart } from "@/context/CartContext";
+import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import NotificationCenter from "./notifications/NotificationCenter";
 import NotificationToast from "./notifications/NotificationToast";
@@ -14,11 +15,18 @@ interface UserData {
   image?: string;
 }
 
+type NavLink = {
+  label: string;
+  href: string;
+  badge?: string;
+  type?: "scroll" | "route";
+};
+
 const LOGO_URL =
   "https://res.cloudinary.com/ddfozmzv0/image/upload/v1774012277/edited-photo_ojra9c.png";
 
-const LINKS = [
-  { label: "Shop", href: "/shop" },
+const LINKS: NavLink[] = [
+  { label: "Shop", href: "#shop", type: "scroll" },
   { label: "Men", href: "/men" },
   { label: "Women", href: "/women" },
   { label: "Trending", href: "/trending", badge: "New" },
@@ -598,7 +606,8 @@ export default function Navbar() {
           p.cat.toLowerCase().includes(mobileQuery.toLowerCase()),
       )
     : [];
-
+  const router = useRouter();
+  const pathname = usePathname();
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", fn, { passive: true });
@@ -729,20 +738,40 @@ export default function Navbar() {
         {/* Center links */}
         <div className={`nav-center${searchOpen ? " search-open" : ""}`}>
           <div className="nav-links">
-            {LINKS.map((l) => (
-              <a
-                key={l.label}
-                href={l.href}
-                className={`nav-link${active === l.label ? " active" : ""}`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  setActive(l.label);
-                }}
-              >
-                {l.label}
-                {l.badge && <span className="nav-link-badge">{l.badge}</span>}
-              </a>
-            ))}
+            {LINKS.map((l) => {
+              if (l.type === "scroll") {
+                return (
+                  <button
+                    key={l.label}
+                    className="nav-link"
+                    onClick={() => {
+                      if (pathname === "/") {
+                        // ✅ already on homepage → smooth scroll
+                        document
+                          .getElementById("shop")
+                          ?.scrollIntoView({ behavior: "smooth" });
+                      } else {
+                        // ✅ go to homepage (NOT /men#shop)
+                        router.push("/#shop");
+                      }
+                    }}
+                  >
+                    {l.label}
+                  </button>
+                );
+              }
+
+              return (
+                <Link
+                  key={l.label}
+                  href={l.href}
+                  className={`nav-link${pathname === l.href ? " active" : ""}`}
+                >
+                  {l.label}
+                  {l.badge && <span className="nav-link-badge">{l.badge}</span>}
+                </Link>
+              );
+            })}
 
             <a
               href={
