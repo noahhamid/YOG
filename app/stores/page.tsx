@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useCallback, useRef } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 
@@ -85,6 +85,9 @@ const UsersIco = ({ size = 16 }: { size?: number }) => (
     size={size}
     d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"
   />
+);
+const CheckIco = ({ size = 12 }: { size?: number }) => (
+  <Ico size={size} d="M20 6 9 17l-5-5" sw={2.5} />
 );
 
 // ─── Filters ──────────────────────────────────────────────────────────────────
@@ -214,77 +217,230 @@ const CSS = `
   .sp-meta { font-size:12px; color:var(--muted); font-weight:600; margin-bottom:22px; }
 
   /* Grid */
-  .sp-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:20px; }
-  @media(max-width:1200px) { .sp-grid { grid-template-columns:repeat(3,1fr); } }
-  @media(max-width:860px)  { .sp-grid { grid-template-columns:repeat(2,1fr); } }
+  .sp-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:20px; }
   @media(max-width:500px)  { .sp-grid { grid-template-columns:1fr; } }
 
-  /* Card */
+  /* ✅ NEW CARD DESIGN */
   .sp-card {
-    background:var(--card); border-radius:20px; border:1px solid var(--border);
-    overflow:hidden; text-decoration:none; display:flex; flex-direction:column;
-    color:inherit; transition:box-shadow 0.22s, transform 0.22s, border-color 0.22s;
+    background:var(--card); 
+    border-radius:18px; 
+    border:1px solid var(--border);
+    overflow:hidden; 
+    text-decoration:none; 
+    display:flex; 
+    flex-direction:column;
+    color:inherit; 
+    transition:all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     animation:sp-fadeUp 0.38s ease both;
     will-change:transform;
+    position:relative;
   }
-  .sp-card:hover { box-shadow:0 16px 48px rgba(0,0,0,0.1); transform:translateY(-4px); border-color:rgba(0,0,0,0.1); }
+  .sp-card:hover { 
+    box-shadow:0 20px 60px rgba(0,0,0,0.12); 
+    transform:translateY(-6px); 
+    border-color:rgba(0,0,0,0.08); 
+  }
 
-  /* Cover */
-  .sp-cover { position:relative; height:120px; overflow:hidden; flex-shrink:0; background:linear-gradient(135deg, #ede9e4, #e0dbd5); }
-  .sp-cover img { width:100%; height:100%; object-fit:cover; transition:transform 0.5s ease; }
-  .sp-card:hover .sp-cover img { transform:scale(1.06); }
-  .sp-cover-ph { width:100%; height:100%; display:flex; align-items:center; justify-content:center; }
+  /* Header with gradient */
+  .sp-card-header {
+    position:relative;
+    padding:24px 20px 70px;
+    background:linear-gradient(135deg, #1a1714 0%, #2d2925 100%);
+    overflow:hidden;
+  }
+  .sp-card-header::before {
+    content:'';
+    position:absolute;
+    top:-50%;
+    right:-30%;
+    width:200px;
+    height:200px;
+    background:radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%);
+    border-radius:50%;
+  }
 
   /* Logo */
-  .sp-logo-wrap { position:absolute; bottom:-20px; left:18px; }
-  .sp-logo {
-    width:44px; height:44px; border-radius:12px;
-    border:2.5px solid #fff; background:#fff; overflow:hidden;
-    box-shadow:0 4px 16px rgba(0,0,0,0.12);
-    display:flex; align-items:center; justify-content:center;
-    font-size:16px; font-weight:800; color:var(--text); letter-spacing:-0.5px;
-    flex-shrink:0;
+  .sp-logo-circle {
+    position:absolute;
+    bottom:-40px;
+    left:20px;
+    width:80px;
+    height:80px;
+    border-radius:50%;
+    border:4px solid #fff;
+    background:#fff;
+    overflow:hidden;
+    box-shadow:0 8px 24px rgba(0,0,0,0.15);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:24px;
+    font-weight:800;
+    color:var(--text);
+    letter-spacing:-0.5px;
+    z-index:2;
   }
-  .sp-logo img { width:100%; height:100%; object-fit:cover; }
+  .sp-logo-circle img { 
+    width:100%; 
+    height:100%; 
+    object-fit:cover; 
+  }
 
-  /* Badge overlay on cover */
-  .sp-cover-badge {
-    position:absolute; top:10px; right:10px;
-    padding:3px 9px; border-radius:20px; font-size:10px; font-weight:700;
-    backdrop-filter:blur(8px); letter-spacing:0.3px;
+  /* Verified badge */
+  .sp-verified-badge {
+    position:absolute;
+    top:16px;
+    right:16px;
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+    padding:5px 10px;
+    background:rgba(255,255,255,0.15);
+    backdrop-filter:blur(12px);
+    border:1px solid rgba(255,255,255,0.2);
+    border-radius:20px;
+    font-size:10px;
+    font-weight:700;
+    color:#fff;
+    letter-spacing:0.3px;
+    z-index:1;
   }
-  .sp-cover-badge.verified { background:rgba(37,99,235,0.15); color:#2563eb; border:1px solid rgba(37,99,235,0.2); }
 
   /* Body */
-  .sp-body { padding:28px 18px 18px; flex:1; display:flex; flex-direction:column; }
-  .sp-brand { font-size:15px; font-weight:800; color:var(--text); letter-spacing:-0.3px; margin:0 0 4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .sp-location { display:flex; align-items:center; gap:4px; font-size:11px; color:var(--muted); font-weight:600; margin-bottom:9px; }
-  .sp-desc { font-size:12px; color:var(--muted); line-height:1.6; margin:0 0 14px; flex:1; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; min-height:38px; }
+  .sp-card-body { 
+    padding:50px 20px 20px; 
+    flex:1; 
+    display:flex; 
+    flex-direction:column; 
+  }
+
+  .sp-brand { 
+    font-size:17px; 
+    font-weight:800; 
+    color:var(--text); 
+    letter-spacing:-0.5px; 
+    margin:0 0 6px; 
+    white-space:nowrap; 
+    overflow:hidden; 
+    text-overflow:ellipsis; 
+  }
+
+  .sp-location { 
+    display:flex; 
+    align-items:center; 
+    gap:5px; 
+    font-size:12px; 
+    color:var(--muted); 
+    font-weight:600; 
+    margin-bottom:12px; 
+  }
+
+  .sp-desc { 
+    font-size:13px; 
+    color:var(--muted); 
+    line-height:1.6; 
+    margin:0 0 16px; 
+    flex:1; 
+    display:-webkit-box; 
+    -webkit-line-clamp:2; 
+    -webkit-box-orient:vertical; 
+    overflow:hidden; 
+    min-height:42px; 
+  }
 
   /* Stats */
-  .sp-stats { display:grid; grid-template-columns:repeat(3,1fr); border:1px solid var(--border); border-radius:12px; overflow:hidden; margin-bottom:14px; }
-  .sp-stat { padding:9px 10px; text-align:center; }
-  .sp-stat + .sp-stat { border-left:1px solid var(--border); }
-  .sp-stat-val   { display:block; font-size:14px; font-weight:800; color:var(--text); letter-spacing:-0.4px; }
-  .sp-stat-label { display:block; font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--muted); margin-top:1px; }
+  .sp-stats { 
+    display:flex;
+    gap:16px;
+    padding:14px 0;
+    border-top:1px solid var(--border);
+    border-bottom:1px solid var(--border);
+    margin-bottom:16px;
+  }
+  .sp-stat { 
+    flex:1;
+    text-align:center;
+  }
+  .sp-stat-val { 
+    display:block; 
+    font-size:16px; 
+    font-weight:800; 
+    color:var(--text); 
+    letter-spacing:-0.5px; 
+  }
+  .sp-stat-label { 
+    display:block; 
+    font-size:10px; 
+    font-weight:700; 
+    text-transform:uppercase; 
+    letter-spacing:0.6px; 
+    color:var(--muted); 
+    margin-top:2px; 
+  }
 
   /* CTA */
   .sp-cta {
-    display:flex; align-items:center; justify-content:center; gap:7px;
-    padding:10px; background:var(--text); color:#fff; border-radius:12px;
-    font-family:'Sora',sans-serif; font-size:12px; font-weight:700;
-    text-decoration:none; transition:all 0.15s; margin-top:auto;
+    display:flex; 
+    align-items:center; 
+    justify-content:center; 
+    gap:7px;
+    padding:12px; 
+    background:var(--text); 
+    color:#fff; 
+    border-radius:11px;
+    font-family:'Sora',sans-serif; 
+    font-size:13px; 
+    font-weight:700;
+    text-decoration:none; 
+    transition:all 0.2s; 
+    margin-top:auto;
   }
-  .sp-cta:hover { background:#333; transform:translateY(-1px); box-shadow:0 4px 14px rgba(0,0,0,0.16); }
+  .sp-cta:hover { 
+    background:#333; 
+    transform:translateY(-2px); 
+    box-shadow:0 6px 20px rgba(0,0,0,0.2); 
+  }
 
   /* Skeleton */
-  .sp-skel-base { background:linear-gradient(90deg,#ede9e4 25%,#e4e0db 50%,#ede9e4 75%); background-size:300% 100%; animation:sp-shimmer 1.6s infinite; border-radius:8px; }
+  .sp-skel-base { 
+    background:linear-gradient(90deg,#ede9e4 25%,#e4e0db 50%,#ede9e4 75%); 
+    background-size:300% 100%; 
+    animation:sp-shimmer 1.6s infinite; 
+    border-radius:8px; 
+  }
 
   /* Empty */
-  .sp-empty { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:100px 24px; text-align:center; }
-  .sp-empty-ico { width:80px; height:80px; background:var(--hover); border-radius:24px; display:flex; align-items:center; justify-content:center; margin-bottom:22px; color:var(--muted); }
-  .sp-empty-title { font-size:19px; font-weight:800; color:var(--text); margin:0 0 8px; letter-spacing:-0.4px; }
-  .sp-empty-sub   { font-size:13px; color:var(--muted); margin:0; }
+  .sp-empty { 
+    display:flex; 
+    flex-direction:column; 
+    align-items:center; 
+    justify-content:center; 
+    padding:100px 24px; 
+    text-align:center; 
+  }
+  .sp-empty-ico { 
+    width:80px; 
+    height:80px; 
+    background:var(--hover); 
+    border-radius:24px; 
+    display:flex; 
+    align-items:center; 
+    justify-content:center; 
+    margin-bottom:22px; 
+    color:var(--muted); 
+  }
+  .sp-empty-title { 
+    font-size:19px; 
+    font-weight:800; 
+    color:var(--text); 
+    margin:0 0 8px; 
+    letter-spacing:-0.4px; 
+  }
+  .sp-empty-sub { 
+    font-size:13px; 
+    color:var(--muted); 
+    margin:0; 
+  }
 `;
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
@@ -294,31 +450,31 @@ function SkeletonCard({ delay = 0 }: { delay?: number }) {
       className="sp-card"
       style={{ animationDelay: `${delay}ms`, pointerEvents: "none" }}
     >
-      <div className="sp-cover" />
-      <div className="sp-body" style={{ paddingTop: 34 }}>
+      <div className="sp-card-header" />
+      <div className="sp-card-body">
         <div
           className="sp-skel-base"
-          style={{ height: 14, width: "55%", marginBottom: 6 }}
+          style={{ height: 16, width: "60%", marginBottom: 8 }}
         />
         <div
           className="sp-skel-base"
-          style={{ height: 10, width: "35%", marginBottom: 12 }}
+          style={{ height: 12, width: "40%", marginBottom: 14 }}
         />
         <div
           className="sp-skel-base"
-          style={{ height: 10, width: "100%", marginBottom: 5 }}
+          style={{ height: 12, width: "100%", marginBottom: 5 }}
         />
         <div
           className="sp-skel-base"
-          style={{ height: 10, width: "75%", marginBottom: 18 }}
+          style={{ height: 12, width: "80%", marginBottom: 18 }}
         />
         <div
           className="sp-skel-base"
-          style={{ height: 52, borderRadius: 12, marginBottom: 14 }}
+          style={{ height: 60, marginBottom: 16 }}
         />
         <div
           className="sp-skel-base"
-          style={{ height: 38, borderRadius: 12 }}
+          style={{ height: 44, borderRadius: 11 }}
         />
       </div>
     </div>
@@ -327,9 +483,10 @@ function SkeletonCard({ delay = 0 }: { delay?: number }) {
 
 // ─── Store Card ───────────────────────────────────────────────────────────────
 function StoreCard({ store, delay = 0 }: { store: Store; delay?: number }) {
+  // ✅ Changed from /store/ to /stores/
   const href = store.storeSlug
-    ? `/store/${store.storeSlug}`
-    : `/store/${store.id}`;
+    ? `/stores/${store.storeSlug}`
+    : `/stores/${store.id}`;
   const initials = store.brandName.slice(0, 2).toUpperCase();
   const fmt = (n: number) =>
     n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n);
@@ -340,46 +497,29 @@ function StoreCard({ store, delay = 0 }: { store: Store; delay?: number }) {
       className="sp-card"
       style={{ animationDelay: `${delay}ms` }}
     >
-      {/* Cover */}
-      <div className="sp-cover">
-        {store.storeCover ? (
-          <img src={store.storeCover} alt="" />
-        ) : (
-          <div className="sp-cover-ph">
-            <svg
-              width="36"
-              height="36"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="rgba(158,152,144,0.35)"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10" />
-            </svg>
-          </div>
-        )}
-        {/* Logo */}
-        <div className="sp-logo-wrap">
-          <div className="sp-logo">
-            {store.storeLogo ? (
-              <img src={store.storeLogo} alt={store.brandName} />
-            ) : (
-              <span>{initials}</span>
-            )}
-          </div>
-        </div>
+      {/* Header with gradient */}
+      <div className="sp-card-header">
         {/* Verified badge */}
-        <span className="sp-cover-badge verified">✓ Verified</span>
+        <span className="sp-verified-badge">
+          <CheckIco size={11} /> Verified
+        </span>
+
+        {/* Circular logo */}
+        <div className="sp-logo-circle">
+          {store.storeLogo ? (
+            <img src={store.storeLogo} alt={store.brandName} />
+          ) : (
+            <span>{initials}</span>
+          )}
+        </div>
       </div>
 
       {/* Body */}
-      <div className="sp-body">
+      <div className="sp-card-body">
         <p className="sp-brand">{store.brandName}</p>
         {store.location && (
           <div className="sp-location">
-            <MapPinIco size={11} /> {store.location}
+            <MapPinIco size={12} /> {store.location}
           </div>
         )}
         <p className="sp-desc">
