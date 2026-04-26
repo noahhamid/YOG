@@ -98,14 +98,14 @@ const NAV_STYLES = `
       max-width 0.5s cubic-bezier(0.16,1,0.3,1),
       border-radius 0.5s cubic-bezier(0.16,1,0.3,1);
   }
-  .nav-bar.scrolled {
-    top: 0; width: 100%; max-width: 100%;
-    border-radius: 0 0 20px 20px; border-top: none;
-    background: rgba(246,245,243,0.98);
-    border-color: rgba(200,195,188,0.9);
-    box-shadow: 0 8px 40px rgba(26,23,20,0.12), 0 1px 0 rgba(255,255,255,0.7) inset;
-  }
-
+ .nav-bar.scrolled {
+top: 10px;
+background: rgba(246,245,243,0.95);
+border-color: rgba(210,206,200,0.95);
+box-shadow: 0 8px 32px rgba(26,23,20,0.13), 0 2px 8px rgba(26,23,20,0.06), 0 1px 0 rgba(255,255,255,0.7) inset;
+backdrop-filter: blur(28px) saturate(180%);
+-webkit-backdrop-filter: blur(28px) saturate(180%);
+}
   .nav-brand { display:flex; align-items:center; gap:6px; text-decoration:none; flex-shrink:0; margin-right:6px; }
   .nav-logo-img { height:58px; width:auto; object-fit:contain; display:block; transition:height 0.45s cubic-bezier(0.16,1,0.3,1); }
   .nav-bar.scrolled .nav-logo-img { height:50px; }
@@ -789,7 +789,7 @@ export default function Navbar() {
         {/* Right cluster */}
         <div className="nav-right">
           {/* Search */}
-          <div
+          {/* <div
             ref={searchRef}
             className={`nav-search-wrap${searchOpen ? " exp" : ""}`}
           >
@@ -885,7 +885,7 @@ export default function Navbar() {
                 </div>
               </div>
             )}
-          </div>
+          </div> */}
 
           {/* Bell — opens real NotificationCenter */}
           {user && (

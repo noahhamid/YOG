@@ -1097,7 +1097,7 @@ export default function AddProductForm({
                         />
                       </div>
                     </Field>
-                    <Field label="Compare-at Price">
+                    <Field label="Discounted Price">
                       <div style={{ position: "relative" }}>
                         <span
                           style={{

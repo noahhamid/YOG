@@ -56,24 +56,6 @@ const MapPinIco = (p: IconProps) => (
     d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z M12 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"
   />
 );
-
-const InstaIco = (p: IconProps) => (
-  <svg
-    width={p.size || 16}
-    height={p.size || 16}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.75}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
-    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-    <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
-  </svg>
-);
-
 const LinkIco = (p: IconProps) => (
   <Ico
     {...p}
@@ -101,6 +83,31 @@ const AlertIco = (p: IconProps) => (
     d="M12 9v4m0 4h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
   />
 );
+const CopyIco = (p: IconProps) => (
+  <Ico
+    {...p}
+    d="M8 17.929H6c-1.105 0-2-.912-2-2.036V5.036C4 3.91 4.895 3 6 3h8c1.105 0 2 .911 2 2.036v1.866m-6 .17h8c1.105 0 2 .91 2 2.035v10.857C20 21.09 19.105 22 18 22h-8c-1.105 0-2-.911-2-2.036V9.107c0-1.124.895-2.036 2-2.036z"
+  />
+);
+const CheckSmallIco = (p: IconProps) => <Ico {...p} d="M20 6 9 17l-5-5" />;
+
+const InstaIco = (p: IconProps) => (
+  <svg
+    width={p.size || 16}
+    height={p.size || 16}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.75}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+    <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+  </svg>
+);
+
 const LoaderIcon = ({ size = 16 }: { size?: number }) => (
   <svg
     width={size}
@@ -121,7 +128,7 @@ const compressImage = (
   file: File,
   maxW: number,
   maxH: number,
-  q: number = 0.85,
+  q = 0.85,
 ): Promise<Blob> =>
   new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -142,10 +149,7 @@ const compressImage = (
         const canvas = document.createElement("canvas");
         canvas.width = w;
         canvas.height = h;
-        const ctx = canvas.getContext("2d");
-        if (ctx) {
-          ctx.drawImage(img, 0, 0, w, h);
-        }
+        canvas.getContext("2d")?.drawImage(img, 0, 0, w, h);
         canvas.toBlob(
           (b) => (b ? resolve(b) : reject(new Error("Failed"))),
           "image/jpeg",
@@ -159,130 +163,174 @@ const compressImage = (
     reader.readAsDataURL(file);
   });
 
-// ─── Shared CSS ───────────────────────────────────────────────────────────────
+// ─── CSS ──────────────────────────────────────────────────────────────────────
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&display=swap');
-  :root {
-    --bg: #f6f5f3; --card: #ffffff; --text: #1a1714; --muted: #9e9890;
-    --border: #e8e4de; --input-bg: #fdfcfb; --accent: #2563eb;
-    --accent-soft: rgba(37,99,235,0.08); --error: #dc2626;
-    --error-soft: #fef2f2; --success: #16a34a; --success-soft: #f0fdf4;
-    --hover: #f5f3f0; --divider: rgba(0,0,0,0.06);
-  }
-  @keyframes sp-spin { to { transform: rotate(360deg); } }
-  @keyframes sp-fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }
-  .sp-page { min-height:100vh; background:var(--bg); padding-top:72px; font-family:'Sora',sans-serif; }
-  .sp-wrap { max-width:900px; margin:0 auto; padding:36px 24px 72px; }
+  @keyframes sp-spin    { to { transform: rotate(360deg); } }
+  @keyframes sp-fadeUp  { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
+  @keyframes sp-shimmer { 0%,100%{opacity:1} 50%{opacity:0.5} }
 
-  /* breadcrumb */
+  .sp-page  { min-height:100vh; background:#f6f5f3; padding-top:80px; font-family:'Sora',sans-serif; }
+  .sp-wrap  { max-width:780px; margin:0 auto; padding:32px 20px 80px; }
+
+  /* back */
   .sp-back { display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:600;
-    color:var(--muted); text-decoration:none; transition:color 0.15s; margin-bottom:24px; }
-  .sp-back:hover { color:var(--text); }
+    color:#9e9890; text-decoration:none; transition:color .15s; margin-bottom:28px; }
+  .sp-back:hover { color:#1a1714; }
 
-  /* header */
-  .sp-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:32px; flex-wrap:wrap; gap:14px; }
-  .sp-header-title { font-size:26px; font-weight:800; color:var(--text); letter-spacing:-0.7px; margin:0 0 4px; }
-  .sp-header-sub { font-size:13px; color:var(--muted); margin:0; }
-  .sp-preview-btn { display:flex; align-items:center; gap:7px; padding:10px 20px;
-    background:var(--text); color:#fff; border:none; border-radius:11px;
-    font-family:'Sora',sans-serif; font-size:13px; font-weight:600; cursor:pointer;
-    text-decoration:none; transition:all 0.15s; }
-  .sp-preview-btn:hover { background:#333; transform:translateY(-1px); box-shadow:0 4px 14px rgba(0,0,0,0.16); }
+  /* header row */
+  .sp-hrow { display:flex; align-items:center; justify-content:space-between; margin-bottom:28px; flex-wrap:wrap; gap:12px; }
+  .sp-htitle { font-size:24px; font-weight:800; color:#1a1714; letter-spacing:-.6px; margin:0 0 3px; }
+  .sp-hsub   { font-size:13px; color:#9e9890; margin:0; }
+  .sp-preview-btn { display:inline-flex; align-items:center; gap:7px; padding:9px 18px;
+    background:#1a1714; color:#fff; border:none; border-radius:11px; font-family:'Sora',sans-serif;
+    font-size:13px; font-weight:600; cursor:pointer; text-decoration:none; transition:all .15s; }
+  .sp-preview-btn:hover { background:#333; transform:translateY(-1px); box-shadow:0 4px 14px rgba(0,0,0,.18); }
 
   /* toast */
-  .sp-toast { display:flex; align-items:center; gap:10px; padding:12px 16px; border-radius:12px;
-    font-size:13px; font-weight:600; margin-bottom:20px; animation:sp-fadeUp 0.2s ease; }
+  .sp-toast { display:flex; align-items:center; gap:9px; padding:11px 16px; border-radius:12px;
+    font-size:13px; font-weight:600; margin-bottom:20px; }
 
-  /* main card */
-  .sp-card { background:var(--card); border-radius:20px; border:1px solid var(--border);
-    overflow:hidden; box-shadow:0 4px 24px rgba(0,0,0,0.06); animation:sp-fadeUp 0.35s ease; }
+  /* ── profile hero card ── */
+  .sp-hero { background:#fff; border-radius:20px; border:1px solid #e8e4de;
+    overflow:hidden; box-shadow:0 2px 16px rgba(0,0,0,.05); margin-bottom:16px; }
 
   /* cover */
-  .sp-cover { position:relative; height:220px; background:#1a1714; overflow:hidden; }
+  .sp-cover { position:relative; height:200px; background:#1a1714; overflow:hidden; cursor:pointer; }
   .sp-cover-placeholder { position:absolute; inset:0; display:flex; flex-direction:column;
-    align-items:center; justify-content:center; color:rgba(255,255,255,0.35); gap:8px; }
-  .sp-cover-placeholder span { font-size:12px; font-weight:600; }
-  .sp-cover-hover { position:absolute; inset:0; background:rgba(0,0,0,0.5);
-    display:flex; align-items:center; justify-content:center; opacity:0;
-    transition:opacity 0.2s; cursor:pointer; backdrop-filter:blur(2px); z-index:2; }
+    align-items:center; justify-content:center; color:rgba(255,255,255,.3); gap:8px; }
+  .sp-cover-placeholder span { font-size:12px; font-weight:500; }
+  .sp-cover-hover { position:absolute; inset:0; background:rgba(0,0,0,.45); display:flex;
+    align-items:center; justify-content:center; opacity:0; transition:opacity .2s; backdrop-filter:blur(3px); z-index:2; }
   .sp-cover:hover .sp-cover-hover { opacity:1; }
-  .sp-cover-btn { display:flex; align-items:center; gap:8px; padding:10px 20px; background:#fff;
-    color:#1a1714; border-radius:10px; font-size:13px; font-weight:700; border:none; cursor:pointer;
-    font-family:'Sora',sans-serif; }
-  .sp-progress-overlay { position:absolute; inset:0; background:rgba(0,0,0,0.88);
+  .sp-cover-btn { display:flex; align-items:center; gap:8px; padding:9px 18px; background:#fff;
+    color:#1a1714; border-radius:10px; font-size:13px; font-weight:700; border:none; font-family:'Sora',sans-serif; }
+  .sp-prog-overlay { position:absolute; inset:0; background:rgba(0,0,0,.85);
     display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; z-index:3; }
-  .sp-progress-bar-wrap { width:180px; height:4px; background:rgba(255,255,255,0.15); border-radius:99px; overflow:hidden; }
-  .sp-progress-bar { height:100%; background:#3b82f6; border-radius:99px; transition:width 0.3s; }
-  .sp-progress-label { font-size:11px; color:rgba(255,255,255,0.6); font-family:'Sora',sans-serif; }
+  .sp-prog-bar-wrap { width:160px; height:3px; background:rgba(255,255,255,.15); border-radius:99px; overflow:hidden; }
+  .sp-prog-bar { height:100%; background:#3b82f6; border-radius:99px; transition:width .3s; }
+  .sp-prog-label { font-size:11px; color:rgba(255,255,255,.5); font-family:'Sora',sans-serif; }
 
-  /* logo */
-  .sp-logo-wrap { margin:-56px 0 0 28px; position:relative; z-index:5; display:inline-block; }
-  .sp-logo { width:112px; height:112px; border-radius:20px; border:4px solid #fff;
-    box-shadow:0 8px 24px rgba(0,0,0,0.14); overflow:hidden; background:#1a1714;
-    display:flex; align-items:center; justify-content:center; position:relative; }
-  .sp-logo-placeholder { color:rgba(255,255,255,0.5); display:flex; flex-direction:column;
-    align-items:center; justify-content:center; gap:4px; }
-  .sp-logo-hover { position:absolute; inset:0; background:rgba(0,0,0,0.7); border-radius:16px;
-    display:flex; align-items:center; justify-content:center; opacity:0; transition:opacity 0.2s; cursor:pointer; z-index:10; }
-  .sp-logo-wrap:hover .sp-logo-hover { opacity:1; }
-  .sp-logo-cam { width:36px; height:36px; background:#fff; border-radius:50%;
+  /* avatar circle */
+  .sp-avatar-row  { padding:0 28px 24px; display:flex; align-items:flex-end; gap:16px; }
+  .sp-avatar-wrap { margin-top:-52px; position:relative; flex-shrink:0; }
+  .sp-avatar { width:104px; height:104px; border-radius:50%; border:4px solid #fff;
+    box-shadow:0 4px 20px rgba(0,0,0,.13); overflow:hidden; background:#1a1714;
+    display:flex; align-items:center; justify-content:center; position:relative; cursor:pointer; }
+  .sp-avatar-placeholder { color:rgba(255,255,255,.45); display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:3px; }
+  .sp-avatar-hover { position:absolute; inset:0; border-radius:50%; background:rgba(0,0,0,.65);
+    display:flex; align-items:center; justify-content:center; opacity:0; transition:opacity .2s; z-index:10; }
+  .sp-avatar:hover .sp-avatar-hover { opacity:1; }
+  .sp-avatar-cam { width:32px; height:32px; background:#fff; border-radius:50%;
     display:flex; align-items:center; justify-content:center; }
+  .sp-avatar-prog { position:absolute; inset:0; border-radius:50%; background:rgba(0,0,0,.82);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:7px; z-index:5; }
 
-  /* form */
-  .sp-form-body { padding:24px 28px 28px; }
-  .sp-form-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
-  @media (max-width:640px) { .sp-form-grid { grid-template-columns:1fr; } }
+  /* store name display in hero */
+  .sp-hero-name  { font-size:20px; font-weight:800; color:#1a1714; letter-spacing:-.4px; margin:0 0 2px; }
+  .sp-hero-slug  { font-size:12px; color:#9e9890; font-weight:500; margin:0; }
+
+  /* ── url copy card ── */
+  .sp-url-card { background:#fff; border-radius:16px; border:1px solid #e8e4de;
+    padding:16px 20px; margin-bottom:16px; display:flex; align-items:center; gap:12px;
+    box-shadow:0 1px 8px rgba(0,0,0,.04); }
+  .sp-url-ico { width:36px; height:36px; background:#f6f5f3; border-radius:10px; border:1px solid #e8e4de;
+    display:flex; align-items:center; justify-content:center; color:#9e9890; flex-shrink:0; }
+  .sp-url-text { flex:1; min-width:0; }
+  .sp-url-label { font-size:10px; font-weight:700; color:#b8b3ad; text-transform:uppercase; letter-spacing:.7px; margin:0 0 3px; }
+  .sp-url-value { font-size:13px; font-weight:600; color:#1a1714; white-space:nowrap;
+    overflow:hidden; text-overflow:ellipsis; margin:0; }
+  .sp-url-value span { color:#9e9890; }
+  .sp-copy-btn { display:flex; align-items:center; gap:6px; padding:8px 14px;
+    border:1.5px solid #e8e4de; border-radius:10px; background:#fff; color:#6b6760;
+    font-size:12px; font-weight:700; font-family:'Sora',sans-serif; cursor:pointer;
+    transition:all .18s; white-space:nowrap; flex-shrink:0; }
+  .sp-copy-btn:hover { border-color:#1a1714; color:#1a1714; background:#f6f5f3; }
+  .sp-copy-btn.copied { border-color:#16a34a; color:#16a34a; background:#f0fdf4; }
+
+  /* ── form card ── */
+  .sp-form-card { background:#fff; border-radius:20px; border:1px solid #e8e4de;
+    overflow:hidden; box-shadow:0 2px 16px rgba(0,0,0,.05); }
+  .sp-form-section { padding:24px 28px; }
+  .sp-section-title { font-size:11px; font-weight:800; color:#b8b3ad; text-transform:uppercase;
+    letter-spacing:.8px; margin:0 0 18px; display:flex; align-items:center; gap:8px; }
+  .sp-section-title::after { content:''; flex:1; height:1px; background:#f0ede9; }
+  .sp-form-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+  @media (max-width:600px) { .sp-form-grid { grid-template-columns:1fr; } .sp-form-section { padding:20px 18px; } .sp-avatar-row { padding:0 18px 20px; } }
   .sp-full { grid-column:1/-1; }
 
-  .sp-field { display:flex; flex-direction:column; gap:8px; }
-  .sp-label { display:flex; align-items:center; gap:6px; font-size:12px; font-weight:700;
-    color:var(--muted); text-transform:uppercase; letter-spacing:0.6px; }
-  .sp-input {
-    width:100%; padding:11px 14px; font-size:14px; background:var(--input-bg);
-    border:1.5px solid var(--border); border-radius:10px; color:var(--text);
-    outline:none; box-sizing:border-box; transition:border-color 0.15s, box-shadow 0.15s;
-    font-family:'Sora',sans-serif;
-  }
-  .sp-input:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
+  .sp-field { display:flex; flex-direction:column; gap:7px; }
+  .sp-label { display:flex; align-items:center; gap:5px; font-size:11px; font-weight:700;
+    color:#9e9890; text-transform:uppercase; letter-spacing:.6px; }
+  .sp-input { width:100%; padding:10px 13px; font-size:14px; background:#fdfcfb;
+    border:1.5px solid #e8e4de; border-radius:10px; color:#1a1714; outline:none;
+    box-sizing:border-box; transition:border-color .15s, box-shadow .15s; font-family:'Sora',sans-serif; }
+  .sp-input:focus { border-color:#1a1714; box-shadow:0 0 0 3px rgba(26,23,20,.07); }
   .sp-textarea { resize:none; line-height:1.6; }
-  .sp-prefix-wrap { display:flex; align-items:center; gap:0; border:1.5px solid var(--border);
-    border-radius:10px; background:var(--input-bg); overflow:hidden; transition:border-color 0.15s, box-shadow 0.15s; }
-  .sp-prefix-wrap:focus-within { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
-  .sp-prefix { padding:11px 12px; font-size:12px; font-weight:700; color:var(--muted);
-    background:var(--hover); border-right:1px solid var(--border); white-space:nowrap; flex-shrink:0; }
-  .sp-prefix-input { flex:1; padding:11px 14px; font-size:14px; background:transparent;
-    border:none; color:var(--text); outline:none; font-family:'Sora',sans-serif; min-width:0; }
+  .sp-prefix-wrap { display:flex; align-items:center; border:1.5px solid #e8e4de;
+    border-radius:10px; background:#fdfcfb; overflow:hidden; transition:border-color .15s, box-shadow .15s; }
+  .sp-prefix-wrap:focus-within { border-color:#1a1714; box-shadow:0 0 0 3px rgba(26,23,20,.07); }
+  .sp-prefix { padding:10px 11px; font-size:12px; font-weight:700; color:#b8b3ad;
+    background:#f6f5f3; border-right:1.5px solid #e8e4de; white-space:nowrap; flex-shrink:0; }
+  .sp-prefix-input { flex:1; padding:10px 13px; font-size:14px; background:transparent;
+    border:none; color:#1a1714; outline:none; font-family:'Sora',sans-serif; min-width:0; }
+  .sp-form-divider { height:1px; background:#f6f5f3; margin:4px -28px; }
 
-  .sp-divider { height:1px; background:var(--divider); margin:24px 0; }
+  /* save */
+  .sp-save-btn { width:100%; padding:13px; background:#1a1714; color:#fff; border:none;
+    border-radius:12px; font-size:14px; font-weight:700; cursor:pointer; font-family:'Sora',sans-serif;
+    transition:all .15s; display:flex; align-items:center; justify-content:center; gap:8px; margin-top:24px; }
+  .sp-save-btn:hover:not(:disabled) { background:#333; transform:translateY(-1px); box-shadow:0 4px 14px rgba(0,0,0,.16); }
+  .sp-save-btn:disabled { opacity:.45; cursor:not-allowed; transform:none; }
 
-  /* save button */
-  .sp-save-btn { width:100%; padding:13px; background:var(--text); color:#fff;
-    border:none; border-radius:12px; font-size:14px; font-weight:700; cursor:pointer;
-    font-family:'Sora',sans-serif; transition:all 0.15s; display:flex;
-    align-items:center; justify-content:center; gap:9px; margin-top:28px; }
-  .sp-save-btn:hover:not(:disabled) { background:#333; transform:translateY(-1px); box-shadow:0 4px 14px rgba(0,0,0,0.16); }
-  .sp-save-btn:disabled { opacity:0.5; cursor:not-allowed; transform:none; }
-
-  /* spinner page */
-  .sp-loader { min-height:100vh; display:flex; align-items:center; justify-content:center; background:var(--bg); }
-  .sp-spinner { width:36px; height:36px; border:3px solid var(--border); border-top-color:var(--text); border-radius:50%; animation:sp-spin 0.7s linear infinite; }
+  /* loader */
+  .sp-loader { min-height:100vh; display:flex; align-items:center; justify-content:center; background:#f6f5f3; }
+  .sp-spinner { width:34px; height:34px; border:2.5px solid #e8e4de; border-top-color:#1a1714; border-radius:50%; animation:sp-spin .7s linear infinite; }
 `;
 
-// ─── Field component ──────────────────────────────────────────────────────────
-interface FieldProps {
+// ─── Field ────────────────────────────────────────────────────────────────────
+function Field({
+  label,
+  icon: Icon,
+  children,
+}: {
   label: string;
-  icon: React.ComponentType<IconProps>;
+  icon: any;
   children: React.ReactNode;
-}
-
-function Field({ label, icon: Icon, children }: FieldProps) {
+}) {
   return (
     <div className="sp-field">
       <label className="sp-label">
-        <Icon size={12} /> {label}
+        <Icon size={11} /> {label}
       </label>
       {children}
     </div>
+  );
+}
+
+// ─── Copy Button ──────────────────────────────────────────────────────────────
+function CopyButton({ value }: { value: string }) {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {}
+  };
+  return (
+    <button className={`sp-copy-btn${copied ? " copied" : ""}`} onClick={copy}>
+      {copied ? (
+        <>
+          <CheckSmallIco size={13} /> Copied!
+        </>
+      ) : (
+        <>
+          <CopyIco size={13} /> Copy Link
+        </>
+      )}
+    </button>
   );
 }
 
@@ -299,7 +347,6 @@ export default function SellerProfilePage() {
     type: "success" | "error";
     msg: string;
   } | null>(null);
-
   const [formData, setFormData] = useState({
     brandName: "",
     storeSlug: "",
@@ -320,7 +367,6 @@ export default function SellerProfilePage() {
 
   useEffect(() => {
     loadSettings();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadSettings = async () => {
@@ -340,7 +386,7 @@ export default function SellerProfilePage() {
       });
       if (!res.ok) throw new Error();
       const data = await res.json();
-      if (data.seller) {
+      if (data.seller)
         setFormData({
           brandName: data.seller.brandName || "",
           storeSlug: data.seller.storeSlug || "",
@@ -350,7 +396,6 @@ export default function SellerProfilePage() {
           instagram: data.seller.instagram || "",
           location: data.seller.location || "",
         });
-      }
     } catch {
       showToast("error", "Failed to load settings");
     } finally {
@@ -398,7 +443,7 @@ export default function SellerProfilePage() {
           ...p,
           [type === "logo" ? "storeLogo" : "storeCover"]: data.url,
         }));
-        showToast("success", `${type === "logo" ? "Logo" : "Cover"} updated!`);
+        showToast("success", `${type === "logo" ? "Photo" : "Cover"} updated!`);
       }
     } catch (err: any) {
       showToast("error", err.message || "Upload failed");
@@ -450,6 +495,13 @@ export default function SellerProfilePage() {
     );
   }
 
+  const storeUrl = formData.storeSlug
+    ? `yogmarket.com/stores/${formData.storeSlug}`
+    : "";
+  const fullUrl = formData.storeSlug
+    ? `https://yogmarket.com/stores/${formData.storeSlug}`
+    : "";
+
   return (
     <>
       <style>{CSS}</style>
@@ -462,20 +514,20 @@ export default function SellerProfilePage() {
           </Link>
 
           {/* Header */}
-          <div className="sp-header">
+          <div className="sp-hrow">
             <div>
-              <h1 className="sp-header-title">Store Profile</h1>
-              <p className="sp-header-sub">
+              <h1 className="sp-htitle">Store Profile</h1>
+              <p className="sp-hsub">
                 Customize your brand identity and store settings
               </p>
             </div>
             {formData.storeSlug && (
               <Link
-                href={`/store/${formData.storeSlug}`}
+                href={`/stores/${formData.storeSlug}`}
                 target="_blank"
                 className="sp-preview-btn"
               >
-                <EyeIco size={15} /> Preview Store
+                <EyeIco size={14} /> Preview Store
               </Link>
             )}
           </div>
@@ -489,122 +541,107 @@ export default function SellerProfilePage() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
                 style={{
-                  background:
-                    toast.type === "success"
-                      ? "var(--success-soft)"
-                      : "var(--error-soft)",
-                  color:
-                    toast.type === "success"
-                      ? "var(--success)"
-                      : "var(--error)",
+                  background: toast.type === "success" ? "#f0fdf4" : "#fef2f2",
+                  color: toast.type === "success" ? "#16a34a" : "#dc2626",
                   border: `1px solid ${toast.type === "success" ? "#bbf7d0" : "#fecaca"}`,
                 }}
               >
                 {toast.type === "success" ? (
-                  <CheckIco size={16} />
+                  <CheckIco size={15} />
                 ) : (
-                  <AlertIco size={16} />
+                  <AlertIco size={15} />
                 )}
                 {toast.msg}
               </motion.div>
             )}
           </AnimatePresence>
 
-          {/* Card */}
-          <div className="sp-card">
+          {/* ── Hero card (cover + avatar) ── */}
+          <div className="sp-hero">
             {/* Cover */}
-            <div className="sp-cover">
+            <div
+              className="sp-cover"
+              onClick={() => !uploadingCover && coverRef.current?.click()}
+            >
               {formData.storeCover ? (
                 <Image
                   src={formData.storeCover}
                   alt="Cover"
                   fill
                   className="object-cover"
-                  sizes="900px"
+                  sizes="780px"
                   priority
                 />
               ) : (
                 <div className="sp-cover-placeholder">
-                  <CameraIco size={36} />
-                  <span>Add a cover image</span>
+                  <CameraIco size={32} />
+                  <span>Click to add a cover image</span>
                   <span style={{ fontSize: 11, opacity: 0.6 }}>
                     1600 × 800 recommended
                   </span>
                 </div>
               )}
-
               {uploadingCover ? (
-                <div className="sp-progress-overlay">
-                  <LoaderIcon size={28} />
-                  <div className="sp-progress-bar-wrap">
+                <div className="sp-prog-overlay">
+                  <LoaderIcon size={26} />
+                  <div className="sp-prog-bar-wrap">
                     <div
-                      className="sp-progress-bar"
+                      className="sp-prog-bar"
                       style={{ width: `${coverProg}%` }}
                     />
                   </div>
-                  <span className="sp-progress-label">
+                  <span className="sp-prog-label">
                     {coverProg < 60 ? "Compressing…" : "Uploading…"} {coverProg}
                     %
                   </span>
                 </div>
               ) : (
-                <div
-                  className="sp-cover-hover"
-                  onClick={() => coverRef.current?.click()}
-                >
+                <div className="sp-cover-hover">
                   <div className="sp-cover-btn">
-                    <CameraIco size={16} /> Change Cover
+                    <CameraIco size={15} /> Change Cover
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Logo + form */}
-            <div style={{ padding: "0 0 0" }}>
-              {/* Logo */}
-              <div className="sp-logo-wrap" style={{ marginBottom: 20 }}>
-                <div className="sp-logo">
+            {/* Avatar + name */}
+            <div className="sp-avatar-row">
+              <div className="sp-avatar-wrap">
+                <div
+                  className="sp-avatar"
+                  onClick={() => !uploadingLogo && logoRef.current?.click()}
+                >
                   {formData.storeLogo ? (
                     <Image
                       src={formData.storeLogo}
                       alt="Logo"
-                      width={112}
-                      height={112}
-                      className="object-cover"
-                      style={{ width: "100%", height: "100%" }}
+                      width={104}
+                      height={104}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                      }}
                       priority
                     />
                   ) : (
-                    <div className="sp-logo-placeholder">
-                      <StoreIco size={32} />
+                    <div className="sp-avatar-placeholder">
+                      <StoreIco size={28} />
                       <span
-                        style={{ fontSize: 10, color: "rgba(255,255,255,0.4)" }}
+                        style={{ fontSize: 10, color: "rgba(255,255,255,.35)" }}
                       >
-                        Logo
+                        Photo
                       </span>
                     </div>
                   )}
                   {uploadingLogo && (
-                    <div
-                      style={{
-                        position: "absolute",
-                        inset: 0,
-                        background: "rgba(0,0,0,0.85)",
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: 8,
-                        borderRadius: 16,
-                        zIndex: 5,
-                      }}
-                    >
-                      <LoaderIcon size={22} />
+                    <div className="sp-avatar-prog">
+                      <LoaderIcon size={20} />
                       <div
                         style={{
-                          width: 56,
+                          width: 50,
                           height: 3,
-                          background: "rgba(255,255,255,0.15)",
+                          background: "rgba(255,255,255,.15)",
                           borderRadius: 99,
                           overflow: "hidden",
                         }}
@@ -614,151 +651,175 @@ export default function SellerProfilePage() {
                             height: "100%",
                             width: `${logoProg}%`,
                             background: "#3b82f6",
-                            transition: "width 0.3s",
+                            transition: "width .3s",
                             borderRadius: 99,
                           }}
                         />
                       </div>
                     </div>
                   )}
-                </div>
-                {!uploadingLogo && (
-                  <div
-                    className="sp-logo-hover"
-                    onClick={() => logoRef.current?.click()}
-                  >
-                    <div className="sp-logo-cam">
-                      <CameraIco size={17} />
+                  {!uploadingLogo && (
+                    <div className="sp-avatar-hover">
+                      <div className="sp-avatar-cam">
+                        <CameraIco size={15} />
+                      </div>
                     </div>
-                  </div>
+                  )}
+                </div>
+              </div>
+              <div style={{ paddingBottom: 4 }}>
+                <p className="sp-hero-name">
+                  {formData.brandName || "Your Store Name"}
+                </p>
+                {formData.storeSlug && (
+                  <p className="sp-hero-slug">
+                    yogmarket.com/stores/{formData.storeSlug}
+                  </p>
                 )}
               </div>
+            </div>
+          </div>
 
-              {/* Form */}
-              <div className="sp-form-body">
-                <div className="sp-form-grid">
-                  {/* Store Name */}
-                  <div className="sp-full">
-                    <Field label="Store Name" icon={StoreIco}>
-                      <input
-                        className="sp-input"
-                        type="text"
-                        value={formData.brandName}
-                        onChange={(e) =>
-                          setFormData((p) => ({
-                            ...p,
-                            brandName: e.target.value,
-                          }))
-                        }
-                        placeholder="Your Store Name"
-                      />
-                    </Field>
-                  </div>
+          {/* ── Store link copy card ── */}
+          {storeUrl && (
+            <div className="sp-url-card">
+              <div className="sp-url-ico">
+                <LinkIco size={15} />
+              </div>
+              <div className="sp-url-text">
+                <p className="sp-url-label">Your Store Link</p>
+                <p className="sp-url-value">
+                  <span>yogmarket.com/stores/</span>
+                  {formData.storeSlug}
+                </p>
+              </div>
+              <CopyButton value={fullUrl} />
+            </div>
+          )}
 
-                  {/* Store URL */}
-                  <div className="sp-full">
-                    <Field label="Store URL" icon={LinkIco}>
-                      <div className="sp-prefix-wrap">
-                        <span className="sp-prefix">yog.com/store/</span>
-                        <input
-                          className="sp-prefix-input"
-                          type="text"
-                          value={formData.storeSlug}
-                          onChange={(e) =>
-                            setFormData((p) => ({
-                              ...p,
-                              storeSlug: e.target.value
-                                .toLowerCase()
-                                .replace(/[^a-z0-9-]/g, ""),
-                            }))
-                          }
-                          placeholder="your-store"
-                        />
-                      </div>
-                    </Field>
-                  </div>
-
-                  {/* Description */}
-                  <div className="sp-full">
-                    <Field label="Store Description" icon={FileIco}>
-                      <textarea
-                        className="sp-input sp-textarea"
-                        rows={4}
-                        value={formData.storeDescription}
-                        onChange={(e) =>
-                          setFormData((p) => ({
-                            ...p,
-                            storeDescription: e.target.value,
-                          }))
-                        }
-                        placeholder="Tell customers about your brand — what makes you unique, what you offer, your story…"
-                      />
-                    </Field>
-                  </div>
-
-                  {/* Location */}
-                  <div>
-                    <Field label="Location" icon={MapPinIco}>
-                      <input
-                        className="sp-input"
-                        type="text"
-                        value={formData.location}
-                        onChange={(e) =>
-                          setFormData((p) => ({
-                            ...p,
-                            location: e.target.value,
-                          }))
-                        }
-                        placeholder="Addis Ababa, Ethiopia"
-                      />
-                    </Field>
-                  </div>
-
-                  {/* Instagram */}
-                  <div>
-                    <Field label="Instagram" icon={InstaIco}>
-                      <div className="sp-prefix-wrap">
-                        <span className="sp-prefix">@</span>
-                        <input
-                          className="sp-prefix-input"
-                          type="text"
-                          value={formData.instagram}
-                          onChange={(e) =>
-                            setFormData((p) => ({
-                              ...p,
-                              instagram: e.target.value.replace("@", ""),
-                            }))
-                          }
-                          placeholder="yourhandle"
-                        />
-                      </div>
-                    </Field>
-                  </div>
+          {/* ── Form card ── */}
+          <div className="sp-form-card">
+            <div className="sp-form-section">
+              <p className="sp-section-title">Store Info</p>
+              <div className="sp-form-grid">
+                <div className="sp-full">
+                  <Field label="Store Name" icon={StoreIco}>
+                    <input
+                      className="sp-input"
+                      type="text"
+                      value={formData.brandName}
+                      onChange={(e) =>
+                        setFormData((p) => ({
+                          ...p,
+                          brandName: e.target.value,
+                        }))
+                      }
+                      placeholder="Your Store Name"
+                    />
+                  </Field>
                 </div>
 
-                {/* Save */}
-                <button
-                  className="sp-save-btn"
-                  onClick={handleSave}
-                  disabled={isSaving || uploadingLogo || uploadingCover}
-                >
-                  {isSaving ? (
-                    <>
-                      <LoaderIcon size={16} /> Saving…
-                    </>
-                  ) : (
-                    <>
-                      <SaveIco size={16} /> Save Changes
-                    </>
-                  )}
-                </button>
+                <div className="sp-full">
+                  <Field label="Store URL" icon={LinkIco}>
+                    <div className="sp-prefix-wrap">
+                      <span className="sp-prefix">yogmarket.com/stores/</span>
+                      <input
+                        className="sp-prefix-input"
+                        type="text"
+                        value={formData.storeSlug}
+                        onChange={(e) =>
+                          setFormData((p) => ({
+                            ...p,
+                            storeSlug: e.target.value
+                              .toLowerCase()
+                              .replace(/[^a-z0-9-]/g, ""),
+                          }))
+                        }
+                        placeholder="your-store"
+                      />
+                    </div>
+                  </Field>
+                </div>
+
+                <div className="sp-full">
+                  <Field label="Description" icon={FileIco}>
+                    <textarea
+                      className="sp-input sp-textarea"
+                      rows={4}
+                      value={formData.storeDescription}
+                      onChange={(e) =>
+                        setFormData((p) => ({
+                          ...p,
+                          storeDescription: e.target.value,
+                        }))
+                      }
+                      placeholder="Tell customers about your brand — what makes you unique, what you offer, your story…"
+                    />
+                  </Field>
+                </div>
               </div>
+            </div>
+
+            <div className="sp-form-divider" />
+
+            <div className="sp-form-section">
+              <p className="sp-section-title">Contact & Social</p>
+              <div className="sp-form-grid">
+                <div>
+                  <Field label="Location" icon={MapPinIco}>
+                    <input
+                      className="sp-input"
+                      type="text"
+                      value={formData.location}
+                      onChange={(e) =>
+                        setFormData((p) => ({ ...p, location: e.target.value }))
+                      }
+                      placeholder="Addis Ababa, Ethiopia"
+                    />
+                  </Field>
+                </div>
+
+                <div>
+                  <Field label="Instagram" icon={InstaIco}>
+                    <div className="sp-prefix-wrap">
+                      <span className="sp-prefix">@</span>
+                      <input
+                        className="sp-prefix-input"
+                        type="text"
+                        value={formData.instagram}
+                        onChange={(e) =>
+                          setFormData((p) => ({
+                            ...p,
+                            instagram: e.target.value.replace("@", ""),
+                          }))
+                        }
+                        placeholder="yourhandle"
+                      />
+                    </div>
+                  </Field>
+                </div>
+              </div>
+
+              <button
+                className="sp-save-btn"
+                onClick={handleSave}
+                disabled={isSaving || uploadingLogo || uploadingCover}
+              >
+                {isSaving ? (
+                  <>
+                    <LoaderIcon size={15} /> Saving…
+                  </>
+                ) : (
+                  <>
+                    <SaveIco size={15} /> Save Changes
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Hidden file inputs */}
       <input
         ref={logoRef}
         type="file"
