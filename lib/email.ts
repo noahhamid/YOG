@@ -5,7 +5,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 export async function sendPasswordResetOTP(email: string, otp: string, name: string) {
   try {
     const { error } = await resend.emails.send({
-      from: "YOG <onboarding@beysolution.com>",
+      from: "auth@yogmarket.com",
       to: email,
       subject: "Password Reset Code - YOG",
       html: `

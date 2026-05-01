@@ -104,7 +104,7 @@ export async function POST(req: NextRequest) {
 
     // Send email via Resend
     const { error } = await resend.emails.send({
-      from: "YOG <onboarding@beysolution.com>",
+      from: "auth@yogmarket.com",
       to: email,
       subject: "Your YOG Verification Code",
       html: `

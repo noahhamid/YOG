@@ -1,6 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'standalone', 
   images: {
+    unoptimized: true, // 👈 CRUCIAL: Stops the server from using CPU to resize images
     remotePatterns: [
       {
         protocol: "https",
@@ -18,14 +20,13 @@ const nextConfig = {
         protocol: "https",
         hostname: "i.pinimg.com",
       },
-      // ✅ ADD THIS - FOR USER UPLOADED IMAGES
       {
         protocol: "https",
         hostname: "wantsandneeds.com",
       },
       {
         protocol: "https",
-        hostname: "res.cloudinary.com", // ✅ ADD THIS
+        hostname: "res.cloudinary.com",
       },
       {
         protocol: "https",
@@ -33,7 +34,10 @@ const nextConfig = {
       },
     ],
   },
+  // 👇 ADD THIS SECTION to limit CPU usage on shared hosting
   experimental: {
+    workerThreads: false,
+    cpus: 1,
     staleTimes: {
       dynamic: 30,
       static: 180,

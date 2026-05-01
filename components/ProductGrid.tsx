@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useCart } from "@/context/CartContext";
 import FilterSidebar from "./FilterSidebar";
+import { toast } from "@/components/ToastProvider";
 
 interface ProductsCache {
   all: any[];
@@ -614,7 +615,7 @@ function ProductCard({ product, index, isVisible }: any) {
       sellerId: product.seller?.id || "unknown",
       sellerName: product.seller?.name || "Unknown",
     });
-    alert("✅ Added to cart!");
+    toast.cart("Added to cart", product.title);
   };
 
   return (

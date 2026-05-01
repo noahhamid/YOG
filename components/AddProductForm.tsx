@@ -10,6 +10,7 @@ import {
   FocusEvent,
 } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "@/components/ToastProvider";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface IconProps {
@@ -487,11 +488,11 @@ export default function AddProductForm({
     if (!file) return;
     e.target.value = "";
     if (!file.type.startsWith("image/")) {
-      alert("Please upload an image");
+      toast.error("Invalid file type", "Please upload an image");
       return;
     }
     if (file.size > 10 * 1024 * 1024) {
-      alert("Max file size is 10 MB");
+      toast.error("File too large", "Max file size is 10 MB");
       return;
     }
     setUploading(true);
@@ -512,9 +513,9 @@ export default function AddProductForm({
       const data = (await res.json()) as { url?: string; error?: string };
       setUploadProgress(100);
       if (res.ok && data.url) setImages((p) => [...p, data.url!]);
-      else alert(data.error ?? "Upload failed");
+      else toast.error("Upload failed", data.error ?? "Unable to upload image");
     } catch {
-      alert("Upload failed");
+      toast.error("Upload failed", "Something went wrong while uploading");
     } finally {
       setUploading(false);
       setUploadProgress(0);
@@ -581,14 +582,20 @@ export default function AddProductForm({
       });
       const data = (await res.json()) as { product?: unknown; error?: string };
       if (res.ok) {
-        alert("Product added!");
+        toast.success(
+          "Product added!",
+          "Your product has been created successfully",
+        );
         onSubmit?.(data.product);
       } else {
-        alert(data.error ?? "Failed to create product");
+        toast.error(
+          "Failed to create product",
+          data.error ?? "Something went wrong",
+        );
         setIsSubmitting(false);
       }
     } catch {
-      alert("Failed to submit");
+      toast.error("Failed to submit", "Something went wrong while submitting");
       setIsSubmitting(false);
     }
   };

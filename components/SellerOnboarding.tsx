@@ -795,9 +795,17 @@ export default function SellerOnboarding() {
                   </div>
                 </div>
                 <p className="text-[12px] text-[#9e9890] leading-relaxed">
-                  I agree to Yog's seller terms and conditions. I understand my
-                  application will be reviewed and I may be contacted for
-                  additional information.{" "}
+                  I agree to Yog's{" "}
+                  <a
+                    href="/seller-terms"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[#1a1714] font-semibold underline underline-offset-2 hover:opacity-70 transition-opacity"
+                  >
+                    Terms & Seller Agreement
+                  </a>
+                  . I understand my application will be reviewed and I may be
+                  contacted for additional information.{" "}
                   <span className="text-red-400">*</span>
                 </p>
               </label>

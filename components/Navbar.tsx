@@ -32,46 +32,6 @@ const LINKS: NavLink[] = [
   { label: "Trending", href: "/trending", badge: "New" },
 ];
 const MOBILE_LINKS = ["Shop", "Men", "Women", "Trending", "Stores"];
-const TRENDING = ["Streetwear", "Linen sets", "Formal wear", "Activewear"];
-
-// ── Fake product data for search preview ─────────────────────────────────────
-const PRODUCTS = [
-  {
-    id: 1,
-    name: "Oversized Linen Blazer",
-    cat: "Men · Formal",
-    price: "ETB 1,240",
-    img: "https://i.pinimg.com/736x/9e/08/02/9e080294c3e98b72af065936d7354819.jpg",
-  },
-  {
-    id: 2,
-    name: "Streetwear Cargo Set",
-    cat: "Men · Streetwear",
-    price: "ETB 890",
-    img: "https://i.pinimg.com/736x/20/c6/59/20c65924540dfb04f838becaa011024f.jpg",
-  },
-  {
-    id: 3,
-    name: "Floral Wrap Dress",
-    cat: "Women · Summer",
-    price: "ETB 760",
-    img: "https://i.pinimg.com/736x/60/0a/dd/600add9cd7c693096eb36e0f4816fb3f.jpg",
-  },
-  {
-    id: 4,
-    name: "Tailored Suit Jacket",
-    cat: "Men · Formal",
-    price: "ETB 2,100",
-    img: "https://i.pinimg.com/736x/ab/bb/f3/abbbf3e25662109c77967649cff0f65e.jpg",
-  },
-  {
-    id: 5,
-    name: "Silk Evening Gown",
-    cat: "Women · Formal",
-    price: "ETB 3,450",
-    img: "https://i.pinimg.com/1200x/e9/3a/72/e93a72d23920a6cda792be63b7df8879.jpg",
-  },
-];
 
 // ── CSS ───────────────────────────────────────────────────────────────────────
 const NAV_STYLES = `
@@ -98,14 +58,14 @@ const NAV_STYLES = `
       max-width 0.5s cubic-bezier(0.16,1,0.3,1),
       border-radius 0.5s cubic-bezier(0.16,1,0.3,1);
   }
- .nav-bar.scrolled {
-top: 10px;
-background: rgba(246,245,243,0.95);
-border-color: rgba(210,206,200,0.95);
-box-shadow: 0 8px 32px rgba(26,23,20,0.13), 0 2px 8px rgba(26,23,20,0.06), 0 1px 0 rgba(255,255,255,0.7) inset;
-backdrop-filter: blur(28px) saturate(180%);
--webkit-backdrop-filter: blur(28px) saturate(180%);
-}
+  .nav-bar.scrolled {
+    top: 10px;
+    background: rgba(246,245,243,0.95);
+    border-color: rgba(210,206,200,0.95);
+    box-shadow: 0 8px 32px rgba(26,23,20,0.13), 0 2px 8px rgba(26,23,20,0.06), 0 1px 0 rgba(255,255,255,0.7) inset;
+    backdrop-filter: blur(28px) saturate(180%);
+    -webkit-backdrop-filter: blur(28px) saturate(180%);
+  }
   .nav-brand { display:flex; align-items:center; gap:6px; text-decoration:none; flex-shrink:0; margin-right:6px; }
   .nav-logo-img { height:58px; width:auto; object-fit:contain; display:block; transition:height 0.45s cubic-bezier(0.16,1,0.3,1); }
   .nav-bar.scrolled .nav-logo-img { height:50px; }
@@ -114,8 +74,6 @@ backdrop-filter: blur(28px) saturate(180%);
     flex:1; display:flex; align-items:center; justify-content:center;
     overflow:hidden; transition:flex 0.42s cubic-bezier(0.16,1,0.3,1), opacity 0.3s ease;
   }
-  .nav-center.search-open { flex:0 1 auto; min-width:0; justify-content:flex-start; }
-  .nav-bar.scrolled .nav-center.search-open { flex:1; justify-content:center; }
 
   .nav-links { display:flex; align-items:center; gap:2px; white-space:nowrap; }
   .nav-link {
@@ -146,48 +104,6 @@ backdrop-filter: blur(28px) saturate(180%);
   .nav-sell:hover { color:#1a1714; border-color:#1a1714; background:#fff; }
 
   .nav-right { display:flex; align-items:center; gap:3px; flex-shrink:0; margin-left:auto; }
-
-  /* Search */
-  .nav-search-wrap { display:flex; align-items:center; position:relative; transition:width 0.42s cubic-bezier(0.16,1,0.3,1); width:36px; }
-  .nav-search-wrap.exp { width:clamp(240px,36vw,440px); }
-  .nav-bar.scrolled .nav-search-wrap { width:clamp(200px,22vw,340px); }
-  .nav-bar.scrolled .nav-search-wrap.exp { width:clamp(300px,38vw,520px); }
-  .nav-search-pill {
-    width:100%; height:36px; display:flex; align-items:center; gap:8px;
-    padding:0 12px; background:#fff; border:1.5px solid #e8e4de; border-radius:11px;
-    overflow:hidden; transition:all 0.42s cubic-bezier(0.16,1,0.3,1); cursor:pointer;
-  }
-  .nav-search-pill:focus-within { border-color:#1a1714; box-shadow:0 0 0 3px rgba(26,23,20,.07); cursor:default; }
-  .nav-search-pill.col { width:36px; padding:0; justify-content:center; background:transparent; border-color:transparent; border-radius:11px; }
-  .nav-search-pill.col:hover { background:rgba(26,23,20,.06); }
-  .nav-search-icon { color:#6b6760; flex-shrink:0; display:flex; transition:color .2s; }
-  .nav-search-pill:focus-within .nav-search-icon { color:#1a1714; }
-  .nav-search-input { flex:1; border:none; background:transparent; outline:none; font-size:12px; font-weight:500; color:#1a1714; font-family:'Sora',sans-serif; width:0; min-width:0; }
-  .nav-search-input::placeholder { color:#b8b3ad; }
-  .nav-search-wrap.exp .nav-search-input { width:100%; }
-  .nav-search-close { background:none; border:none; cursor:pointer; padding:0; color:#b8b3ad; display:flex; border-radius:6px; transition:color .15s; flex-shrink:0; }
-  .nav-search-close:hover { color:#1a1714; }
-  .nav-search-drop {
-    position:absolute; top:calc(100% + 8px); right:0; width:100%; min-width:310px;
-    background:#fff; border:1.5px solid #e8e4de; border-radius:14px; overflow:hidden;
-    box-shadow:0 12px 40px rgba(26,23,20,.12); z-index:200;
-    animation:drop-in .22s cubic-bezier(.16,1,.3,1) forwards;
-  }
-  @keyframes drop-in { from{opacity:0;transform:scaleY(.92) translateY(-6px)} to{opacity:1;transform:scaleY(1) translateY(0)} }
-  .search-lbl { padding:10px 14px 6px; font-size:9px; font-weight:800; color:#b8b3ad; text-transform:uppercase; letter-spacing:1px; }
-  .search-chips { display:flex; flex-wrap:wrap; gap:6px; padding:0 14px 10px; }
-  .search-chip { padding:5px 12px; font-size:11px; font-weight:700; color:#6b6760; background:#f6f5f3; border:1.5px solid #e8e4de; border-radius:99px; cursor:pointer; font-family:'Sora',sans-serif; transition:all .15s; }
-  .search-chip:hover { border-color:#1a1714; color:#1a1714; }
-  .search-divider { height:1px; background:#f0ede9; margin:0 14px; }
-  .search-item { display:flex; align-items:center; gap:10px; padding:9px 14px; cursor:pointer; transition:background .12s; }
-  .search-item:hover { background:#f6f5f3; }
-  .search-thumb { width:34px; height:34px; border-radius:8px; background:#f0ede9; overflow:hidden; flex-shrink:0; }
-  .search-thumb img { width:100%; height:100%; object-fit:cover; }
-  .search-item-name { font-size:12px; font-weight:600; color:#1a1714; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .search-item-cat  { font-size:11px; color:#9e9890; margin-top:1px; }
-  .search-item-price { font-size:12px; font-weight:700; color:#1a1714; flex-shrink:0; }
-  .search-footer { padding:10px 14px; display:flex; align-items:center; justify-content:center; gap:6px; cursor:pointer; font-size:11px; font-weight:700; color:#9e9890; transition:color .15s; }
-  .search-footer:hover { color:#1a1714; }
 
   /* Icon buttons */
   .nav-icon-btn {
@@ -223,6 +139,7 @@ backdrop-filter: blur(28px) saturate(180%);
     box-shadow:0 16px 48px rgba(26,23,20,.14);
     animation:drop-in .24s cubic-bezier(.16,1,.3,1) forwards; z-index:200;
   }
+  @keyframes drop-in { from{opacity:0;transform:scaleY(.92) translateY(-6px)} to{opacity:1;transform:scaleY(1) translateY(0)} }
   .pdrop-header { padding:14px 16px 12px; border-bottom:1px solid #f0ede9; background:#f6f5f3; }
   .pdrop-name  { font-size:13px; font-weight:800; color:#1a1714; letter-spacing:-0.03em; line-height:1.2; }
   .pdrop-email { font-size:11px; color:#9e9890; margin-top:2px; }
@@ -260,36 +177,23 @@ backdrop-filter: blur(28px) saturate(180%);
   }
   .drawer-close-btn:hover { background:rgba(26,23,20,0.13); }
 
-  /* Mobile drawer */
-  .nav-drawer { position:fixed; inset:0; z-index:99; pointer-events:none; }
+  /* Mobile drawer — z-index bumped to 9999 to always sit on top */
+  .nav-drawer { position:fixed; inset:0; z-index:9999; pointer-events:none; }
   .nav-drawer-backdrop { position:absolute; inset:0; background:rgba(26,23,20,0); transition:background 0.4s ease; }
   .nav-drawer.open .nav-drawer-backdrop { background:rgba(26,23,20,0.4); pointer-events:all; backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); }
   .nav-drawer-panel {
-  position:absolute; top:0; left:0; right:0;
-  background:#f6f5f3; border-bottom:1.5px solid #e8e4de;
-  border-radius:0 0 28px 28px; padding:0 0 28px;
-  transform:translateY(-110%);
-  transition:transform 0.48s cubic-bezier(0.16,1,0.3,1);
-  box-shadow:0 24px 80px rgba(26,23,20,0.18);
-  max-height:100dvh;
-  overflow-y:auto;
-}
+    position:absolute; top:0; left:0; right:0;
+    background:#f6f5f3; border-bottom:1.5px solid #e8e4de;
+    border-radius:0 0 28px 28px; padding:0 0 28px;
+    transform:translateY(-110%);
+    transition:transform 0.48s cubic-bezier(0.16,1,0.3,1);
+    box-shadow:0 24px 80px rgba(26,23,20,0.18);
+    max-height:100dvh;
+    overflow-y:auto;
+  }
   .nav-drawer.open .nav-drawer-panel { transform:translateY(0); pointer-events:all; }
 
   .drawer-topbar { height:66px; display:flex; align-items:center; justify-content:space-between; padding:0 20px 0 10px; border-bottom:1px solid #ede9e3; }
-  .drawer-search-wrap {
-    margin:18px 20px 8px; display:flex; align-items:center; gap:10px;
-    background:#fff; border:1.5px solid #e8e4de; border-radius:13px;
-    padding:0 14px; height:46px; transition:border-color .2s, box-shadow .2s;
-  }
-  .drawer-search-wrap:focus-within { border-color:#1a1714; box-shadow:0 0 0 3px rgba(26,23,20,.07); }
-  .drawer-search-ico { color:#9e9890; display:flex; flex-shrink:0; transition:color .2s; }
-  .drawer-search-wrap:focus-within .drawer-search-ico { color:#1a1714; }
-  .drawer-search-input { flex:1; border:none; background:transparent; outline:none; font-size:14px; font-weight:500; color:#1a1714; font-family:'Sora',sans-serif; }
-  .drawer-search-input::placeholder { color:#b8b3ad; }
-  .drawer-chips-wrap { padding:6px 20px 14px; display:flex; flex-wrap:wrap; gap:7px; }
-  .drawer-chip { padding:5px 13px; font-size:11px; font-weight:700; color:#6b6760; background:#fff; border:1.5px solid #e8e4de; border-radius:99px; cursor:pointer; font-family:'Sora',sans-serif; transition:all .15s; }
-  .drawer-chip:hover { border-color:#1a1714; color:#1a1714; }
 
   .drawer-links { padding:4px 12px; }
   .drawer-link {
@@ -328,15 +232,6 @@ backdrop-filter: blur(28px) saturate(180%);
   }
   .drawer-profile-row:hover { background:rgba(26,23,20,.05); }
 
-  .drawer-bottom {
-    display:flex; align-items:center; gap:8px; margin:8px 20px 0;
-    opacity:0; transform:translateY(8px); transition:opacity .0s, transform .0s;
-  }
-  .nav-drawer.open .drawer-bottom {
-    opacity:1; transform:translateY(0);
-    transition:opacity .4s cubic-bezier(.16,1,.3,1) .44s, transform .4s cubic-bezier(.16,1,.3,1) .44s;
-  }
-
   /* Responsive */
   @media (max-width: 960px) {
     .nav-center { display:none; }
@@ -350,31 +245,31 @@ backdrop-filter: blur(28px) saturate(180%);
     .nav-bar { justify-content:space-between; }
     .nav-brand { margin-right:0; }
   }
-  @media (max-width: 768px) { .nav-bar { top:12px; width:calc(100% - 24px); } }
-  @media (max-width: 600px) {
-    .nav-bar { height:56px; top:10px; width:calc(100% - 20px); padding:0 6px 0 4px; border-radius:16px; }
-    .nav-logo-img { height:46px; }
-    .drawer-topbar { height:56px; padding:0 14px 0 6px; }
-    .drawer-topbar .nav-logo-img { height:44px; }
-    .nav-drawer-panel { border-radius:0; min-height:100dvh; padding-bottom:env(safe-area-inset-bottom,24px); }
-    .drawer-links { padding:4px 10px; }
-    .drawer-link { font-size:22px; padding:13px 12px; }
-    .drawer-link.sell { font-size:15px; }
-    .drawer-search-wrap { margin:14px 16px 6px; height:48px; }
-    .drawer-chips-wrap { padding:4px 16px 10px; }
-    .drawer-bottom { margin:10px 16px 0; }
-    .drawer-profile-row { padding:13px 12px; }
-  }
-  @media (max-width: 390px) {
-    .nav-bar { height:52px; border-radius:14px; }
-    .nav-logo-img { height:42px; }
-    .nav-icon-btn { width:32px; height:32px; }
-    .nav-mobile-btn { width:34px; height:34px; }
-    .drawer-topbar { height:52px; }
-    .drawer-link { font-size:20px; padding:11px 12px; }
-    .drawer-search-wrap { height:44px; }
-    .drawer-search-input { font-size:13px; }
-  }
+  @media (max-width: 768px) {
+  .nav-bar { top:12px; width:calc(100% - 24px); }
+  .nav-bar.scrolled { top:0; width:100%; border-radius:0 0 16px 16px; border-left:none; border-right:none; border-top:none; }
+}
+@media (max-width: 600px) {
+  .nav-bar { height:56px; top:10px; width:calc(100% - 20px); padding:0 6px 0 4px; border-radius:16px; }
+  .nav-bar.scrolled { top:0; width:100%; border-radius:0 0 14px 14px; border-left:none; border-right:none; border-top:none; }
+  .nav-logo-img { height:46px; }
+  .drawer-topbar { height:56px; padding:0 14px 0 6px; }
+  .drawer-topbar .nav-logo-img { height:44px; }
+  .nav-drawer-panel { border-radius:0; min-height:100dvh; padding-bottom:env(safe-area-inset-bottom,24px); }
+  .drawer-links { padding:4px 10px; }
+  .drawer-link { font-size:22px; padding:13px 12px; }
+  .drawer-link.sell { font-size:15px; }
+  .drawer-profile-row { padding:13px 12px; }
+}
+@media (max-width: 390px) {
+  .nav-bar { height:52px; border-radius:14px; }
+  .nav-bar.scrolled { top:0; width:100%; border-radius:0 0 12px 12px; border-left:none; border-right:none; border-top:none; }
+  .nav-logo-img { height:42px; }
+  .nav-icon-btn { width:32px; height:32px; }
+  .nav-mobile-btn { width:34px; height:34px; }
+  .drawer-topbar { height:52px; }
+  .drawer-link { font-size:20px; padding:11px 12px; }
+}
 `;
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
@@ -571,15 +466,10 @@ const Ico = {
 };
 
 export default function Navbar() {
-  const [active, setActive] = useState("Shop");
   const [scrolled, setScrolled] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [query, setQuery] = useState("");
-  const [mobileQuery, setMobileQuery] = useState("");
 
-  // ── Real logic from old navbar ──────────────────────────────────────────────
   const [user, setUser] = useState<UserData | null>(null);
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -587,27 +477,11 @@ export default function Navbar() {
   const { getCartCount } = useCart();
   const cartCount = getCartCount();
 
-  const inputRef = useRef<HTMLInputElement>(null);
-  const searchRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
 
-  const results = query.trim()
-    ? PRODUCTS.filter(
-        (p) =>
-          p.name.toLowerCase().includes(query.toLowerCase()) ||
-          p.cat.toLowerCase().includes(query.toLowerCase()),
-      )
-    : PRODUCTS.slice(0, 3);
-
-  const mobileResults = mobileQuery.trim()
-    ? PRODUCTS.filter(
-        (p) =>
-          p.name.toLowerCase().includes(mobileQuery.toLowerCase()) ||
-          p.cat.toLowerCase().includes(mobileQuery.toLowerCase()),
-      )
-    : [];
   const router = useRouter();
   const pathname = usePathname();
+
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", fn, { passive: true });
@@ -615,26 +489,11 @@ export default function Navbar() {
   }, []);
 
   useEffect(() => {
-    if (searchOpen) setTimeout(() => inputRef.current?.focus(), 50);
-    else setQuery("");
-  }, [searchOpen]);
-
-  useEffect(() => {
-    if (!drawerOpen) setMobileQuery("");
     document.body.style.overflow = drawerOpen ? "hidden" : "";
     return () => {
       document.body.style.overflow = "";
     };
   }, [drawerOpen]);
-
-  useEffect(() => {
-    if (!searchOpen) return;
-    const h = (e: MouseEvent) => {
-      if (!searchRef.current?.contains(e.target as Node)) setSearchOpen(false);
-    };
-    setTimeout(() => document.addEventListener("mousedown", h), 0);
-    return () => document.removeEventListener("mousedown", h);
-  }, [searchOpen]);
 
   useEffect(() => {
     if (!profileOpen) return;
@@ -736,7 +595,7 @@ export default function Navbar() {
         </a>
 
         {/* Center links */}
-        <div className={`nav-center${searchOpen ? " search-open" : ""}`}>
+        <div className="nav-center">
           <div className="nav-links">
             {LINKS.map((l) => {
               if (l.type === "scroll") {
@@ -746,12 +605,10 @@ export default function Navbar() {
                     className="nav-link"
                     onClick={() => {
                       if (pathname === "/") {
-                        // ✅ already on homepage → smooth scroll
                         document
                           .getElementById("shop")
                           ?.scrollIntoView({ behavior: "smooth" });
                       } else {
-                        // ✅ go to homepage (NOT /men#shop)
                         router.push("/#shop");
                       }
                     }}
@@ -760,7 +617,6 @@ export default function Navbar() {
                   </button>
                 );
               }
-
               return (
                 <Link
                   key={l.label}
@@ -772,7 +628,6 @@ export default function Navbar() {
                 </Link>
               );
             })}
-
             <a
               href={
                 user?.role === "SELLER" || user?.role === "ADMIN"
@@ -788,106 +643,7 @@ export default function Navbar() {
 
         {/* Right cluster */}
         <div className="nav-right">
-          {/* Search */}
-          {/* <div
-            ref={searchRef}
-            className={`nav-search-wrap${searchOpen ? " exp" : ""}`}
-          >
-            <div
-              className={`nav-search-pill${searchOpen || scrolled ? "" : " col"}`}
-              onClick={() => !searchOpen && setSearchOpen(true)}
-            >
-              <span className="nav-search-icon">
-                <Ico.Search size={16} />
-              </span>
-              {(searchOpen || scrolled) && (
-                <>
-                  <input
-                    ref={inputRef}
-                    className="nav-search-input"
-                    placeholder="Search clothes, brands, styles…"
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    onFocus={() => !searchOpen && setSearchOpen(true)}
-                  />
-                  {searchOpen && (
-                    <button
-                      className="nav-search-close"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSearchOpen(false);
-                      }}
-                    >
-                      <Ico.Close />
-                    </button>
-                  )}
-                </>
-              )}
-            </div>
-            {searchOpen && (
-              <div className="nav-search-drop">
-                {!query.trim() && (
-                  <>
-                    <div className="search-lbl">Trending searches</div>
-                    <div className="search-chips">
-                      {TRENDING.map((t) => (
-                        <button
-                          key={t}
-                          className="search-chip"
-                          onClick={() => setQuery(t)}
-                        >
-                          {t}
-                        </button>
-                      ))}
-                    </div>
-                    <div className="search-divider" />
-                  </>
-                )}
-                <div className="search-lbl">
-                  {query.trim()
-                    ? `${results.length} result${results.length !== 1 ? "s" : ""} for "${query}"`
-                    : "Suggested for you"}
-                </div>
-                {results.length === 0 ? (
-                  <div
-                    style={{
-                      padding: "14px",
-                      fontSize: "12px",
-                      color: "#9e9890",
-                      textAlign: "center",
-                    }}
-                  >
-                    No products found
-                  </div>
-                ) : (
-                  results.map((p, i) => (
-                    <div key={p.id}>
-                      {i > 0 && <div className="search-divider" />}
-                      <div className="search-item">
-                        <div className="search-thumb">
-                          <img src={p.img} alt={p.name} />
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div className="search-item-name">{p.name}</div>
-                          <div className="search-item-cat">{p.cat}</div>
-                        </div>
-                        <div className="search-item-price">{p.price}</div>
-                      </div>
-                    </div>
-                  ))
-                )}
-                <div className="search-divider" />
-                <div
-                  className="search-footer"
-                  onClick={() => setSearchOpen(false)}
-                >
-                  View all results <Ico.Arrow />
-                </div>
-              </div>
-            )}
-          </div> */}
-
-          {/* Bell — opens real NotificationCenter */}
+          {/* Bell */}
           {user && (
             <button
               className="nav-icon-btn nav-bell-btn"
@@ -904,7 +660,7 @@ export default function Navbar() {
             </button>
           )}
 
-          {/* Cart — real count */}
+          {/* Cart */}
           <Link href="/cart" className="nav-icon-btn nav-cart-btn">
             <Ico.Cart />
             {cartCount > 0 && (
@@ -916,7 +672,7 @@ export default function Navbar() {
 
           {user && <div className="nav-divider" />}
 
-          {/* Profile — real user */}
+          {/* Profile */}
           {user ? (
             <div ref={profileRef} style={{ position: "relative" }}>
               <button
@@ -1055,368 +811,231 @@ export default function Navbar() {
             </button>
           </div>
 
-          {/* Search */}
-          <div className="drawer-search-wrap">
-            <span className="drawer-search-ico">
-              <Ico.Search size={17} />
-            </span>
-            <input
-              className="drawer-search-input"
-              placeholder="Search clothes, brands, styles…"
-              value={mobileQuery}
-              onChange={(e) => setMobileQuery(e.target.value)}
-            />
-            {mobileQuery && (
-              <button
-                onClick={() => setMobileQuery("")}
-                style={{
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  color: "#b8b3ad",
-                  display: "flex",
-                }}
+          {/* Nav links — no search, no filter chips */}
+          <div className="drawer-links">
+            {MOBILE_LINKS.map((l) => (
+              <a
+                key={l}
+                href={l === "Stores" ? "/stores" : `/${l.toLowerCase()}`}
+                className="drawer-link"
+                onClick={() => setDrawerOpen(false)}
               >
-                <Ico.Close />
-              </button>
-            )}
-          </div>
+                <span>{l}</span>
+                <span className="drawer-link-right">
+                  <Ico.Chevron />
+                </span>
+              </a>
+            ))}
+            <div className="drawer-divider" />
+            <a
+              href={
+                user?.role === "SELLER" || user?.role === "ADMIN"
+                  ? "/seller/dashboard"
+                  : "/seller/apply"
+              }
+              className="drawer-link sell"
+              onClick={() => setDrawerOpen(false)}
+            >
+              <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <Ico.Tag /> Sell on Yog
+              </span>
+              <Ico.Chevron />
+            </a>
+            <div className="drawer-divider" />
 
-          {!mobileQuery && (
-            <div className="drawer-chips-wrap">
-              {TRENDING.map((t) => (
-                <button
-                  key={t}
-                  className="drawer-chip"
-                  onClick={() => setMobileQuery(t)}
+            {/* Profile row */}
+            {user ? (
+              <>
+                <a
+                  href="/account"
+                  className="drawer-profile-row"
+                  onClick={() => setDrawerOpen(false)}
                 >
-                  {t}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {mobileQuery && (
-            <div style={{ padding: "0 20px 12px" }}>
-              {mobileResults.length === 0 ? (
-                <div
-                  style={{ fontSize: 12, color: "#9e9890", padding: "8px 0" }}
-                >
-                  No products found
-                </div>
-              ) : (
-                mobileResults.map((p, i) => (
-                  <div key={p.id}>
-                    {i > 0 && (
-                      <div style={{ height: 1, background: "#f0ede9" }} />
-                    )}
+                  <span
+                    style={{ display: "flex", alignItems: "center", gap: 12 }}
+                  >
                     <div
                       style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 10,
+                        overflow: "hidden",
+                        background: "#1a1714",
+                        flexShrink: 0,
                         display: "flex",
                         alignItems: "center",
-                        gap: 10,
-                        padding: "9px 0",
-                        cursor: "pointer",
+                        justifyContent: "center",
+                        color: "#fff",
+                        fontSize: 14,
+                        fontWeight: 700,
                       }}
                     >
-                      <div
-                        style={{
-                          width: 36,
-                          height: 36,
-                          borderRadius: 9,
-                          overflow: "hidden",
-                          flexShrink: 0,
-                          background: "#f0ede9",
-                        }}
-                      >
+                      {user.image ? (
                         <img
-                          src={p.img}
-                          alt={p.name}
+                          src={user.image}
+                          alt={user.name}
                           style={{
                             width: "100%",
                             height: "100%",
                             objectFit: "cover",
                           }}
                         />
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div
-                          style={{
-                            fontSize: 13,
-                            fontWeight: 600,
-                            color: "#1a1714",
-                            whiteSpace: "nowrap",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                          }}
-                        >
-                          {p.name}
-                        </div>
-                        <div
-                          style={{
-                            fontSize: 11,
-                            color: "#9e9890",
-                            marginTop: 1,
-                          }}
-                        >
-                          {p.cat}
-                        </div>
-                      </div>
-                      <div
-                        style={{
-                          fontSize: 12,
-                          fontWeight: 700,
-                          color: "#1a1714",
-                          flexShrink: 0,
-                        }}
-                      >
-                        {p.price}
-                      </div>
+                      ) : (
+                        user.name[0].toUpperCase()
+                      )}
                     </div>
-                  </div>
-                ))
-              )}
-            </div>
-          )}
-
-          {!mobileQuery && (
-            <>
-              <div className="drawer-links">
-                {MOBILE_LINKS.map((l) => (
-                  <a
-                    key={l}
-                    href={l === "Stores" ? "/stores" : `/${l.toLowerCase()}`}
-                    className="drawer-link"
-                    onClick={() => setDrawerOpen(false)}
-                  >
-                    <span>{l}</span>
-                    <span className="drawer-link-right">
-                      <Ico.Chevron />
-                    </span>
-                  </a>
-                ))}
-                <div className="drawer-divider" />
-                <a
-                  href={
-                    user?.role === "SELLER" || user?.role === "ADMIN"
-                      ? "/seller/dashboard"
-                      : "/seller/apply"
-                  }
-                  className="drawer-link sell"
-                  onClick={() => setDrawerOpen(false)}
-                >
-                  <span
-                    style={{ display: "flex", alignItems: "center", gap: 8 }}
-                  >
-                    <Ico.Tag /> Sell on Yog
-                  </span>
-                  <Ico.Chevron />
-                </a>
-                <div className="drawer-divider" />
-
-                {/* Profile row — real user */}
-                {/* Profile row — real user */}
-                {user ? (
-                  <>
-                    <a
-                      href="/account"
-                      className="drawer-profile-row"
-                      onClick={() => setDrawerOpen(false)}
+                    <span
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "flex-start",
+                        gap: 2,
+                      }}
                     >
                       <span
                         style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 12,
+                          fontSize: 17,
+                          fontWeight: 700,
+                          color: "#1a1714",
+                          letterSpacing: "-0.03em",
+                          lineHeight: 1.1,
                         }}
                       >
-                        <div
-                          style={{
-                            width: 36,
-                            height: 36,
-                            borderRadius: 10,
-                            overflow: "hidden",
-                            background: "#1a1714",
-                            flexShrink: 0,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            color: "#fff",
-                            fontSize: 14,
-                            fontWeight: 700,
-                          }}
-                        >
-                          {user.image ? (
-                            <img
-                              src={user.image}
-                              alt={user.name}
-                              style={{
-                                width: "100%",
-                                height: "100%",
-                                objectFit: "cover",
-                              }}
-                            />
-                          ) : (
-                            user.name[0].toUpperCase()
-                          )}
-                        </div>
-                        <span
-                          style={{
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "flex-start",
-                            gap: 2,
-                          }}
-                        >
-                          <span
-                            style={{
-                              fontSize: 17,
-                              fontWeight: 700,
-                              color: "#1a1714",
-                              letterSpacing: "-0.03em",
-                              lineHeight: 1.1,
-                            }}
-                          >
-                            {user.name}
-                          </span>
-                          <span
-                            style={{
-                              fontSize: 11,
-                              color: "#9e9890",
-                              fontWeight: 400,
-                            }}
-                          >
-                            {user.email}
-                          </span>
-                        </span>
+                        {user.name}
                       </span>
-                      <Ico.Chevron />
-                    </a>
-
-                    {/* Account sub-links */}
-                    <div style={{ padding: "0 12px 4px" }}>
-                      <a
-                        href="/account"
-                        className="pdrop-item"
-                        onClick={() => setDrawerOpen(false)}
-                        style={{ borderRadius: 10 }}
-                      >
-                        <span className="pdrop-ico">
-                          <Ico.User />
-                        </span>{" "}
-                        Account Settings
-                      </a>
-                      <a
-                        href="/following"
-                        className="pdrop-item"
-                        onClick={() => setDrawerOpen(false)}
-                        style={{ borderRadius: 10 }}
-                      >
-                        <span className="pdrop-ico">
-                          <Ico.Chevron />
-                        </span>{" "}
-                        Following
-                      </a>
-                      {user.role === "SELLER" && (
-                        <a
-                          href="/seller/profile"
-                          className="pdrop-item"
-                          onClick={() => setDrawerOpen(false)}
-                          style={{ borderRadius: 10 }}
-                        >
-                          <span className="pdrop-ico">
-                            <Ico.Store />
-                          </span>{" "}
-                          Store Profile
-                        </a>
-                      )}
-                      {user.role === "ADMIN" && (
-                        <a
-                          href="/admin/sellers"
-                          className="pdrop-item"
-                          onClick={() => setDrawerOpen(false)}
-                          style={{ borderRadius: 10 }}
-                        >
-                          <span className="pdrop-ico">
-                            <Ico.Settings />
-                          </span>{" "}
-                          Admin Panel
-                        </a>
-                      )}
-                      <div
+                      <span
                         style={{
-                          height: 1,
-                          background: "#ede9e3",
-                          margin: "4px 0",
+                          fontSize: 11,
+                          color: "#9e9890",
+                          fontWeight: 400,
                         }}
-                      />
-                      <button
-                        className="pdrop-item pdrop-signout"
-                        onClick={() => {
-                          handleSignOut();
-                          setDrawerOpen(false);
-                        }}
-                        style={{ borderRadius: 10, width: "100%" }}
                       >
-                        <span className="pdrop-ico">
-                          <Ico.SignOut />
-                        </span>{" "}
-                        Sign Out
-                      </button>
-                    </div>
-                  </>
-                ) : (
-                  <div
-                    style={{ display: "flex", gap: 10, padding: "12px 12px" }}
+                        {user.email}
+                      </span>
+                    </span>
+                  </span>
+                  <Ico.Chevron />
+                </a>
+
+                <div style={{ padding: "0 12px 4px" }}>
+                  <a
+                    href="/account"
+                    className="pdrop-item"
+                    onClick={() => setDrawerOpen(false)}
+                    style={{ borderRadius: 10 }}
                   >
+                    <span className="pdrop-ico">
+                      <Ico.User />
+                    </span>{" "}
+                    Account Settings
+                  </a>
+                  <a
+                    href="/following"
+                    className="pdrop-item"
+                    onClick={() => setDrawerOpen(false)}
+                    style={{ borderRadius: 10 }}
+                  >
+                    <span className="pdrop-ico">
+                      <Ico.Chevron />
+                    </span>{" "}
+                    Following
+                  </a>
+                  {user.role === "SELLER" && (
                     <a
-                      href="/login"
+                      href="/seller/profile"
+                      className="pdrop-item"
                       onClick={() => setDrawerOpen(false)}
-                      style={{
-                        flex: 1,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        padding: "13px",
-                        borderRadius: 12,
-                        border: "1.5px solid #e8e4de",
-                        fontSize: 14,
-                        fontWeight: 700,
-                        color: "#1a1714",
-                        textDecoration: "none",
-                        background: "#fff",
-                      }}
+                      style={{ borderRadius: 10 }}
                     >
-                      Log In
+                      <span className="pdrop-ico">
+                        <Ico.Store />
+                      </span>{" "}
+                      Store Profile
                     </a>
+                  )}
+                  {user.role === "ADMIN" && (
                     <a
-                      href="/signup"
+                      href="/admin/sellers"
+                      className="pdrop-item"
                       onClick={() => setDrawerOpen(false)}
-                      style={{
-                        flex: 1,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        padding: "13px",
-                        borderRadius: 12,
-                        fontSize: 14,
-                        fontWeight: 700,
-                        color: "#fff",
-                        textDecoration: "none",
-                        background: "#1a1714",
-                      }}
+                      style={{ borderRadius: 10 }}
                     >
-                      Sign Up
+                      <span className="pdrop-ico">
+                        <Ico.Settings />
+                      </span>{" "}
+                      Admin Panel
                     </a>
-                  </div>
-                )}
+                  )}
+                  <div
+                    style={{
+                      height: 1,
+                      background: "#ede9e3",
+                      margin: "4px 0",
+                    }}
+                  />
+                  <button
+                    className="pdrop-item pdrop-signout"
+                    onClick={() => {
+                      handleSignOut();
+                      setDrawerOpen(false);
+                    }}
+                    style={{ borderRadius: 10, width: "100%" }}
+                  >
+                    <span className="pdrop-ico">
+                      <Ico.SignOut />
+                    </span>{" "}
+                    Sign Out
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div style={{ display: "flex", gap: 10, padding: "12px 12px" }}>
+                <a
+                  href="/login"
+                  onClick={() => setDrawerOpen(false)}
+                  style={{
+                    flex: 1,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: "13px",
+                    borderRadius: 12,
+                    border: "1.5px solid #e8e4de",
+                    fontSize: 14,
+                    fontWeight: 700,
+                    color: "#1a1714",
+                    textDecoration: "none",
+                    background: "#fff",
+                  }}
+                >
+                  Log In
+                </a>
+                <a
+                  href="/signup"
+                  onClick={() => setDrawerOpen(false)}
+                  style={{
+                    flex: 1,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: "13px",
+                    borderRadius: 12,
+                    fontSize: 14,
+                    fontWeight: 700,
+                    color: "#fff",
+                    textDecoration: "none",
+                    background: "#1a1714",
+                  }}
+                >
+                  Sign Up
+                </a>
               </div>
-            </>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Real NotificationCenter + Toast */}
+      {/* Notification Center + Toast */}
       <>
         {showNotifications && (
           <div
