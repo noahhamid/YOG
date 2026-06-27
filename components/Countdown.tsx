@@ -6,7 +6,7 @@ import Home from "@/components/Home";
 import ProductGrid from "@/components/ProductGrid";
 
 // ── Hard-code your exact launch datetime here (EAT = UTC+3) ──
-const TARGET = new Date("2026-06-27T16:00:00+03:00");
+const TARGET = new Date("2026-06-27T22:00:00+03:00");
 
 const LOGO_URL =
   "https://res.cloudinary.com/ddfozmzv0/image/upload/v1774012277/edited-photo_ojra9c.png";
