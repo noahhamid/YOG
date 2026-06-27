@@ -154,7 +154,7 @@ export default function CartPage() {
               Looks like you haven't added anything yet. Browse our collections
               and find something you love.
             </p>
-            <Link href="/shop">
+            <Link href="#shop">
               <button className="inline-flex items-center gap-2 bg-[#1a1714] text-white px-7 py-3.5 rounded-[12px] text-[13px] font-bold hover:bg-[#333] transition-all hover:-translate-y-px hover:shadow-lg">
                 Start Shopping <ArrowIcon />
               </button>
