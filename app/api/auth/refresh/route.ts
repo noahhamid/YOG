@@ -1,21 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-
+import { auth } from "@/auth";
 
 export async function POST(req: NextRequest) {
   try {
-    const { email } = await req.json();
+    const session = await auth();
 
-    if (!email) {
+    if (!session?.user?.email) {
       return NextResponse.json(
-        { error: "Email is required" },
-        { status: 400 }
+        { error: "Unauthorized" },
+        { status: 401 }
       );
     }
 
-    // Fetch fresh user data from database
     const user = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() },
+      where: { email: session.user.email },
     });
 
     if (!user) {
@@ -24,8 +23,6 @@ export async function POST(req: NextRequest) {
         { status: 404 }
       );
     }
-
-    console.log(`🔄 Session refreshed for ${user.email} - Role: ${user.role}`);
 
     return NextResponse.json({
       success: true,
@@ -36,8 +33,8 @@ export async function POST(req: NextRequest) {
         role: user.role,
       },
     });
-  } catch (error: any) {
-    console.error("❌ Refresh error:", error);
+  } catch (error) {
+    console.error("Refresh error:", error);
     return NextResponse.json(
       { error: "Failed to refresh session" },
       { status: 500 }

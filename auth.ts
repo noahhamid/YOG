@@ -2,12 +2,22 @@ import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
-import { prisma } from "@/lib/prisma";
+import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { UserRole } from "@prisma/client";
 
+declare global {
+  var prismaAuth: PrismaClient | undefined;
+}
+
+const prismaAuth = global.prismaAuth ?? new PrismaClient();
+
+if (process.env.NODE_ENV !== "production") {
+  global.prismaAuth = prismaAuth;
+}
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  adapter: PrismaAdapter(prisma),
+  adapter: PrismaAdapter(prismaAuth),
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -19,7 +29,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         password: {},
       },
       async authorize(credentials) {
-        const user = await prisma.user.findUnique({
+        const user = await prismaAuth.user.findUnique({
           where: { email: (credentials.email as string).toLowerCase() },
         });
 
@@ -44,12 +54,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   ],
   callbacks: {
     async session({ session, token }) {
-  if (token) {
-    session.user.id = token.id as string;
-    session.user.role = token.role as UserRole;
-  }
-  return session;
-},
+      if (token) {
+        session.user.id = token.id as string;
+        session.user.role = token.role as UserRole;
+      }
+      return session;
+    },
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;

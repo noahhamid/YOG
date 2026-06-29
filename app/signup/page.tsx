@@ -3,6 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { signIn } from "next-auth/react";
+
+// ... all your icon components stay exactly the same ...
 
 const UserIcon = () => (
   <svg
@@ -123,7 +126,6 @@ const EyeOffIcon = () => (
     <line x1="1" y1="1" x2="23" y2="23" />
   </svg>
 );
-
 const GoogleLogo = () => (
   <svg width="16" height="16" viewBox="0 0 24 24">
     <path
@@ -149,6 +151,7 @@ export default function SignUpPage() {
   const router = useRouter();
   const [step, setStep] = useState<"details" | "otp">("details");
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
@@ -158,6 +161,11 @@ export default function SignUpPage() {
   });
   const [otp, setOtp] = useState("");
   const [error, setError] = useState("");
+
+  const handleGoogleSignUp = async () => {
+    setIsGoogleLoading(true);
+    await signIn("google", { redirectTo: "/" });
+  };
 
   const handleSendOTP = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -184,17 +192,33 @@ export default function SignUpPage() {
     setError("");
     setIsLoading(true);
     try {
+      // Step 1: verify OTP and create account
       const res = await fetch("/api/auth/send-otp", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: formData.email, otp }),
       });
       const data = await res.json();
-      if (res.ok && data.user) {
-        localStorage.setItem("yog_user", JSON.stringify(data.user));
-        window.dispatchEvent(new Event("userLoggedIn"));
-        router.push("/");
-      } else setError(data.error || "Invalid OTP");
+
+      if (!res.ok || !data.user) {
+        setError(data.error || "Invalid OTP");
+        return;
+      }
+
+      // Step 2: sign in with NextAuth credentials
+      const result = await signIn("credentials", {
+        email: formData.email,
+        password: formData.password,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        setError("Account created but sign in failed. Please log in.");
+        router.push("/login");
+        return;
+      }
+
+      router.push("/");
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {
@@ -256,11 +280,17 @@ export default function SignUpPage() {
             <>
               {/* Google */}
               <button
-                onClick={() => alert("Google Sign In coming soon!")}
-                className="w-full flex items-center justify-center gap-2.5 py-3 rounded-[11px] text-[13px] font-semibold text-[#1a1714] bg-[#f6f5f3] hover:bg-[#edeae6] transition-colors cursor-pointer mb-5"
+                onClick={handleGoogleSignUp}
+                disabled={isGoogleLoading}
+                className="w-full flex items-center justify-center gap-2.5 py-3 rounded-[11px] text-[13px] font-semibold text-[#1a1714] bg-[#f6f5f3] hover:bg-[#edeae6] transition-colors cursor-pointer mb-5 disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ border: "1px solid #e8e4de" }}
               >
-                <GoogleLogo /> Continue with Google
+                {isGoogleLoading ? (
+                  <div className="w-4 h-4 border-2 border-[#1a1714] border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <GoogleLogo />
+                )}
+                Continue with Google
               </button>
 
               {/* Divider */}

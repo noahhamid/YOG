@@ -1,27 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
-import {prisma} from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 
 export async function POST(req: NextRequest) {
   try {
-    const { userId } = await req.json();
+    const session = await auth();
 
-    if (!userId) {
-      return NextResponse.json(
-        { error: "User ID is required" },
-        { status: 400 }
-      );
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Find user
     const user = await prisma.user.findUnique({
-      where: { id: userId },
+      where: { email: session.user.email },
     });
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Check if deletion is scheduled
     if (!user.deletedAt) {
       return NextResponse.json(
         { error: "No deletion scheduled for this account" },
@@ -29,22 +25,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Cancel deletion
     await prisma.user.update({
-      where: { id: userId },
+      where: { id: user.id },
       data: { deletedAt: null },
     });
 
     return NextResponse.json({
       success: true,
       message: "Account deletion cancelled successfully",
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        image: user.image,
-      },
     });
   } catch (error) {
     console.error("Cancel deletion error:", error);

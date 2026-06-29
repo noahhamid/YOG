@@ -5,22 +5,6 @@ import bcrypt from "bcryptjs";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-// Store OTPs and user data temporarily - FIXED TYPE SYNTAX
-interface OTPData {
-  code: string;
-  expiresAt: number;
-  attempts: number;
-  userData?: {
-    name: string;
-    email: string;
-    password: string;
-    phone?: string;
-  };
-}
-
-const otpStore = new Map<string, OTPData>();
-const rateLimitMap = new Map<string, number>();
-
 const RATE_LIMIT_MINUTES = 1;
 const MAX_ATTEMPTS = 5;
 
@@ -66,41 +50,41 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Rate limiting
-    const lastSent = rateLimitMap.get(email.toLowerCase());
-    const now = Date.now();
+    // Rate limiting via DB
+    const existingOTP = await prisma.signupOTP.findFirst({
+      where: { email: email.toLowerCase() },
+    });
 
-    if (lastSent && now - lastSent < RATE_LIMIT_MINUTES * 60 * 1000) {
-      const waitTime = Math.ceil(
-        (RATE_LIMIT_MINUTES * 60 * 1000 - (now - lastSent)) / 1000
-      );
-      return NextResponse.json(
-        { error: `Please wait ${waitTime} seconds before requesting a new code` },
-        { status: 429 }
-      );
+    if (existingOTP) {
+      const timeSinceSent = Date.now() - existingOTP.createdAt.getTime();
+      if (timeSinceSent < RATE_LIMIT_MINUTES * 60 * 1000) {
+        const waitTime = Math.ceil(
+          (RATE_LIMIT_MINUTES * 60 * 1000 - timeSinceSent) / 1000
+        );
+        return NextResponse.json(
+          { error: `Please wait ${waitTime} seconds before requesting a new code` },
+          { status: 429 }
+        );
+      }
     }
 
     const otp = generateOTP();
-
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Store OTP with user data
-    otpStore.set(email.toLowerCase(), {
-      code: otp,
-      expiresAt: Date.now() + 5 * 60 * 1000, // 5 minutes
-      attempts: 0,
-      userData: {
-        name,
+    // Delete any existing OTP for this email and create new one
+    await prisma.signupOTP.deleteMany({ where: { email: email.toLowerCase() } });
+    await prisma.signupOTP.create({
+      data: {
         email: email.toLowerCase(),
+        code: otp,
+        name,
         password: hashedPassword,
-        phone,
+        phone: phone || null,
+        expiresAt: new Date(Date.now() + 5 * 60 * 1000),
       },
     });
 
-    rateLimitMap.set(email.toLowerCase(), now);
-
-    console.log(`📧 OTP for ${email}: ${otp}`); // DEBUG
+    console.log(`📧 OTP for ${email}: ${otp}`); // DEBUG - remove in production
 
     // Send email via Resend
     const { error } = await resend.emails.send({
@@ -153,7 +137,10 @@ export async function POST(req: NextRequest) {
 
     if (error) {
       console.error("Resend error:", error);
-      return NextResponse.json({ error: "Failed to send email" }, { status: 500 });
+      return NextResponse.json(
+        { error: "Failed to send email" },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({
@@ -162,7 +149,10 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error("Server error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
 }
 
@@ -171,8 +161,6 @@ export async function PUT(req: NextRequest) {
   try {
     const { email, otp } = await req.json();
 
-    console.log(`🔍 Verifying OTP for ${email}: ${otp}`);
-
     if (!email || !otp) {
       return NextResponse.json(
         { error: "Email and OTP are required" },
@@ -180,7 +168,9 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    const stored = otpStore.get(email.toLowerCase());
+    const stored = await prisma.signupOTP.findFirst({
+      where: { email: email.toLowerCase() },
+    });
 
     if (!stored) {
       return NextResponse.json(
@@ -189,8 +179,8 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    if (Date.now() > stored.expiresAt) {
-      otpStore.delete(email.toLowerCase());
+    if (new Date() > stored.expiresAt) {
+      await prisma.signupOTP.delete({ where: { id: stored.id } });
       return NextResponse.json(
         { error: "OTP has expired. Please request a new code." },
         { status: 400 }
@@ -198,50 +188,43 @@ export async function PUT(req: NextRequest) {
     }
 
     if (stored.code !== otp) {
-      stored.attempts++;
+      const newAttempts = stored.attempts + 1;
 
-      if (stored.attempts >= MAX_ATTEMPTS) {
-        otpStore.delete(email.toLowerCase());
+      if (newAttempts >= MAX_ATTEMPTS) {
+        await prisma.signupOTP.delete({ where: { id: stored.id } });
         return NextResponse.json(
           { error: "Too many failed attempts. Please request a new code." },
           { status: 400 }
         );
       }
 
-      const attemptsLeft = MAX_ATTEMPTS - stored.attempts;
+      await prisma.signupOTP.update({
+        where: { id: stored.id },
+        data: { attempts: newAttempts },
+      });
+
+      const attemptsLeft = MAX_ATTEMPTS - newAttempts;
       return NextResponse.json(
         { error: `Invalid OTP. ${attemptsLeft} attempts remaining.` },
         { status: 400 }
       );
     }
 
-    console.log(`✅ OTP verified!`);
-
-    // OTP is valid - create user
-    if (!stored.userData) {
-      return NextResponse.json({ error: "User data not found" }, { status: 400 });
-    }
-
-    const { name, email: userEmail, password, phone } = stored.userData;
-
-    // Create user in database
+    // OTP valid - create user
     const user = await prisma.user.create({
       data: {
-        name,
-        email: userEmail,
-        password,
-        phone: phone || null,
+        name: stored.name,
+        email: stored.email,
+        password: stored.password,
+        phone: stored.phone || null,
         provider: "credentials",
         role: "USER",
       },
     });
 
-    console.log(`✅ New user created: ${user.id}`);
+    // Cleanup OTP
+    await prisma.signupOTP.delete({ where: { id: stored.id } });
 
-    // Delete OTP
-    otpStore.delete(email.toLowerCase());
-
-    // Return user data
     return NextResponse.json({
       success: true,
       user: {
@@ -252,7 +235,10 @@ export async function PUT(req: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("❌ Verification error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    console.error("Verification error:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
 }

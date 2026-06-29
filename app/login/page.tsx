@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+import { signIn } from "next-auth/react";
 
 const MailIcon = () => (
   <svg
@@ -94,7 +95,6 @@ const AlertIcon = () => (
     <path d="M12 9v4m0 4h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
   </svg>
 );
-
 const GoogleLogo = () => (
   <svg width="16" height="16" viewBox="0 0 24 24">
     <path
@@ -119,13 +119,18 @@ const GoogleLogo = () => (
 export default function LoginPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
-
   const [showDeletionModal, setShowDeletionModal] = useState(false);
   const [deletionData, setDeletionData] = useState<any>(null);
   const [isCancelling, setIsCancelling] = useState(false);
+
+  const handleGoogleLogin = async () => {
+    setIsGoogleLoading(true);
+    await signIn("google", { redirectTo: "/" });
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -133,29 +138,35 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const res = await fetch("/api/auth/login", {
+      // Step 1: check for scheduled deletion first
+      const checkRes = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ email: formData.email }),
       });
-      const data = await res.json();
+      const checkData = await checkRes.json();
 
-      if (res.ok) {
-        if (data.scheduledForDeletion) {
-          setDeletionData(data);
-          setShowDeletionModal(true);
-          setIsLoading(false);
-          return;
-        }
-
-        if (data.user) {
-          localStorage.setItem("yog_user", JSON.stringify(data.user));
-          window.dispatchEvent(new Event("userLoggedIn"));
-          router.push("/");
-        }
-      } else {
-        setError(data.error || "Invalid email or password");
+      if (checkData.scheduledForDeletion) {
+        setDeletionData(checkData);
+        setShowDeletionModal(true);
+        setIsLoading(false);
+        return;
       }
+
+      // Step 2: sign in with NextAuth
+      const result = await signIn("credentials", {
+        email: formData.email,
+        password: formData.password,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        setError("Invalid email or password");
+        return;
+      }
+
+      router.push("/");
+      router.refresh();
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {
@@ -165,7 +176,6 @@ export default function LoginPage() {
 
   const handleCancelDeletion = async () => {
     if (!deletionData) return;
-
     setIsCancelling(true);
     setError("");
 
@@ -173,15 +183,26 @@ export default function LoginPage() {
       const res = await fetch("/api/user/cancel-deletion", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: deletionData.user.id }),
+        body: JSON.stringify({ email: formData.email }),
       });
-
       const data = await res.json();
 
-      if (res.ok && data.user) {
-        localStorage.setItem("yog_user", JSON.stringify(data.user));
-        window.dispatchEvent(new Event("userLoggedIn"));
+      if (res.ok) {
+        // Account restored — now sign in
+        const result = await signIn("credentials", {
+          email: formData.email,
+          password: formData.password,
+          redirect: false,
+        });
+
+        if (result?.error) {
+          setError("Account restored. Please log in.");
+          setShowDeletionModal(false);
+          return;
+        }
+
         router.push("/");
+        router.refresh();
       } else {
         setError(data.error || "Failed to cancel deletion");
         setShowDeletionModal(false);
@@ -226,11 +247,17 @@ export default function LoginPage() {
             style={{ border: "1px solid #e8e4de" }}
           >
             <button
-              onClick={() => alert("Google Sign In coming soon!")}
-              className="w-full flex items-center justify-center gap-2.5 py-3 rounded-[11px] text-[13px] font-semibold text-[#1a1714] bg-[#f6f5f3] hover:bg-[#edeae6] transition-colors cursor-pointer mb-5"
+              onClick={handleGoogleLogin}
+              disabled={isGoogleLoading}
+              className="w-full flex items-center justify-center gap-2.5 py-3 rounded-[11px] text-[13px] font-semibold text-[#1a1714] bg-[#f6f5f3] hover:bg-[#edeae6] transition-colors cursor-pointer mb-5 disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ border: "1px solid #e8e4de" }}
             >
-              <GoogleLogo /> Continue with Google
+              {isGoogleLoading ? (
+                <div className="w-4 h-4 border-2 border-[#1a1714] border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <GoogleLogo />
+              )}
+              Continue with Google
             </button>
 
             <div className="flex items-center gap-3 mb-5">
@@ -317,7 +344,7 @@ export default function LoginPage() {
               >
                 {isLoading ? (
                   <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />{" "}
                     Logging in…
                   </>
                 ) : (
@@ -420,7 +447,7 @@ export default function LoginPage() {
                   >
                     {isCancelling ? (
                       <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />{" "}
                         Cancelling...
                       </>
                     ) : (

@@ -328,3 +328,16 @@ enum Season {
   WINTER
   ALL_SEASON
 }
+model SignupOTP {
+  id        String   @id @default(cuid())
+  email     String
+  code      String
+  name      String
+  password  String
+  phone     String?
+  expiresAt DateTime
+  attempts  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([email])
+}

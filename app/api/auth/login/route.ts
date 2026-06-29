@@ -1,94 +1,40 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import bcrypt from "bcryptjs";
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, password } = await req.json();
+    const { email } = await req.json();
 
-    if (!email || !password) {
+    if (!email) {
       return NextResponse.json(
-        { error: "Email and password are required" },
+        { error: "Email is required" },
         { status: 400 }
       );
     }
 
-    // Find user
     const user = await prisma.user.findUnique({
       where: { email: email.toLowerCase() },
     });
 
-    if (!user) {
-      return NextResponse.json(
-        { error: "Invalid email or password" },
-        { status: 401 }
-      );
-    }
+    if (!user) return NextResponse.json({ ok: true });
 
-    // Check if user signed up with OAuth
-    if (user.provider && user.provider !== "credentials") {
-      return NextResponse.json(
-        {
-          error: `Please sign in with ${user.provider.charAt(0).toUpperCase() + user.provider.slice(1)}`,
-        },
-        { status: 400 }
-      );
-    }
-
-    // Verify password
-    if (!user.password) {
-      return NextResponse.json(
-        { error: "Invalid email or password" },
-        { status: 401 }
-      );
-    }
-
-    const isValidPassword = await bcrypt.compare(password, user.password);
-
-    if (!isValidPassword) {
-      return NextResponse.json(
-        { error: "Invalid email or password" },
-        { status: 401 }
-      );
-    }
-
-    // ✅ Check if account is scheduled for deletion
+    // Check if account is scheduled for deletion
     if (user.deletedAt) {
       const daysRemaining = Math.ceil(
         (new Date(user.deletedAt).getTime() - new Date().getTime()) /
           (1000 * 60 * 60 * 24)
       );
 
-      return NextResponse.json(
-        {
-          scheduledForDeletion: true,
-          deletionDate: user.deletedAt,
-          daysRemaining,
-          user: {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            role: user.role,
-            image: user.image,
-          },
-        },
-        { status: 200 }
-      );
+      return NextResponse.json({
+        scheduledForDeletion: true,
+        deletionDate: user.deletedAt,
+        daysRemaining,
+      });
     }
 
-    // Return user data
-    return NextResponse.json({
-      success: true,
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        image: user.image,
-      },
-    });
+    return NextResponse.json({ ok: true });
   } catch (error) {
-    console.error("Login error:", error);
+    console.error("Login check error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
