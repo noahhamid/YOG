@@ -1,5 +1,6 @@
 "use client";
 
+import { useSession, signOut as nextAuthSignOut } from "next-auth/react";
 import { useState, useEffect, useRef } from "react";
 import { useCart } from "@/context/CartContext";
 import { useRouter, usePathname } from "next/navigation";
@@ -470,7 +471,6 @@ export default function Navbar() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
 
-  const [user, setUser] = useState<UserData | null>(null);
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [toastNotification, setToastNotification] = useState<any>(null);
@@ -478,6 +478,17 @@ export default function Navbar() {
   const cartCount = getCartCount();
 
   const profileRef = useRef<HTMLDivElement>(null);
+
+  const { data: session } = useSession();
+  const user: UserData | null = session?.user
+    ? {
+        id: session.user.id as string,
+        email: session.user.email as string,
+        name: session.user.name as string,
+        role: session.user.role as "USER" | "SELLER" | "ADMIN",
+        image: session.user.image as string | undefined,
+      }
+    : null;
 
   const router = useRouter();
   const pathname = usePathname();
@@ -505,41 +516,13 @@ export default function Navbar() {
     return () => document.removeEventListener("mousedown", h);
   }, [profileOpen]);
 
-  // ── Auth + session ──────────────────────────────────────────────────────────
-  useEffect(() => {
-    loadUser();
-    window.addEventListener("userLoggedIn", loadUser);
-    return () => window.removeEventListener("userLoggedIn", loadUser);
-  }, []);
-
-  const loadUser = async () => {
-    const s = localStorage.getItem("yog_user");
-    if (!s) return;
-    const stored = JSON.parse(s);
-    setUser(stored);
-    try {
-      const res = await fetch("/api/auth/refresh", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: stored.email }),
-      });
-      const data = await res.json();
-      if (res.ok && data.user) {
-        localStorage.setItem("yog_user", JSON.stringify(data.user));
-        setUser(data.user);
-      }
-    } catch {}
-  };
-
   // ── Notification polling ────────────────────────────────────────────────────
   useEffect(() => {
     if (!user) return;
     const poll = async () => {
-      const userStr = localStorage.getItem("yog_user");
-      if (!userStr) return;
       try {
         const res = await fetch("/api/notifications", {
-          headers: { "x-user-data": userStr },
+          headers: { "x-user-id": user?.id ?? "" },
         });
         const data = await res.json();
         if (data.unreadCount !== undefined) {
@@ -570,10 +553,8 @@ export default function Navbar() {
   }, [user]);
 
   const handleSignOut = () => {
-    localStorage.removeItem("yog_user");
-    setUser(null);
     setProfileOpen(false);
-    window.location.href = "/";
+    nextAuthSignOut({ callbackUrl: "/" });
   };
 
   const roleClass =
