@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import Image from "next/image";
@@ -337,6 +338,7 @@ function CopyButton({ value }: { value: string }) {
 // ─── MAIN PAGE ────────────────────────────────────────────────────────────────
 export default function SellerProfilePage() {
   const router = useRouter();
+  const { data: session, status } = useSession();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
@@ -366,24 +368,24 @@ export default function SellerProfilePage() {
   };
 
   useEffect(() => {
-    loadSettings();
-  }, []);
+    if (status === "loading") return;
 
-  const loadSettings = async () => {
-    const userStr = localStorage.getItem("yog_user");
-    if (!userStr) {
+    if (status === "unauthenticated") {
       router.push("/login");
       return;
     }
-    const user = JSON.parse(userStr);
-    if (user.role !== "SELLER" && user.role !== "ADMIN") {
+
+    if (session?.user?.role !== "SELLER" && session?.user?.role !== "ADMIN") {
       router.push("/");
       return;
     }
+
+    loadSettings();
+  }, [status, session]);
+
+  const loadSettings = async () => {
     try {
-      const res = await fetch("/api/seller/settings", {
-        headers: { "x-user-data": userStr },
-      });
+      const res = await fetch("/api/seller/settings");
       if (!res.ok) throw new Error();
       const data = await res.json();
       if (data.seller)
@@ -398,8 +400,6 @@ export default function SellerProfilePage() {
         });
     } catch {
       showToast("error", "Failed to load settings");
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -414,8 +414,6 @@ export default function SellerProfilePage() {
       showToast("error", "Image must be under 10MB");
       return;
     }
-    const userStr = localStorage.getItem("yog_user");
-    if (!userStr) return;
     const setUploading = type === "logo" ? setUploadingLogo : setUploadingCover;
     const setProg = type === "logo" ? setLogoProg : setCoverProg;
     setUploading(true);
@@ -432,7 +430,6 @@ export default function SellerProfilePage() {
       fd.append("type", type);
       const res = await fetch("/api/upload", {
         method: "POST",
-        headers: { "x-user-data": userStr },
         body: fd,
       });
       if (!res.ok) throw new Error("Upload failed");
@@ -464,13 +461,9 @@ export default function SellerProfilePage() {
     }
     setIsSaving(true);
     try {
-      const userStr = localStorage.getItem("yog_user");
       const res = await fetch("/api/seller/settings", {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "x-user-data": userStr || "",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
       const data = await res.json();
@@ -483,7 +476,7 @@ export default function SellerProfilePage() {
     }
   };
 
-  if (isLoading) {
+  if (status === "loading") {
     return (
       <>
         <style>{CSS}</style>

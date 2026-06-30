@@ -1,30 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import SellerOnboarding from "@/components/SellerOnboarding";
 
 export default function SellerApplyPage() {
   const router = useRouter();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const { status } = useSession();
 
-  useEffect(() => {
-    // Check if user is logged in
-    const userStr = localStorage.getItem("yog_user");
-
-    if (!userStr) {
-      // Not logged in - redirect to login
-      router.push("/login?redirect=/seller/apply");
-    } else {
-      setIsAuthenticated(true);
-    }
-
-    setIsLoading(false);
-  }, [router]);
-
-  // Show loading spinner
-  if (isLoading) {
+  if (status === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-50 to-white">
         <div className="text-center">
@@ -35,11 +19,10 @@ export default function SellerApplyPage() {
     );
   }
 
-  // Don't show anything if not authenticated (will redirect)
-  if (!isAuthenticated) {
+  if (status === "unauthenticated") {
+    router.push("/login?redirect=/seller/apply");
     return null;
   }
 
-  // Show the seller onboarding form
   return <SellerOnboarding />;
 }

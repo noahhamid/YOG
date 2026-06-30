@@ -1,24 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 
 export async function GET(req: NextRequest) {
   try {
-    const userDataHeader = req.headers.get("x-user-data");
-    if (!userDataHeader) {
+    const session = await auth();
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const userData = JSON.parse(userDataHeader);
-
     const user = await prisma.user.findUnique({
-      where: { id: userData.id },
+      where: { id: session.user.id },
       select: {
         id: true,
         name: true,
         email: true,
         role: true,
         deletedAt: true,
-        lastNameChange: true, // ✅ Include this
+        lastNameChange: true,
+        password: true,
       },
     });
 
@@ -26,7 +26,17 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ user });
+    return NextResponse.json({
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        deletedAt: user.deletedAt,
+        lastNameChange: user.lastNameChange,
+        hasPassword: !!user.password,
+      },
+    });
   } catch (error) {
     console.error("Get profile error:", error);
     return NextResponse.json(
@@ -38,16 +48,14 @@ export async function GET(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
-    const userDataHeader = req.headers.get("x-user-data");
-    if (!userDataHeader) {
+    const session = await auth();
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const userData = JSON.parse(userDataHeader);
     const body = await req.json();
     const { name } = body;
 
-    // Validate
     if (!name) {
       return NextResponse.json(
         { error: "Name is required" },
@@ -55,9 +63,8 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    // Check if user can change name (2 weeks restriction)
     const user = await prisma.user.findUnique({
-      where: { id: userData.id },
+      where: { id: session.user.id },
       select: { lastNameChange: true },
     });
 
@@ -81,12 +88,11 @@ export async function PUT(req: NextRequest) {
       }
     }
 
-    // Update user name and timestamp
     const updatedUser = await prisma.user.update({
-      where: { id: userData.id },
+      where: { id: session.user.id },
       data: {
         name,
-        lastNameChange: new Date(), // ✅ Update timestamp
+        lastNameChange: new Date(),
       },
       select: {
         id: true,

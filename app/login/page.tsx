@@ -38,12 +38,12 @@ const LockIcon = () => (
 );
 const ArrowIcon = () => (
   <svg
-    width="14"
-    height="14"
+    width="13"
+    height="13"
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth="2"
+    strokeWidth="2.5"
     strokeLinecap="round"
     strokeLinejoin="round"
   >
@@ -83,8 +83,8 @@ const EyeOffIcon = () => (
 );
 const AlertIcon = () => (
   <svg
-    width="24"
-    height="24"
+    width="18"
+    height="18"
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
@@ -92,7 +92,9 @@ const AlertIcon = () => (
     strokeLinecap="round"
     strokeLinejoin="round"
   >
-    <path d="M12 9v4m0 4h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+    <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+    <line x1="12" y1="9" x2="12" y2="13" />
+    <line x1="12" y1="17" x2="12.01" y2="17" />
   </svg>
 );
 const GoogleLogo = () => (
@@ -216,41 +218,106 @@ export default function LoginPage() {
   };
 
   const inputBase =
-    "w-full pl-10 pr-4 py-3 rounded-[11px] text-[13px] font-medium text-[#1a1714] bg-[#f6f5f3] placeholder:text-[#c4c0bb] focus:outline-none focus:bg-white transition-all";
+    "w-full pl-10 pr-4 py-3 rounded-[10px] text-[13px] font-medium text-[#1a1714] bg-white placeholder:text-[#c4bfb9] focus:outline-none transition-all";
 
   return (
     <>
       <div
-        className="min-h-screen bg-[#f6f5f3] flex items-center justify-center px-4 py-12"
+        className="min-h-screen bg-[#0D0C0A] flex items-center justify-center p-4"
         style={{ fontFamily: "'Sora',sans-serif" }}
       >
-        <div className="w-full max-w-sm">
-          <div className="text-center mb-8">
-            <Link href="/">
+        <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 rounded-2xl overflow-hidden shadow-2xl">
+          {/* LEFT — editorial brand panel */}
+          <div className="hidden lg:flex relative bg-[#0D0C0A] p-11 flex-col justify-between overflow-hidden">
+            {/* diagonal grain texture */}
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                backgroundImage:
+                  "repeating-linear-gradient(135deg, transparent, transparent 2px, rgba(201,168,76,0.045) 2px, rgba(201,168,76,0.045) 3px)",
+              }}
+            />
+            {/* ambient gold glow */}
+            <div
+              className="absolute pointer-events-none"
+              style={{
+                bottom: "-80px",
+                left: "-60px",
+                width: "340px",
+                height: "340px",
+                background:
+                  "radial-gradient(circle, rgba(201,168,76,0.13) 0%, transparent 70%)",
+              }}
+            />
+
+            <Link href="/" className="relative z-10">
               <span
-                className="text-[42px] font-black tracking-[6px] text-[#1a1714] cursor-pointer hover:opacity-70 transition-opacity"
+                className="text-[38px] font-black tracking-[6px] text-[#C9A84C] cursor-pointer hover:opacity-80 transition-opacity"
                 style={{
                   fontFamily: "'Bebas Neue',sans-serif",
-                  letterSpacing: "0.18em",
+                  letterSpacing: "0.2em",
                 }}
               >
                 YOG
               </span>
             </Link>
-            <p className="text-[12px] text-[#9e9890] mt-1 font-medium">
-              Welcome back
+
+            <div className="relative z-10">
+              <div className="flex items-center gap-2 text-[10px] font-semibold tracking-[0.18em] uppercase text-[#C9A84C] mb-4">
+                <span className="block w-6 h-px bg-[#C9A84C]" />
+                Curated fashion
+              </div>
+              <h1
+                className="text-[36px] leading-[1.12] italic text-[#F0EDE6] mb-5"
+                style={{ fontFamily: "'DM Serif Display', serif" }}
+              >
+                Style that
+                <br />
+                speaks before
+                <br />
+                you <span className="not-italic text-[#C9A84C]">do.</span>
+              </h1>
+              <p className="text-[13px] text-[#6B6560] leading-relaxed max-w-[240px]">
+                A marketplace for people who know the difference between wearing
+                clothes and wearing intention.
+              </p>
+            </div>
+
+            <p className="relative z-10 text-[11px] text-[#4A4540] font-medium tracking-wide">
+              Est. 2024 &nbsp;·&nbsp; Addis &nbsp;·&nbsp; The World
             </p>
           </div>
 
-          <div
-            className="bg-white rounded-2xl p-6"
-            style={{ border: "1px solid #e8e4de" }}
-          >
+          {/* RIGHT — form panel */}
+          <div className="bg-[#F0EDE6] p-8 sm:p-11 flex flex-col justify-center">
+            <div className="lg:hidden text-center mb-6">
+              <Link href="/">
+                <span
+                  className="text-[34px] font-black tracking-[6px] text-[#1a1714] cursor-pointer hover:opacity-70 transition-opacity"
+                  style={{
+                    fontFamily: "'Bebas Neue',sans-serif",
+                    letterSpacing: "0.18em",
+                  }}
+                >
+                  YOG
+                </span>
+              </Link>
+            </div>
+
+            <div className="mb-7">
+              <h2 className="text-[22px] font-semibold text-[#1a1714] tracking-tight mb-1">
+                Welcome back
+              </h2>
+              <p className="text-[13px] text-[#9e9890]">
+                Sign in to your account
+              </p>
+            </div>
+
             <button
               onClick={handleGoogleLogin}
               disabled={isGoogleLoading}
-              className="w-full flex items-center justify-center gap-2.5 py-3 rounded-[11px] text-[13px] font-semibold text-[#1a1714] bg-[#f6f5f3] hover:bg-[#edeae6] transition-colors cursor-pointer mb-5 disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{ border: "1px solid #e8e4de" }}
+              className="w-full flex items-center justify-center gap-2.5 py-3 rounded-[10px] text-[13px] font-semibold text-[#1a1714] bg-white hover:bg-[#F7F5F2] transition-colors cursor-pointer mb-5 disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ border: "1px solid #D8D4CE" }}
             >
               {isGoogleLoading ? (
                 <div className="w-4 h-4 border-2 border-[#1a1714] border-t-transparent rounded-full animate-spin" />
@@ -261,29 +328,29 @@ export default function LoginPage() {
             </button>
 
             <div className="flex items-center gap-3 mb-5">
-              <div className="flex-1 h-px bg-[#e8e4de]" />
-              <span className="text-[11px] text-[#b8b4ae] font-medium">
+              <div className="flex-1 h-px bg-[#D8D4CE]" />
+              <span className="text-[11px] text-[#b0aba5] font-medium tracking-wide whitespace-nowrap">
                 or with email
               </span>
-              <div className="flex-1 h-px bg-[#e8e4de]" />
+              <div className="flex-1 h-px bg-[#D8D4CE]" />
             </div>
 
             {error && (
               <div
-                className="mb-4 px-3 py-2.5 rounded-[10px] text-[12px] text-red-600 bg-red-50"
-                style={{ border: "1px solid #fecaca" }}
+                className="mb-4 px-3 py-2.5 rounded-[8px] text-[12px] font-medium text-[#C0392B] bg-[#FFF0EF]"
+                style={{ border: "1px solid #FEC9C5" }}
               >
                 {error}
               </div>
             )}
 
-            <form onSubmit={handleLogin} className="flex flex-col gap-3">
+            <form onSubmit={handleLogin} className="flex flex-col gap-3.5">
               <div>
-                <label className="block text-[11px] font-bold text-[#9e9890] uppercase tracking-[0.9px] mb-1.5">
+                <label className="block text-[11px] font-bold text-[#9e9890] uppercase tracking-[0.1em] mb-1.5">
                   Email
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#b8b4ae]">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#b0aba5]">
                     <MailIcon />
                   </span>
                   <input
@@ -295,14 +362,26 @@ export default function LoginPage() {
                     }
                     placeholder="you@example.com"
                     className={inputBase}
-                    style={{ border: "1px solid #e8e4de" }}
+                    style={{
+                      border: "1px solid #D8D4CE",
+                      boxShadow: "none",
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = "#C9A84C";
+                      e.target.style.boxShadow =
+                        "0 0 0 3px rgba(201,168,76,0.15)";
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = "#D8D4CE";
+                      e.target.style.boxShadow = "none";
+                    }}
                   />
                 </div>
               </div>
 
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-[11px] font-bold text-[#9e9890] uppercase tracking-[0.9px]">
+                  <label className="block text-[11px] font-bold text-[#9e9890] uppercase tracking-[0.1em]">
                     Password
                   </label>
                   <Link
@@ -313,7 +392,7 @@ export default function LoginPage() {
                   </Link>
                 </div>
                 <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#b8b4ae]">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#b0aba5]">
                     <LockIcon />
                   </span>
                   <input
@@ -325,12 +404,24 @@ export default function LoginPage() {
                     }
                     placeholder="Enter your password"
                     className={`${inputBase} pr-10`}
-                    style={{ border: "1px solid #e8e4de" }}
+                    style={{
+                      border: "1px solid #D8D4CE",
+                      boxShadow: "none",
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = "#C9A84C";
+                      e.target.style.boxShadow =
+                        "0 0 0 3px rgba(201,168,76,0.15)";
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = "#D8D4CE";
+                      e.target.style.boxShadow = "none";
+                    }}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword((p) => !p)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#b8b4ae] hover:text-[#9e9890] transition-colors cursor-pointer"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#b0aba5] hover:text-[#6B6560] transition-colors cursor-pointer"
                   >
                     {showPassword ? <EyeOffIcon /> : <EyeIcon />}
                   </button>
@@ -340,67 +431,84 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full mt-1 bg-[#1a1714] text-white py-3.5 rounded-[12px] text-[13px] font-bold flex items-center justify-center gap-2 hover:bg-[#333] transition-all cursor-pointer hover:-translate-y-px hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                className="relative w-full mt-1 bg-[#1a1714] text-white py-3.5 rounded-[10px] text-[13px] font-bold tracking-wide flex items-center justify-center gap-2 hover:bg-[#2E2A26] transition-all cursor-pointer hover:-translate-y-px disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none overflow-hidden"
               >
-                {isLoading ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />{" "}
-                    Logging in…
-                  </>
-                ) : (
-                  <>
-                    Log In <ArrowIcon />
-                  </>
-                )}
+                <span
+                  className="absolute inset-0 pointer-events-none"
+                  style={{
+                    background:
+                      "linear-gradient(135deg, rgba(201,168,76,0.15) 0%, transparent 60%)",
+                  }}
+                />
+                <span className="relative flex items-center gap-2">
+                  {isLoading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Signing in…
+                    </>
+                  ) : (
+                    <>
+                      Log in <ArrowIcon />
+                    </>
+                  )}
+                </span>
               </button>
             </form>
-          </div>
 
-          <p className="text-center text-[12px] text-[#9e9890] mt-5">
-            Don't have an account?{" "}
-            <Link
-              href="/signup"
-              className="font-bold text-[#1a1714] hover:underline"
-            >
-              Sign up
-            </Link>
-          </p>
+            <p className="text-center text-[12px] text-[#9e9890] mt-5">
+              Don't have an account?{" "}
+              <Link
+                href="/signup"
+                className="font-bold text-[#1a1714] hover:underline"
+              >
+                Sign up
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
 
       <AnimatePresence>
         {showDeletionModal && deletionData && (
           <motion.div
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => !isCancelling && setShowDeletionModal(false)}
           >
             <motion.div
-              className="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden"
+              className="bg-[#F0EDE6] rounded-2xl max-w-md w-full shadow-2xl overflow-hidden"
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
               onClick={(e) => e.stopPropagation()}
               style={{ fontFamily: "'Sora', sans-serif" }}
             >
-              <div
-                className="p-6 bg-gradient-to-br from-red-50 to-orange-50"
-                style={{ borderBottom: "1px solid #fecaca" }}
-              >
-                <div className="w-14 h-14 rounded-full bg-white flex items-center justify-center mb-4 shadow-sm">
+              <div className="relative p-6 bg-[#1a1714]">
+                <div
+                  className="absolute bottom-0 left-0 right-0 h-[2px]"
+                  style={{ background: "#C9A84C" }}
+                />
+                <div
+                  className="w-11 h-11 rounded-[10px] flex items-center justify-center mb-4"
+                  style={{
+                    background: "rgba(201,168,76,0.15)",
+                    border: "1px solid rgba(201,168,76,0.3)",
+                    color: "#C9A84C",
+                  }}
+                >
                   <AlertIcon />
                 </div>
                 <h3
-                  className="text-xl font-bold text-[#1a1714] mb-2"
-                  style={{ letterSpacing: "-0.02em" }}
+                  className="text-lg font-bold text-[#F0EDE6] mb-1"
+                  style={{ letterSpacing: "-0.01em" }}
                 >
-                  Account Scheduled for Deletion
+                  Account scheduled for deletion
                 </h3>
-                <p className="text-sm text-[#991b1b] leading-relaxed font-medium">
-                  Your account will be permanently deleted in{" "}
-                  <span className="font-bold">
+                <p className="text-[12px] text-[#9e9890]">
+                  Your account will be removed in{" "}
+                  <span className="font-bold" style={{ color: "#C9A84C" }}>
                     {deletionData.daysRemaining} day
                     {deletionData.daysRemaining !== 1 ? "s" : ""}
                   </span>
@@ -409,11 +517,13 @@ export default function LoginPage() {
 
               <div className="p-6">
                 <div
-                  className="bg-red-50 rounded-xl p-4 mb-5"
-                  style={{ border: "1px solid #fecaca" }}
+                  className="bg-white rounded-[10px] p-3.5 mb-4"
+                  style={{ border: "1px solid #D8D4CE" }}
                 >
-                  <p className="text-xs text-[#991b1b] leading-relaxed">
-                    <span className="font-bold block mb-1">Deletion Date:</span>
+                  <p className="text-[12px] text-[#6B6560] leading-relaxed">
+                    <span className="font-bold block mb-0.5 text-[13px] text-[#1a1714]">
+                      Deletion date
+                    </span>
                     {new Date(deletionData.deletionDate).toLocaleDateString(
                       "en-US",
                       {
@@ -426,32 +536,33 @@ export default function LoginPage() {
                   </p>
                 </div>
 
-                <p className="text-sm text-[#1a1714] leading-relaxed mb-6">
-                  Would you like to <strong>cancel the deletion</strong> and
-                  keep your account? All your data, orders, and reviews will be
-                  preserved.
+                <p className="text-[13px] text-[#6B6560] leading-relaxed mb-5">
+                  Cancel the deletion to keep your account, orders, and reviews
+                  intact.
                 </p>
 
-                <div className="flex gap-3">
+                <div className="flex gap-2.5">
                   <button
                     onClick={() => setShowDeletionModal(false)}
                     disabled={isCancelling}
-                    className="flex-1 px-4 py-3 border-2 border-[#e8e4de] rounded-xl text-sm font-bold text-[#1a1714] hover:bg-[#f6f5f3] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 px-4 py-3 rounded-[10px] text-[13px] font-bold text-[#1a1714] hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{ border: "1px solid #D8D4CE" }}
                   >
-                    Go Back
+                    Go back
                   </button>
                   <button
                     onClick={handleCancelDeletion}
                     disabled={isCancelling}
-                    className="flex-1 px-4 py-3 bg-[#1a1714] text-white rounded-xl text-sm font-bold hover:bg-[#333] transition-all hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="flex-1 px-4 py-3 rounded-[10px] text-[13px] font-bold text-[#0D0C0A] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    style={{ background: "#C9A84C" }}
                   >
                     {isCancelling ? (
                       <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />{" "}
-                        Cancelling...
+                        <div className="w-4 h-4 border-2 border-[#0D0C0A] border-t-transparent rounded-full animate-spin" />
+                        Cancelling…
                       </>
                     ) : (
-                      "Cancel Deletion"
+                      "Keep my account"
                     )}
                   </button>
                 </div>

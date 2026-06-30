@@ -1,24 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 
 export const dynamic = 'force-dynamic';
 
 // Get seller's orders - OPTIMIZED
 export async function GET(req: NextRequest) {
   try {
-    const userStr = req.headers.get("x-user-data");
-    if (!userStr) {
+    const session = await auth();
+    if (!session?.user?.id) {
       return NextResponse.json(
         { error: "Please sign in first" },
         { status: 401 }
       );
     }
 
-    const user = JSON.parse(userStr);
-
     const seller = await prisma.seller.findUnique({
-      where: { userId: user.id },
-      select: { id: true }, // Only get ID, nothing else
+      where: { userId: session.user.id },
+      select: { id: true },
     });
 
     if (!seller) {
@@ -31,7 +30,6 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const status = searchParams.get("status");
 
-    // Build where clause
     const where: any = {
       sellerId: seller.id,
     };
@@ -40,7 +38,6 @@ export async function GET(req: NextRequest) {
       where.status = status.toUpperCase();
     }
 
-    // Fetch orders with MINIMAL data
     const orders = await prisma.order.findMany({
       where,
       select: {
@@ -63,7 +60,7 @@ export async function GET(req: NextRequest) {
               select: {
                 url: true,
               },
-              take: 1, // Only get first image
+              take: 1,
               orderBy: {
                 position: 'asc',
               },
@@ -74,10 +71,9 @@ export async function GET(req: NextRequest) {
       orderBy: {
         createdAt: "desc",
       },
-      take: 50, // Limit to 50 most recent orders
+      take: 50,
     });
 
-    // Get stats separately with OPTIMIZED queries
     const [pendingCount, confirmedCount, deliveredCount, revenueData] = await Promise.all([
       prisma.order.count({
         where: { sellerId: seller.id, status: 'PENDING' },

@@ -3,9 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
 import { signIn } from "next-auth/react";
-
-// ... all your icon components stay exactly the same ...
 
 const UserIcon = () => (
   <svg
@@ -68,12 +67,12 @@ const PhoneIcon = () => (
 );
 const ArrowIcon = () => (
   <svg
-    width="14"
-    height="14"
+    width="13"
+    height="13"
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth="2"
+    strokeWidth="2.5"
     strokeLinecap="round"
     strokeLinejoin="round"
   >
@@ -83,8 +82,8 @@ const ArrowIcon = () => (
 );
 const BackIcon = () => (
   <svg
-    width="14"
-    height="14"
+    width="13"
+    height="13"
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
@@ -227,7 +226,17 @@ export default function SignUpPage() {
   };
 
   const inputBase =
-    "w-full pl-10 pr-4 py-3 rounded-[11px] text-[13px] font-medium text-[#1a1714] bg-[#f6f5f3] placeholder:text-[#c4c0bb] focus:outline-none focus:bg-white transition-all";
+    "w-full pl-10 pr-4 py-3 rounded-[10px] text-[13px] font-medium text-[#1a1714] bg-white placeholder:text-[#c4bfb9] focus:outline-none transition-all";
+
+  const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    e.target.style.borderColor = "#C9A84C";
+    e.target.style.boxShadow = "0 0 0 3px rgba(201,168,76,0.15)";
+  };
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    e.target.style.borderColor = "#D8D4CE";
+    e.target.style.boxShadow = "none";
+  };
+
   const Lbl = ({
     icon,
     text,
@@ -237,269 +246,425 @@ export default function SignUpPage() {
     text: string;
     optional?: boolean;
   }) => (
-    <label className="flex items-center gap-1.5 text-[11px] font-bold text-[#9e9890] uppercase tracking-[0.9px] mb-1.5">
-      <span className="text-[#b8b4ae]">{icon}</span>
+    <label className="flex items-center gap-1.5 text-[11px] font-bold text-[#9e9890] uppercase tracking-[0.1em] mb-1.5">
+      <span className="text-[#b0aba5]">{icon}</span>
       {text}
       {optional && (
-        <span className="font-normal normal-case tracking-normal text-[#c4c0bb] ml-0.5">
+        <span className="font-normal normal-case tracking-normal text-[#c4bfb9] ml-0.5">
           optional
         </span>
       )}
     </label>
   );
 
+  // editorial copy on the left panel changes with step, so the brand side
+  // tracks progress instead of sitting static
+  const editorial =
+    step === "details"
+      ? {
+          eyebrow: "Curated fashion",
+          headline: (
+            <>
+              Style that
+              <br />
+              speaks before
+              <br />
+              you <span className="not-italic text-[#C9A84C]">do.</span>
+            </>
+          ),
+          subline:
+            "A marketplace for people who know the difference between wearing clothes and wearing intention.",
+        }
+      : {
+          eyebrow: "Almost there",
+          headline: (
+            <>
+              One step from
+              <br />
+              your first{" "}
+              <span className="not-italic text-[#C9A84C]">find.</span>
+            </>
+          ),
+          subline:
+            "Enter the code we sent and your wardrobe's next favorite piece is one tap away.",
+        };
+
   return (
     <div
-      className="min-h-screen bg-[#f6f5f3] flex items-center justify-center px-4 py-12"
+      className="min-h-screen bg-[#0D0C0A] flex items-center justify-center p-4"
       style={{ fontFamily: "'Sora',sans-serif" }}
     >
-      <div className="w-full max-w-sm">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <Link href="/">
+      <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 rounded-2xl overflow-hidden shadow-2xl">
+        {/* LEFT — editorial brand panel, copy swaps by step */}
+        <div className="hidden lg:flex relative bg-[#0D0C0A] p-11 flex-col justify-between overflow-hidden">
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              backgroundImage:
+                "repeating-linear-gradient(135deg, transparent, transparent 2px, rgba(201,168,76,0.045) 2px, rgba(201,168,76,0.045) 3px)",
+            }}
+          />
+          <div
+            className="absolute pointer-events-none"
+            style={{
+              bottom: "-80px",
+              left: "-60px",
+              width: "340px",
+              height: "340px",
+              background:
+                "radial-gradient(circle, rgba(201,168,76,0.13) 0%, transparent 70%)",
+            }}
+          />
+
+          <Link href="/" className="relative z-10">
             <span
-              className="text-[42px] font-black cursor-pointer hover:opacity-70 transition-opacity text-[#1a1714]"
+              className="text-[38px] font-black tracking-[6px] text-[#C9A84C] cursor-pointer hover:opacity-80 transition-opacity"
               style={{
                 fontFamily: "'Bebas Neue',sans-serif",
-                letterSpacing: "0.18em",
+                letterSpacing: "0.2em",
               }}
             >
               YOG
             </span>
           </Link>
-          <p className="text-[12px] text-[#9e9890] mt-1 font-medium">
-            {step === "details" ? "Create your account" : "Verify your email"}
+
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={step}
+              className="relative z-10"
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.3 }}
+            >
+              <div className="flex items-center gap-2 text-[10px] font-semibold tracking-[0.18em] uppercase text-[#C9A84C] mb-4">
+                <span className="block w-6 h-px bg-[#C9A84C]" />
+                {editorial.eyebrow}
+              </div>
+              <h1
+                className="text-[34px] leading-[1.14] italic text-[#F0EDE6] mb-5"
+                style={{ fontFamily: "'DM Serif Display', serif" }}
+              >
+                {editorial.headline}
+              </h1>
+              <p className="text-[13px] text-[#6B6560] leading-relaxed max-w-[250px]">
+                {editorial.subline}
+              </p>
+            </motion.div>
+          </AnimatePresence>
+
+          <p className="relative z-10 text-[11px] text-[#4A4540] font-medium tracking-wide">
+            Est. 2024 &nbsp;·&nbsp; Addis &nbsp;·&nbsp; The World
           </p>
         </div>
 
-        <div
-          className="bg-white rounded-2xl p-6"
-          style={{ border: "1px solid #e8e4de" }}
-        >
-          {step === "details" ? (
-            <>
-              {/* Google */}
-              <button
-                onClick={handleGoogleSignUp}
-                disabled={isGoogleLoading}
-                className="w-full flex items-center justify-center gap-2.5 py-3 rounded-[11px] text-[13px] font-semibold text-[#1a1714] bg-[#f6f5f3] hover:bg-[#edeae6] transition-colors cursor-pointer mb-5 disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{ border: "1px solid #e8e4de" }}
+        {/* RIGHT — form panel */}
+        <div className="bg-[#F0EDE6] p-8 sm:p-11 flex flex-col justify-center overflow-hidden">
+          <div className="lg:hidden text-center mb-6">
+            <Link href="/">
+              <span
+                className="text-[34px] font-black tracking-[6px] text-[#1a1714] cursor-pointer hover:opacity-70 transition-opacity"
+                style={{
+                  fontFamily: "'Bebas Neue',sans-serif",
+                  letterSpacing: "0.18em",
+                }}
               >
-                {isGoogleLoading ? (
-                  <div className="w-4 h-4 border-2 border-[#1a1714] border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <GoogleLogo />
-                )}
-                Continue with Google
-              </button>
+                YOG
+              </span>
+            </Link>
+          </div>
 
-              {/* Divider */}
-              <div className="flex items-center gap-3 mb-5">
-                <div className="flex-1 h-px bg-[#e8e4de]" />
-                <span className="text-[11px] text-[#b8b4ae] font-medium">
-                  or with email
-                </span>
-                <div className="flex-1 h-px bg-[#e8e4de]" />
-              </div>
+          <AnimatePresence mode="wait">
+            {step === "details" ? (
+              <motion.div
+                key="details"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.25 }}
+              >
+                <h2 className="text-[22px] font-semibold text-[#1a1714] tracking-tight mb-1">
+                  Create your account
+                </h2>
+                <p className="text-[13px] text-[#9e9890] mb-6">
+                  Join the marketplace
+                </p>
 
-              {error && (
-                <div
-                  className="mb-4 px-3 py-2.5 rounded-[10px] text-[12px] text-red-600 bg-red-50"
-                  style={{ border: "1px solid #fecaca" }}
+                <button
+                  onClick={handleGoogleSignUp}
+                  disabled={isGoogleLoading}
+                  className="w-full flex items-center justify-center gap-2.5 py-3 rounded-[10px] text-[13px] font-semibold text-[#1a1714] bg-white hover:bg-[#F7F5F2] transition-colors cursor-pointer mb-5 disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ border: "1px solid #D8D4CE" }}
                 >
-                  {error}
-                </div>
-              )}
+                  {isGoogleLoading ? (
+                    <div className="w-4 h-4 border-2 border-[#1a1714] border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <GoogleLogo />
+                  )}
+                  Continue with Google
+                </button>
 
-              <form onSubmit={handleSendOTP} className="flex flex-col gap-3">
-                <div>
-                  <Lbl icon={<UserIcon />} text="Full Name" />
-                  <div className="relative">
-                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#b8b4ae]">
-                      <UserIcon />
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="flex-1 h-px bg-[#D8D4CE]" />
+                  <span className="text-[11px] text-[#b0aba5] font-medium tracking-wide whitespace-nowrap">
+                    or with email
+                  </span>
+                  <div className="flex-1 h-px bg-[#D8D4CE]" />
+                </div>
+
+                {error && (
+                  <div
+                    className="mb-4 px-3 py-2.5 rounded-[8px] text-[12px] font-medium text-[#C0392B] bg-[#FFF0EF]"
+                    style={{ border: "1px solid #FEC9C5" }}
+                  >
+                    {error}
+                  </div>
+                )}
+
+                <form
+                  onSubmit={handleSendOTP}
+                  className="flex flex-col gap-3.5"
+                >
+                  <div>
+                    <Lbl icon={<UserIcon />} text="Full name" />
+                    <div className="relative">
+                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#b0aba5]">
+                        <UserIcon />
+                      </span>
+                      <input
+                        type="text"
+                        required
+                        value={formData.name}
+                        onChange={(e) =>
+                          setFormData({ ...formData, name: e.target.value })
+                        }
+                        onFocus={handleFocus}
+                        onBlur={handleBlur}
+                        placeholder="John Doe"
+                        className={inputBase}
+                        style={{ border: "1px solid #D8D4CE" }}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Lbl icon={<MailIcon />} text="Email" />
+                    <div className="relative">
+                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#b0aba5]">
+                        <MailIcon />
+                      </span>
+                      <input
+                        type="email"
+                        required
+                        value={formData.email}
+                        onChange={(e) =>
+                          setFormData({ ...formData, email: e.target.value })
+                        }
+                        onFocus={handleFocus}
+                        onBlur={handleBlur}
+                        placeholder="you@example.com"
+                        className={inputBase}
+                        style={{ border: "1px solid #D8D4CE" }}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Lbl icon={<LockIcon />} text="Password" />
+                    <div className="relative">
+                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#b0aba5]">
+                        <LockIcon />
+                      </span>
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        required
+                        minLength={6}
+                        value={formData.password}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            password: e.target.value,
+                          })
+                        }
+                        onFocus={handleFocus}
+                        onBlur={handleBlur}
+                        placeholder="At least 6 characters"
+                        className={`${inputBase} pr-10`}
+                        style={{ border: "1px solid #D8D4CE" }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((p) => !p)}
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#b0aba5] hover:text-[#6B6560] transition-colors cursor-pointer"
+                      >
+                        {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <Lbl icon={<PhoneIcon />} text="Phone" optional />
+                    <div className="relative">
+                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#b0aba5]">
+                        <PhoneIcon />
+                      </span>
+                      <input
+                        type="tel"
+                        value={formData.phone}
+                        onChange={(e) =>
+                          setFormData({ ...formData, phone: e.target.value })
+                        }
+                        onFocus={handleFocus}
+                        onBlur={handleBlur}
+                        placeholder="+251 9XX XXX XXX"
+                        className={inputBase}
+                        style={{ border: "1px solid #D8D4CE" }}
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="relative w-full mt-1 bg-[#1a1714] text-white py-3.5 rounded-[10px] text-[13px] font-bold tracking-wide flex items-center justify-center gap-2 hover:bg-[#2E2A26] transition-all cursor-pointer hover:-translate-y-px disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none overflow-hidden"
+                  >
+                    <span
+                      className="absolute inset-0 pointer-events-none"
+                      style={{
+                        background:
+                          "linear-gradient(135deg, rgba(201,168,76,0.15) 0%, transparent 60%)",
+                      }}
+                    />
+                    <span className="relative flex items-center gap-2">
+                      {isLoading ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          Sending code…
+                        </>
+                      ) : (
+                        <>
+                          Continue <ArrowIcon />
+                        </>
+                      )}
                     </span>
+                  </button>
+                </form>
+
+                <p className="text-center text-[12px] text-[#9e9890] mt-5">
+                  Already have an account?{" "}
+                  <Link
+                    href="/login"
+                    className="font-bold text-[#1a1714] hover:underline"
+                  >
+                    Log in
+                  </Link>
+                </p>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="otp"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.25 }}
+              >
+                <div className="text-center mb-7">
+                  <div
+                    className="relative w-[52px] h-[52px] rounded-[14px] bg-[#1a1714] flex items-center justify-center mx-auto mb-4"
+                    style={{ color: "#C9A84C" }}
+                  >
+                    <span
+                      className="absolute -inset-px rounded-[15px] pointer-events-none"
+                      style={{ border: "1px solid rgba(201,168,76,0.3)" }}
+                    />
+                    <MailIcon />
+                  </div>
+                  <h2 className="text-[16px] font-bold text-[#1a1714] mb-1">
+                    Check your email
+                  </h2>
+                  <p className="text-[12px] text-[#9e9890] leading-relaxed">
+                    We sent a 6-digit code to
+                    <br />
+                    <span className="font-bold text-[#1a1714]">
+                      {formData.email}
+                    </span>
+                  </p>
+                </div>
+
+                {error && (
+                  <div
+                    className="mb-4 px-3 py-2.5 rounded-[8px] text-[12px] font-medium text-[#C0392B] bg-[#FFF0EF]"
+                    style={{ border: "1px solid #FEC9C5" }}
+                  >
+                    {error}
+                  </div>
+                )}
+
+                <form
+                  onSubmit={handleVerifyOTP}
+                  className="flex flex-col gap-3.5"
+                >
+                  <div>
+                    <label className="block text-[11px] font-bold text-[#9e9890] uppercase tracking-[0.1em] mb-2.5 text-center">
+                      Verification code
+                    </label>
                     <input
                       type="text"
                       required
-                      value={formData.name}
+                      maxLength={6}
+                      value={otp}
                       onChange={(e) =>
-                        setFormData({ ...formData, name: e.target.value })
+                        setOtp(e.target.value.replace(/\D/g, ""))
                       }
-                      placeholder="John Doe"
-                      className={inputBase}
-                      style={{ border: "1px solid #e8e4de" }}
+                      onFocus={handleFocus}
+                      onBlur={handleBlur}
+                      placeholder="000000"
+                      className="w-full px-4 py-4 rounded-[10px] text-center text-[26px] font-extrabold tracking-[12px] text-[#1a1714] bg-white focus:outline-none transition-all"
+                      style={{
+                        border: "1px solid #D8D4CE",
+                        fontFamily: "'Courier New',monospace",
+                      }}
                     />
                   </div>
-                </div>
-                <div>
-                  <Lbl icon={<MailIcon />} text="Email" />
-                  <div className="relative">
-                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#b8b4ae]">
-                      <MailIcon />
+
+                  <button
+                    type="submit"
+                    disabled={isLoading || otp.length !== 6}
+                    className="relative w-full mt-1 bg-[#1a1714] text-white py-3.5 rounded-[10px] text-[13px] font-bold tracking-wide flex items-center justify-center gap-2 hover:bg-[#2E2A26] transition-all cursor-pointer hover:-translate-y-px disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none overflow-hidden"
+                  >
+                    <span
+                      className="absolute inset-0 pointer-events-none"
+                      style={{
+                        background:
+                          "linear-gradient(135deg, rgba(201,168,76,0.15) 0%, transparent 60%)",
+                      }}
+                    />
+                    <span className="relative flex items-center gap-2">
+                      {isLoading ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          Verifying…
+                        </>
+                      ) : (
+                        <>
+                          Verify &amp; create account <ArrowIcon />
+                        </>
+                      )}
                     </span>
-                    <input
-                      type="email"
-                      required
-                      value={formData.email}
-                      onChange={(e) =>
-                        setFormData({ ...formData, email: e.target.value })
-                      }
-                      placeholder="you@example.com"
-                      className={inputBase}
-                      style={{ border: "1px solid #e8e4de" }}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <Lbl icon={<LockIcon />} text="Password" />
-                  <div className="relative">
-                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#b8b4ae]">
-                      <LockIcon />
-                    </span>
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      required
-                      minLength={6}
-                      value={formData.password}
-                      onChange={(e) =>
-                        setFormData({ ...formData, password: e.target.value })
-                      }
-                      placeholder="At least 6 characters"
-                      className={`${inputBase} pr-10`}
-                      style={{ border: "1px solid #e8e4de" }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword((p) => !p)}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#b8b4ae] hover:text-[#9e9890] transition-colors cursor-pointer"
-                    >
-                      {showPassword ? <EyeOffIcon /> : <EyeIcon />}
-                    </button>
-                  </div>
-                </div>
-                <div>
-                  <Lbl icon={<PhoneIcon />} text="Phone" optional />
-                  <div className="relative">
-                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#b8b4ae]">
-                      <PhoneIcon />
-                    </span>
-                    <input
-                      type="tel"
-                      value={formData.phone}
-                      onChange={(e) =>
-                        setFormData({ ...formData, phone: e.target.value })
-                      }
-                      placeholder="+251 9XX XXX XXX"
-                      className={inputBase}
-                      style={{ border: "1px solid #e8e4de" }}
-                    />
-                  </div>
-                </div>
+                  </button>
 
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full mt-1 bg-[#1a1714] text-white py-3.5 rounded-[12px] text-[13px] font-bold flex items-center justify-center gap-2 hover:bg-[#333] transition-all cursor-pointer hover:-translate-y-px hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                >
-                  {isLoading ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />{" "}
-                      Sending code…
-                    </>
-                  ) : (
-                    <>
-                      Continue <ArrowIcon />
-                    </>
-                  )}
-                </button>
-              </form>
-            </>
-          ) : (
-            <>
-              {/* OTP step */}
-              <div className="text-center mb-6">
-                <div className="w-14 h-14 rounded-2xl bg-[#1a1714] flex items-center justify-center mx-auto mb-4 text-white">
-                  <MailIcon />
-                </div>
-                <h2 className="text-[16px] font-extrabold text-[#1a1714] mb-1">
-                  Check your email
-                </h2>
-                <p className="text-[12px] text-[#9e9890]">
-                  We sent a 6-digit code to
-                  <br />
-                  <span className="font-bold text-[#1a1714]">
-                    {formData.email}
-                  </span>
-                </p>
-              </div>
-
-              {error && (
-                <div
-                  className="mb-4 px-3 py-2.5 rounded-[10px] text-[12px] text-red-600 bg-red-50"
-                  style={{ border: "1px solid #fecaca" }}
-                >
-                  {error}
-                </div>
-              )}
-
-              <form onSubmit={handleVerifyOTP} className="flex flex-col gap-3">
-                <div>
-                  <label className="block text-[11px] font-bold text-[#9e9890] uppercase tracking-[0.9px] mb-1.5 text-center">
-                    Verification code
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    maxLength={6}
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-                    placeholder="000000"
-                    className="w-full px-4 py-4 rounded-[11px] text-center text-[26px] font-black tracking-[12px] text-[#1a1714] bg-[#f6f5f3] focus:outline-none focus:bg-white transition-all"
-                    style={{
-                      border: "1px solid #e8e4de",
-                      fontFamily: "'Courier New',monospace",
-                    }}
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={isLoading || otp.length !== 6}
-                  className="w-full mt-1 bg-[#1a1714] text-white py-3.5 rounded-[12px] text-[13px] font-bold flex items-center justify-center gap-2 hover:bg-[#333] transition-all cursor-pointer hover:-translate-y-px hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                >
-                  {isLoading ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />{" "}
-                      Verifying…
-                    </>
-                  ) : (
-                    <>
-                      Verify &amp; Create Account <ArrowIcon />
-                    </>
-                  )}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setStep("details")}
-                  className="flex items-center justify-center gap-1.5 mx-auto text-[12px] font-semibold text-[#9e9890] hover:text-[#1a1714] transition-colors cursor-pointer mt-1"
-                >
-                  <BackIcon /> Back to sign up
-                </button>
-              </form>
-            </>
-          )}
+                  <button
+                    type="button"
+                    onClick={() => setStep("details")}
+                    className="flex items-center justify-center gap-1.5 mx-auto text-[12px] font-semibold text-[#9e9890] hover:text-[#1a1714] transition-colors cursor-pointer mt-1"
+                  >
+                    <BackIcon /> Back to sign up
+                  </button>
+                </form>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
-
-        <p className="text-center text-[12px] text-[#9e9890] mt-5">
-          Already have an account?{" "}
-          <Link
-            href="/login"
-            className="font-bold text-[#1a1714] hover:underline"
-          >
-            Log in
-          </Link>
-        </p>
       </div>
     </div>
   );

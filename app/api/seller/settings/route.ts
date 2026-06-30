@@ -1,21 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 
 export const dynamic = "force-dynamic";
 
 // GET - Fetch seller settings (minimal data)
 export async function GET(req: NextRequest) {
   try {
-    const userStr = req.headers.get("x-user-data");
-    if (!userStr) {
+    const session = await auth();
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const user = JSON.parse(userStr);
-
-    // ✅ SELECT ONLY WHAT WE NEED
     const seller = await prisma.seller.findUnique({
-      where: { userId: user.id },
+      where: { userId: session.user.id },
       select: {
         id: true,
         brandName: true,
@@ -45,12 +43,11 @@ export async function GET(req: NextRequest) {
 // PUT - Update seller settings
 export async function PUT(req: NextRequest) {
   try {
-    const userStr = req.headers.get("x-user-data");
-    if (!userStr) {
+    const session = await auth();
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const user = JSON.parse(userStr);
     const body = await req.json();
 
     const {
@@ -63,7 +60,6 @@ export async function PUT(req: NextRequest) {
       location,
     } = body;
 
-    // ✅ VALIDATE SLUG WITHOUT EXTRA QUERY
     if (storeSlug && !/^[a-z0-9-]+$/.test(storeSlug)) {
       return NextResponse.json(
         {
@@ -75,9 +71,8 @@ export async function PUT(req: NextRequest) {
     }
 
     try {
-      // ✅ UPDATE WITH UPSERT PATTERN
       const updated = await prisma.seller.update({
-        where: { userId: user.id },
+        where: { userId: session.user.id },
         data: {
           ...(brandName && { brandName }),
           ...(storeSlug && { storeSlug }),
@@ -101,7 +96,6 @@ export async function PUT(req: NextRequest) {
         seller: updated,
       });
     } catch (error: any) {
-      // ✅ HANDLE UNIQUE CONSTRAINT ERROR
       if (error.code === "P2002") {
         return NextResponse.json(
           { error: "This store URL is already taken" },

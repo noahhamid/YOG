@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 
 export const dynamic = 'force-dynamic';
 
@@ -14,18 +15,16 @@ export async function PATCH(
 
     console.log(`🔍 Editing product ID: ${productId}`);
 
-    const userStr = req.headers.get("x-user-data");
-    if (!userStr) {
+    const session = await auth();
+    if (!session?.user?.id) {
       return NextResponse.json(
         { error: "Please sign in first" },
         { status: 401 }
       );
     }
 
-    const user = JSON.parse(userStr);
-
     const seller = await prisma.seller.findUnique({
-      where: { userId: user.id },
+      where: { userId: session.user.id },
     });
 
     if (!seller) {
@@ -68,7 +67,6 @@ export async function PATCH(
 
     console.log(`✏️ Updating product: ${title}`);
 
-    // Delete old variants and images
     await prisma.productVariant.deleteMany({
       where: { productId },
     });
@@ -77,7 +75,6 @@ export async function PATCH(
       where: { productId },
     });
 
-    // Update product with new data
     const updatedProduct = await prisma.product.update({
       where: { id: productId },
       data: {
@@ -136,18 +133,16 @@ export async function DELETE(
 
     console.log(`🔍 Deleting product ID: ${productId}`);
 
-    const userStr = req.headers.get("x-user-data");
-    if (!userStr) {
+    const session = await auth();
+    if (!session?.user?.id) {
       return NextResponse.json(
         { error: "Please sign in first" },
         { status: 401 }
       );
     }
 
-    const user = JSON.parse(userStr);
-
     const seller = await prisma.seller.findUnique({
-      where: { userId: user.id },
+      where: { userId: session.user.id },
     });
 
     if (!seller) {
@@ -190,7 +185,7 @@ export async function DELETE(
   } catch (error: any) {
     console.error("❌ Error deleting product:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to delete product" },
+      { error: error.message || "Failed to update product" },
       { status: 500 }
     );
   }

@@ -1,18 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   try {
-    const userStr = req.headers.get("x-user-data");
-    if (!userStr)
+    const session = await auth();
+    if (!session?.user?.id)
       return NextResponse.json({ error: "Please sign in first" }, { status: 401 });
 
-    const user = JSON.parse(userStr);
-
     const seller = await prisma.seller.findUnique({
-      where: { userId: user.id },
+      where: { userId: session.user.id },
       select: {
         id: true,
         brandName: true,
@@ -31,8 +30,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ status: "none", approved: false });
     }
 
-    // Use the new status field as source of truth
-    const status = seller.status.toLowerCase(); // "pending","approved","rejected","paused","suspended","deleted"
+    const status = seller.status.toLowerCase();
 
     return NextResponse.json({
       status,

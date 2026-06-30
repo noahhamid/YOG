@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import Link from "next/link";
@@ -71,6 +72,9 @@ const AlertIco = (p: IconProps) => (
 );
 const ClockIco = (p: IconProps) => (
   <Ico {...p} d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM12 6v6l4 2" />
+);
+const ShieldIco = (p: IconProps) => (
+  <Ico {...p} d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
 );
 const LoaderIcon = ({ size = 16 }: { size?: number }) => (
   <svg
@@ -178,6 +182,7 @@ function Field({ label, icon: Icon, children }: FieldProps) {
 
 export default function AccountPage() {
   const router = useRouter();
+  const { status: sessionStatus } = useSession();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [toast, setToast] = useState<{
@@ -188,10 +193,8 @@ export default function AccountPage() {
   const [deletePassword, setDeletePassword] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-  });
+  const [formData, setFormData] = useState({ name: "", email: "" });
+  const [hasPassword, setHasPassword] = useState(true);
 
   const [lastNameChange, setLastNameChange] = useState<Date | null>(null);
   const [canChangeName, setCanChangeName] = useState(true);
@@ -209,20 +212,17 @@ export default function AccountPage() {
   };
 
   useEffect(() => {
-    loadUser();
-  }, []);
-
-  const loadUser = async () => {
-    const userStr = localStorage.getItem("yog_user");
-    if (!userStr) {
+    if (sessionStatus === "loading") return;
+    if (sessionStatus === "unauthenticated") {
       router.push("/login");
       return;
     }
+    loadUser();
+  }, [sessionStatus]);
+
+  const loadUser = async () => {
     try {
-      const user = JSON.parse(userStr);
-      const res = await fetch("/api/user/profile", {
-        headers: { "x-user-data": userStr },
-      });
+      const res = await fetch("/api/user/profile");
       if (!res.ok) throw new Error();
       const data = await res.json();
       if (data.user) {
@@ -230,8 +230,8 @@ export default function AccountPage() {
           name: data.user.name || "",
           email: data.user.email || "",
         });
+        setHasPassword(!!data.user.hasPassword);
 
-        // Check if user can change name
         if (data.user.lastNameChange) {
           const lastChange = new Date(data.user.lastNameChange);
           const twoWeeksAgo = new Date();
@@ -263,7 +263,6 @@ export default function AccountPage() {
       showToast("error", "Name is required");
       return;
     }
-
     if (!canChangeName) {
       showToast(
         "error",
@@ -271,30 +270,16 @@ export default function AccountPage() {
       );
       return;
     }
-
     setIsSaving(true);
-
     try {
-      const userStr = localStorage.getItem("yog_user");
       const res = await fetch("/api/user/profile", {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "x-user-data": userStr || "",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: formData.name }),
       });
-
       const data = await res.json();
-
       if (res.ok) {
         showToast("success", "Name updated successfully!");
-        const user = JSON.parse(userStr || "{}");
-        const updated = { ...user, name: formData.name };
-        localStorage.setItem("yog_user", JSON.stringify(updated));
-        window.dispatchEvent(new Event("userLoggedIn"));
-
-        // Update restrictions
         setCanChangeName(false);
         setDaysUntilNameChange(14);
         setLastNameChange(new Date());
@@ -309,7 +294,7 @@ export default function AccountPage() {
   };
 
   const handleChangePassword = async () => {
-    if (!passwordData.currentPassword) {
+    if (hasPassword && !passwordData.currentPassword) {
       showToast("error", "Current password is required");
       return;
     }
@@ -329,13 +314,9 @@ export default function AccountPage() {
     setIsSaving(true);
 
     try {
-      const userStr = localStorage.getItem("yog_user");
       const res = await fetch("/api/user/change-password", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-user-data": userStr || "",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           currentPassword: passwordData.currentPassword,
           newPassword: passwordData.newPassword,
@@ -345,24 +326,30 @@ export default function AccountPage() {
       const data = await res.json();
 
       if (res.ok) {
-        showToast("success", "Password changed successfully!");
+        showToast(
+          "success",
+          hasPassword
+            ? "Password changed successfully!"
+            : "Password set successfully!",
+        );
         setPasswordData({
           currentPassword: "",
           newPassword: "",
           confirmPassword: "",
         });
+        setHasPassword(true);
       } else {
-        showToast("error", data.error || "Failed to change password");
+        showToast("error", data.error || "Failed to update password");
       }
     } catch {
-      showToast("error", "Failed to change password");
+      showToast("error", "Failed to update password");
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleDeleteAccount = async () => {
-    if (!deletePassword) {
+    if (hasPassword && !deletePassword) {
       showToast("error", "Please enter your password");
       return;
     }
@@ -370,20 +357,15 @@ export default function AccountPage() {
     setIsDeleting(true);
 
     try {
-      const userStr = localStorage.getItem("yog_user");
       const res = await fetch("/api/user/delete", {
         method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          "x-user-data": userStr || "",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password: deletePassword }),
       });
 
       const data = await res.json();
 
       if (res.ok) {
-        localStorage.removeItem("yog_user");
         window.location.href = "/";
       } else {
         showToast("error", data.error || "Failed to delete account");
@@ -395,7 +377,7 @@ export default function AccountPage() {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || sessionStatus === "loading") {
     return (
       <>
         <style>{CSS}</style>
@@ -424,7 +406,6 @@ export default function AccountPage() {
             </p>
           </div>
 
-          {/* Toast */}
           <AnimatePresence>
             {toast && (
               <motion.div
@@ -458,7 +439,6 @@ export default function AccountPage() {
           <div className="sp-card">
             <h2 className="sp-section-title">Personal Information</h2>
 
-            {/* Name Change Restriction Notice */}
             {!canChangeName && (
               <div
                 className="mb-4 px-4 py-3 rounded-xl flex items-start gap-3"
@@ -540,53 +520,75 @@ export default function AccountPage() {
             </button>
           </div>
 
-          {/* Change Password */}
+          {/* Password section — conditional Set vs Change */}
           <div className="sp-card">
-            <h2 className="sp-section-title">Change Password</h2>
+            <h2 className="sp-section-title">
+              {hasPassword ? "Change Password" : "Set a Password"}
+            </h2>
 
-            <div
-              className="mb-4 px-4 py-3 rounded-xl"
-              style={{ background: "#eff6ff", border: "1px solid #bfdbfe" }}
+            {!hasPassword && (
+              <div
+                className="mb-4 px-4 py-3 rounded-xl flex items-start gap-3"
+                style={{ background: "#eff6ff", border: "1px solid #bfdbfe" }}
+              >
+                <ShieldIco size={16} />
+                <p style={{ fontSize: 12, color: "#1e3a8a", lineHeight: 1.5 }}>
+                  Your account currently signs in with Google only. Set a
+                  password to also log in with your email directly.
+                </p>
+              </div>
+            )}
+
+            {hasPassword && (
+              <div
+                className="mb-4 px-4 py-3 rounded-xl"
+                style={{ background: "#eff6ff", border: "1px solid #bfdbfe" }}
+              >
+                <p
+                  style={{
+                    fontSize: 12,
+                    color: "#1e3a8a",
+                    fontWeight: 700,
+                    marginBottom: 8,
+                  }}
+                >
+                  Forgot your password?
+                </p>
+                <Link
+                  href="/forgot-password"
+                  style={{
+                    fontSize: 12,
+                    color: "#2563eb",
+                    fontWeight: 700,
+                    textDecoration: "none",
+                  }}
+                  className="hover:underline"
+                >
+                  Reset password via email →
+                </Link>
+              </div>
+            )}
+
+            {hasPassword && (
+              <Field label="Current Password" icon={LockIco}>
+                <input
+                  className="sp-input"
+                  type="password"
+                  value={passwordData.currentPassword}
+                  onChange={(e) =>
+                    setPasswordData((p) => ({
+                      ...p,
+                      currentPassword: e.target.value,
+                    }))
+                  }
+                  placeholder="••••••••"
+                />
+              </Field>
+            )}
+            <Field
+              label={hasPassword ? "New Password" : "Password"}
+              icon={LockIco}
             >
-              <p
-                style={{
-                  fontSize: 12,
-                  color: "#1e3a8a",
-                  fontWeight: 700,
-                  marginBottom: 8,
-                }}
-              >
-                Forgot your password?
-              </p>
-              <Link
-                href="/forgot-password"
-                style={{
-                  fontSize: 12,
-                  color: "#2563eb",
-                  fontWeight: 700,
-                  textDecoration: "none",
-                }}
-                className="hover:underline"
-              >
-                Reset password via email →
-              </Link>
-            </div>
-
-            <Field label="Current Password" icon={LockIco}>
-              <input
-                className="sp-input"
-                type="password"
-                value={passwordData.currentPassword}
-                onChange={(e) =>
-                  setPasswordData((p) => ({
-                    ...p,
-                    currentPassword: e.target.value,
-                  }))
-                }
-                placeholder="••••••••"
-              />
-            </Field>
-            <Field label="New Password" icon={LockIco}>
               <input
                 className="sp-input"
                 type="password"
@@ -600,7 +602,7 @@ export default function AccountPage() {
                 placeholder="••••••••"
               />
             </Field>
-            <Field label="Confirm New Password" icon={LockIco}>
+            <Field label="Confirm Password" icon={LockIco}>
               <input
                 className="sp-input"
                 type="password"
@@ -621,11 +623,13 @@ export default function AccountPage() {
             >
               {isSaving ? (
                 <>
-                  <LoaderIcon size={14} /> Updating...
+                  <LoaderIcon size={14} />{" "}
+                  {hasPassword ? "Updating..." : "Setting..."}
                 </>
               ) : (
                 <>
-                  <LockIco size={14} /> Update Password
+                  <LockIco size={14} />{" "}
+                  {hasPassword ? "Update Password" : "Set Password"}
                 </>
               )}
             </button>
@@ -654,7 +658,6 @@ export default function AccountPage() {
         </div>
       </div>
 
-      {/* Delete Modal */}
       <AnimatePresence>
         {showDeleteModal && (
           <motion.div
@@ -689,16 +692,23 @@ export default function AccountPage() {
                   permanently removed and cannot be recovered.
                 </p>
 
-                <Field label="Enter Your Password" icon={LockIco}>
-                  <input
-                    className="sp-input"
-                    type="password"
-                    value={deletePassword}
-                    onChange={(e) => setDeletePassword(e.target.value)}
-                    placeholder="Enter your password to confirm"
-                    autoFocus
-                  />
-                </Field>
+                {hasPassword ? (
+                  <Field label="Enter Your Password" icon={LockIco}>
+                    <input
+                      className="sp-input"
+                      type="password"
+                      value={deletePassword}
+                      onChange={(e) => setDeletePassword(e.target.value)}
+                      placeholder="Enter your password to confirm"
+                      autoFocus
+                    />
+                  </Field>
+                ) : (
+                  <p style={{ fontSize: 12, color: "var(--muted)" }}>
+                    Click below to confirm — your Google account session will
+                    verify your identity.
+                  </p>
+                )}
               </div>
               <div className="sp-modal-footer">
                 <button
@@ -714,7 +724,7 @@ export default function AccountPage() {
                 </button>
                 <button
                   onClick={handleDeleteAccount}
-                  disabled={!deletePassword || isDeleting}
+                  disabled={(hasPassword && !deletePassword) || isDeleting}
                   className="sp-btn sp-btn-danger"
                 >
                   {isDeleting ? (

@@ -1,24 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   try {
-    // Get logged-in user from request
-    const userStr = req.headers.get("x-user-data");
-    if (!userStr) {
+    const session = await auth();
+    if (!session?.user?.id) {
       return NextResponse.json(
         { error: "Please sign in first" },
         { status: 401 }
       );
     }
 
-    const user = JSON.parse(userStr);
-
-    // Find seller
     const seller = await prisma.seller.findUnique({
-      where: { userId: user.id },
+      where: { userId: session.user.id },
     });
 
     if (!seller) {
@@ -48,7 +45,6 @@ export async function POST(req: NextRequest) {
       images,
     } = body;
 
-    // Validation
     if (!title || !description || !price || !category) {
       return NextResponse.json(
         { error: "Missing required fields" },
@@ -72,7 +68,6 @@ export async function POST(req: NextRequest) {
 
     console.log(`📦 Creating product: ${title}`);
 
-    // Create product with variants and images
     const product = await prisma.product.create({
       data: {
         sellerId: seller.id,
@@ -109,7 +104,6 @@ export async function POST(req: NextRequest) {
 
     console.log(`✅ Product created: ${product.id}`);
 
-    // ✅ CREATE NOTIFICATIONS FOR FOLLOWERS (only if published)
     if (product.status === "PUBLISHED") {
       try {
         const followers = await prisma.follow.findMany({
@@ -134,7 +128,6 @@ export async function POST(req: NextRequest) {
         }
       } catch (notifError) {
         console.error("❌ Error creating notifications:", notifError);
-        // Don't fail product creation if notifications fail
       }
     }
 
@@ -154,27 +147,22 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
-    // Get logged-in user
-    const userStr = req.headers.get("x-user-data");
-    if (!userStr) {
+    const session = await auth();
+    if (!session?.user?.id) {
       return NextResponse.json(
         { error: "Please sign in first" },
         { status: 401 }
       );
     }
 
-    const user = JSON.parse(userStr);
-
-    // Find seller
     const seller = await prisma.seller.findUnique({
-      where: { userId: user.id },
+      where: { userId: session.user.id },
     });
 
     if (!seller) {
       return NextResponse.json({ products: [] });
     }
 
-    // Get seller's products
     const products = await prisma.product.findMany({
       where: { sellerId: seller.id },
       include: {

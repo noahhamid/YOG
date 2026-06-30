@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { v2 as cloudinary } from "cloudinary";
+import { auth } from "@/auth";
 
 cloudinary.config({
   cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
@@ -9,8 +10,8 @@ cloudinary.config({
 
 export async function POST(req: NextRequest) {
   try {
-    const userStr = req.headers.get("x-user-data");
-    if (!userStr) {
+    const session = await auth();
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -22,7 +23,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    // ✅ VALIDATE FILE SIZE
     if (file.size > 5 * 1024 * 1024) {
       return NextResponse.json(
         { error: "File too large (max 5MB)" },
@@ -30,11 +30,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Convert file to buffer
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // ✅ UPLOAD TO CLOUDINARY WITH OPTIMIZATION
     const result = await new Promise((resolve, reject) => {
       cloudinary.uploader
         .upload_stream(

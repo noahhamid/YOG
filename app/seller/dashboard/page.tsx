@@ -2,12 +2,13 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import AddProductForm from "@/components/AddProductForm";
 import EditProductForm from "@/components/EditProductForm";
 import OrdersTab from "@/components/OrdersTab";
-// ─── Shared order types (defined here, mirrored in OrderCard.tsx / OrdersTab.tsx) ──
+
 interface Order {
   id: string;
   orderNumber: string;
@@ -711,11 +712,7 @@ function StatusGate({ sellerStatus }: { sellerStatus: SellerStatusResponse }) {
 // ─── Main dashboard ───────────────────────────────────────────────────────────
 export default function SellerDashboard() {
   const router = useRouter();
-  const [user, setUser] = useState<{
-    name: string;
-    role: string;
-    id: string;
-  } | null>(null);
+  const { data: session, status: sessionStatus } = useSession();
   const [sellerStatus, setSellerStatus] = useState<SellerStatusResponse | null>(
     null,
   );
@@ -739,30 +736,31 @@ export default function SellerDashboard() {
   const [activeTab, setActiveTab] = useState<"products" | "orders">("products");
 
   useEffect(() => {
+    if (sessionStatus === "loading") return;
+
+    if (sessionStatus === "unauthenticated") {
+      router.push("/login");
+      return;
+    }
+
+    if (session?.user?.role !== "SELLER" && session?.user?.role !== "ADMIN") {
+      router.push("/seller/apply");
+      return;
+    }
+
     checkAuth();
-  }, []);
+  }, [sessionStatus, session]);
 
   useEffect(() => {
-    if (isLoading || !user) return;
+    if (isLoading || !session?.user) return;
     (async () => {
       try {
-        const u = localStorage.getItem("yog_user") || "";
         const [all, p, c, s, d] = await Promise.all([
-          fetch("/api/seller/orders", { headers: { "x-user-data": u } }).then(
-            (r) => r.json(),
-          ),
-          fetch("/api/seller/orders?status=pending", {
-            headers: { "x-user-data": u },
-          }).then((r) => r.json()),
-          fetch("/api/seller/orders?status=confirmed", {
-            headers: { "x-user-data": u },
-          }).then((r) => r.json()),
-          fetch("/api/seller/orders?status=shipped", {
-            headers: { "x-user-data": u },
-          }).then((r) => r.json()),
-          fetch("/api/seller/orders?status=delivered", {
-            headers: { "x-user-data": u },
-          }).then((r) => r.json()),
+          fetch("/api/seller/orders").then((r) => r.json()),
+          fetch("/api/seller/orders?status=pending").then((r) => r.json()),
+          fetch("/api/seller/orders?status=confirmed").then((r) => r.json()),
+          fetch("/api/seller/orders?status=shipped").then((r) => r.json()),
+          fetch("/api/seller/orders?status=delivered").then((r) => r.json()),
         ]);
         setOrdersCache({
           all: (all.orders || []) as Order[],
@@ -775,44 +773,29 @@ export default function SellerDashboard() {
         setOrderStats(all.stats);
       } catch {}
     })();
-  }, [isLoading, user]);
+  }, [isLoading, session]);
 
   const checkAuth = async () => {
-    const u = localStorage.getItem("yog_user");
-    if (!u) {
-      router.push("/login");
-      return;
-    }
-    const data = JSON.parse(u);
-    setUser(data);
-    if (data.role !== "SELLER" && data.role !== "ADMIN") {
-      router.push("/seller/apply");
-      return;
-    }
-    if (data.role === "ADMIN") {
+    if (session?.user?.role === "ADMIN") {
       setIsLoading(false);
-      await fetchProducts(u);
+      await fetchProducts();
       return;
     }
-    await checkSellerStatus(u);
-    await fetchProducts(u);
+    await checkSellerStatus();
+    await fetchProducts();
   };
 
-  const checkSellerStatus = async (u: string) => {
+  const checkSellerStatus = async () => {
     try {
-      const r = await fetch("/api/seller/status", {
-        headers: { "x-user-data": u },
-      });
+      const r = await fetch("/api/seller/status");
       setSellerStatus(await r.json());
     } catch {}
     setIsLoading(false);
   };
 
-  const fetchProducts = async (u?: string) => {
+  const fetchProducts = async () => {
     try {
-      const r = await fetch("/api/products", {
-        headers: { "x-user-data": u || localStorage.getItem("yog_user") || "" },
-      });
+      const r = await fetch("/api/products");
       const d = await r.json();
       if (r.ok) setProducts(d.products);
     } catch {}
@@ -821,10 +804,8 @@ export default function SellerDashboard() {
   const handleDeleteProduct = async (id: string) => {
     if (!confirm("Delete this product? This can't be undone.")) return;
     try {
-      const u = localStorage.getItem("yog_user") || "";
       const r = await fetch(`/api/products/${id}`, {
         method: "DELETE",
-        headers: { "x-user-data": u },
       });
       if (r.ok) {
         alert("Product deleted!");
@@ -839,23 +820,12 @@ export default function SellerDashboard() {
   };
 
   const refreshOrdersCache = async () => {
-    const u = localStorage.getItem("yog_user") || "";
     const [all, p, c, s, d] = await Promise.all([
-      fetch("/api/seller/orders", { headers: { "x-user-data": u } }).then((r) =>
-        r.json(),
-      ),
-      fetch("/api/seller/orders?status=pending", {
-        headers: { "x-user-data": u },
-      }).then((r) => r.json()),
-      fetch("/api/seller/orders?status=confirmed", {
-        headers: { "x-user-data": u },
-      }).then((r) => r.json()),
-      fetch("/api/seller/orders?status=shipped", {
-        headers: { "x-user-data": u },
-      }).then((r) => r.json()),
-      fetch("/api/seller/orders?status=delivered", {
-        headers: { "x-user-data": u },
-      }).then((r) => r.json()),
+      fetch("/api/seller/orders").then((r) => r.json()),
+      fetch("/api/seller/orders?status=pending").then((r) => r.json()),
+      fetch("/api/seller/orders?status=confirmed").then((r) => r.json()),
+      fetch("/api/seller/orders?status=shipped").then((r) => r.json()),
+      fetch("/api/seller/orders?status=delivered").then((r) => r.json()),
     ]);
     setOrdersCache({
       all: (all.orders || []) as Order[],
@@ -868,7 +838,7 @@ export default function SellerDashboard() {
     setOrderStats(all.stats);
   };
 
-  if (isLoading)
+  if (isLoading || sessionStatus === "loading")
     return (
       <>
         <style>{CSS}</style>
@@ -897,7 +867,6 @@ export default function SellerDashboard() {
       </>
     );
   }
-
   const totalStock = products.reduce(
     (s, p) => s + p.variants.reduce((vs, v) => vs + v.quantity, 0),
     0,
@@ -957,8 +926,10 @@ export default function SellerDashboard() {
               </div>
               <p className="sd-header-sub">
                 Welcome back,{" "}
-                <strong style={{ color: "var(--text)" }}>{user?.name}</strong> —
-                here&apos;s your store overview
+                <strong style={{ color: "var(--text)" }}>
+                  {session?.user?.name}
+                </strong>{" "}
+                — here&apos;s your store overview
               </p>
             </div>
             <div className="sd-header-actions">

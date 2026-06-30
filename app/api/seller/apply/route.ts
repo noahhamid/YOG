@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 
 export const dynamic = 'force-dynamic';
 
-// Helper function to generate slug
 function generateSlug(brandName: string): string {
   return brandName
     .toLowerCase()
@@ -13,6 +13,14 @@ function generateSlug(brandName: string): string {
 
 export async function POST(req: NextRequest) {
   try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: "Please sign in first" },
+        { status: 401 }
+      );
+    }
+
     const body = await req.json();
     const {
       brandName,
@@ -27,7 +35,6 @@ export async function POST(req: NextRequest) {
       description,
     } = body;
 
-    // Validation
     if (!brandName || !ownerName || !phone || !email || !location || !clothingType || !businessType) {
       return NextResponse.json(
         { error: "Missing required fields" },
@@ -35,12 +42,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Get logged-in user from request body email
-    const userEmail = email.toLowerCase();
-
-    // Find user by email
     const user = await prisma.user.findUnique({
-      where: { email: userEmail },
+      where: { id: session.user.id },
       include: { seller: true },
     });
 
@@ -51,12 +54,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Generate slug
     const slug = generateSlug(brandName);
+    const userEmail = email.toLowerCase();
 
-    // Check if user already has a seller application
     if (user.seller) {
-      // If rejected, allow reapplication by updating existing seller
       if (user.seller.rejectionReason) {
         console.log(`🔄 Reapplying seller: ${user.id}`);
 
@@ -74,8 +75,8 @@ export async function POST(req: NextRequest) {
             experience: experience || null,
             description: description || null,
             approved: false,
-            rejectionReason: null, // Clear rejection reason
-            storeSlug: slug, // Update slug
+            rejectionReason: null,
+            storeSlug: slug,
           },
         });
 
@@ -94,7 +95,6 @@ export async function POST(req: NextRequest) {
           { status: 201 }
         );
       } else {
-        // Already has a pending or approved application
         return NextResponse.json(
           { error: "You have already applied to become a seller" },
           { status: 400 }
@@ -104,7 +104,6 @@ export async function POST(req: NextRequest) {
 
     console.log(`📝 Creating seller application for user: ${user.id}`);
 
-    // Create new seller application
     const seller = await prisma.seller.create({
       data: {
         userId: user.id,
@@ -119,11 +118,10 @@ export async function POST(req: NextRequest) {
         experience: experience || null,
         description: description || null,
         approved: false,
-        storeSlug: slug, // Add slug
+        storeSlug: slug,
       },
     });
 
-    // Update user role to SELLER (but not approved yet)
     await prisma.user.update({
       where: { id: user.id },
       data: { role: "SELLER" },
