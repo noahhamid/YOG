@@ -6,6 +6,7 @@ import { UserRole } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+   debug: true, 
   adapter: {
     createUser: async (data: any) => {
   const { emailVerified, ...rest } = data;
