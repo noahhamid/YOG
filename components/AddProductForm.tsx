@@ -504,10 +504,8 @@ export default function AddProductForm({
       const fd = new FormData();
       fd.append("file", compressed, file.name);
       fd.append("type", "product");
-      const userStr = localStorage.getItem("yog_user");
       const res = await fetch("/api/upload", {
         method: "POST",
-        headers: { "x-user-data": userStr ?? "" },
         body: fd,
       });
       const data = (await res.json()) as { url?: string; error?: string };
@@ -571,13 +569,9 @@ export default function AddProductForm({
         variants,
         images,
       };
-      const userStr = localStorage.getItem("yog_user");
       const res = await fetch("/api/products", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-user-data": userStr ?? "",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
       const data = (await res.json()) as { product?: unknown; error?: string };
@@ -600,7 +594,6 @@ export default function AddProductForm({
     }
   };
 
-  // ── CSS ─────────────────────────────────────────────────────────────────────
   const css = `
     @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&display=swap');
     :root {
