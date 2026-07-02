@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 
 export async function POST(req: NextRequest) {
   try {
-    const userDataHeader = req.headers.get("x-user-data");
-    if (!userDataHeader)
+    const session = await auth();
+    if (!session?.user?.id)
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-    const userData = JSON.parse(userDataHeader);
-    if (userData.role !== "ADMIN")
+    if (session.user.role !== "ADMIN")
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const { sellerId, action, reason } = await req.json();
@@ -42,8 +41,7 @@ export async function POST(req: NextRequest) {
           suspendedReason: null,
         };
         notifTitle = "🎉 Your store has been approved!";
-        notifMessage =
-          "Congratulations! Your seller application has been approved. You can now add products and start selling on Yog Fashion.";
+        notifMessage = "Congratulations! Your seller application has been approved. You can now add products and start selling on Yog Fashion.";
         break;
 
       case "reject":
@@ -53,9 +51,7 @@ export async function POST(req: NextRequest) {
           rejectionReason: reason || "Application rejected by admin",
         };
         notifTitle = "Application Not Approved";
-        notifMessage = `Your seller application was not approved. Reason: ${
-          reason || "Application rejected by admin"
-        }. You may reapply after addressing the issue.`;
+        notifMessage = `Your seller application was not approved. Reason: ${reason || "Application rejected by admin"}. You may reapply after addressing the issue.`;
         break;
 
       case "pause":
@@ -65,9 +61,7 @@ export async function POST(req: NextRequest) {
           pausedReason: reason || "Account paused by admin",
         };
         notifTitle = "⚠️ Your store has been paused";
-        notifMessage = `Your seller account has been temporarily paused. Reason: ${
-          reason || "Account paused by admin"
-        }. Please contact support to resolve this.`;
+        notifMessage = `Your seller account has been temporarily paused. Reason: ${reason || "Account paused by admin"}. Please contact support to resolve this.`;
         break;
 
       case "unpause":
@@ -77,8 +71,7 @@ export async function POST(req: NextRequest) {
           pausedReason: null,
         };
         notifTitle = "✅ Your store has been reactivated";
-        notifMessage =
-          "Your seller account has been reactivated. You can now manage your products and receive orders again.";
+        notifMessage = "Your seller account has been reactivated. You can now manage your products and receive orders again.";
         break;
 
       case "suspend":
@@ -92,9 +85,7 @@ export async function POST(req: NextRequest) {
           data: { status: "ARCHIVED" },
         });
         notifTitle = "🚫 Your store has been suspended";
-        notifMessage = `Your seller account has been suspended and your products have been hidden. Reason: ${
-          reason || "Account suspended by admin"
-        }. Contact support if you believe this is a mistake.`;
+        notifMessage = `Your seller account has been suspended and your products have been hidden. Reason: ${reason || "Account suspended by admin"}. Contact support if you believe this is a mistake.`;
         break;
 
       case "unsuspend":
@@ -108,8 +99,7 @@ export async function POST(req: NextRequest) {
           data: { status: "PUBLISHED" },
         });
         notifTitle = "✅ Suspension lifted";
-        notifMessage =
-          "Your seller account has been unsuspended and your products are live again. Welcome back to Yog Fashion.";
+        notifMessage = "Your seller account has been unsuspended and your products are live again. Welcome back to Yog Fashion.";
         break;
 
       case "delete":
@@ -122,8 +112,7 @@ export async function POST(req: NextRequest) {
           data: { status: "ARCHIVED" },
         });
         notifTitle = "Account Deleted";
-        notifMessage =
-          "Your seller account has been permanently deleted along with all your products. Contact support if you have questions.";
+        notifMessage = "Your seller account has been permanently deleted along with all your products. Contact support if you have questions.";
         break;
 
       default:
@@ -135,7 +124,6 @@ export async function POST(req: NextRequest) {
       data: updateData,
     });
 
-    // Notify the seller in-app
     await prisma.notification.create({
       data: {
         userId: seller.userId,

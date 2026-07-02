@@ -1,24 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   try {
-    const userStr = req.headers.get("x-user-data");
-    if (!userStr) {
+    const session = await auth();
+    if (!session?.user?.id) {
       return NextResponse.json(
         { error: "Please sign in to view following" },
         { status: 401 }
       );
     }
 
-    const user = JSON.parse(userStr);
-
-    // Get all sellers the user is following
     const following = await prisma.follow.findMany({
       where: {
-        userId: user.id,
+        userId: session.user.id,
       },
       include: {
         seller: {
@@ -37,7 +35,7 @@ export async function GET(req: NextRequest) {
                 products: {
                   where: { status: "PUBLISHED" },
                 },
-                followersList: true, // ✅ COUNT ACTUAL FOLLOWERS
+                followersList: true,
               },
             },
           },
@@ -56,7 +54,7 @@ export async function GET(req: NextRequest) {
         seller: {
           ...f.seller,
           totalProducts: f.seller._count.products,
-          followers: f.seller._count.followersList, // ✅ USE REAL COUNT FROM FOLLOW TABLE
+          followers: f.seller._count.followersList,
         },
       })),
     });

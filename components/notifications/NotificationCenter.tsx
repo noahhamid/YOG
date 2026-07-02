@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState, useCallback } from "react";
+import { useSession } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
@@ -185,6 +186,7 @@ export default function NotificationCenter({
   onUnreadChange,
   onNewNotification,
 }: NotificationCenterProps) {
+  const { data: session } = useSession();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "unread">("all");
@@ -195,15 +197,12 @@ export default function NotificationCenter({
   // ─── Core fetch ────────────────────────────────────────────────────────────
   const fetchNotifications = useCallback(
     async (silent = false) => {
-      const userStr = localStorage.getItem("yog_user");
-      if (!userStr) return;
+      if (!session?.user?.id) return;
 
       if (!silent) setIsLoading(true);
 
       try {
-        const res = await fetch("/api/notifications", {
-          headers: { "x-user-data": userStr },
-        });
+        const res = await fetch("/api/notifications");
         const data = await res.json();
         if (!data.notifications) return;
 
@@ -231,31 +230,27 @@ export default function NotificationCenter({
         if (!silent) setIsLoading(false);
       }
     },
-    [onUnreadChange, onNewNotification],
+    [session, onUnreadChange, onNewNotification],
   );
 
-  // ─── Initial load when panel opens ────────────────────────────────────────
   useEffect(() => {
     if (isOpen) fetchNotifications(false);
   }, [isOpen, fetchNotifications]);
 
-  // ─── Background poll ───────────────────────────────────────────────────────
   useEffect(() => {
+    if (!session?.user?.id) return;
     const firstPoll = setTimeout(() => fetchNotifications(true), 3000);
     const interval = setInterval(() => fetchNotifications(true), POLL_INTERVAL);
     return () => {
       clearTimeout(firstPoll);
       clearInterval(interval);
     };
-  }, [fetchNotifications]);
+  }, [fetchNotifications, session]);
 
-  // ─── Actions ───────────────────────────────────────────────────────────────
   const markAsRead = async (id: string) => {
-    const userStr = localStorage.getItem("yog_user");
-    if (!userStr) return;
     await fetch("/api/notifications", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-user-data": userStr },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ notificationId: id }),
     });
     setNotifications((prev) =>
@@ -266,11 +261,9 @@ export default function NotificationCenter({
   };
 
   const markAllAsRead = async () => {
-    const userStr = localStorage.getItem("yog_user");
-    if (!userStr) return;
     await fetch("/api/notifications", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-user-data": userStr },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ markAllRead: true }),
     });
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
@@ -278,17 +271,13 @@ export default function NotificationCenter({
   };
 
   const deleteNotification = async (id: string) => {
-    const userStr = localStorage.getItem("yog_user");
-    if (!userStr) return;
     await fetch(`/api/notifications?id=${id}`, {
       method: "DELETE",
-      headers: { "x-user-data": userStr },
     });
     const remaining = notifications.filter((n) => n.id !== id);
     setNotifications(remaining);
     onUnreadChange?.(remaining.filter((n) => !n.read).length);
   };
-
   // ─── Helpers ───────────────────────────────────────────────────────────────
   const getLink = (n: Notification) => {
     if (n.type === "ORDER_UPDATE") return "/seller/dashboard?tab=orders";

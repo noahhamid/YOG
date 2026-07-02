@@ -195,12 +195,10 @@ export default function OrdersTab({
     newStatus: string,
   ): Promise<void> => {
     try {
-      const userStr = localStorage.getItem("yog_user");
       const res = await fetch(`/api/seller/orders/${order.id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          "x-user-data": userStr ?? "",
         },
         body: JSON.stringify({ status: newStatus }),
       });

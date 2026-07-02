@@ -1,20 +1,19 @@
-
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
-    const userStr = req.headers.get("x-user-data");
-    if (!userStr) {
+    const session = await auth();
+    if (!session?.user?.id) {
       return NextResponse.json(
         { error: "Please sign in first" },
         { status: 401 }
       );
     }
 
-    const user = JSON.parse(userStr);
     const { sellerId, action } = await req.json();
 
     if (!sellerId || !action) {
@@ -24,7 +23,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check if seller exists
     const seller = await prisma.seller.findUnique({
       where: { id: sellerId },
     });
@@ -37,11 +35,10 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === "follow") {
-      // Check if already following
       const existingFollow = await prisma.follow.findUnique({
         where: {
           userId_sellerId: {
-            userId: user.id,
+            userId: session.user.id,
             sellerId,
           },
         },
@@ -54,44 +51,36 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      // Create follow
       await prisma.follow.create({
         data: {
-          userId: user.id,
+          userId: session.user.id,
           sellerId,
         },
       });
 
-      // Increment follower count
       await prisma.seller.update({
         where: { id: sellerId },
         data: { followers: { increment: 1 } },
       });
-
-      console.log(`✅ User ${user.email} followed seller ${seller.brandName}`);
 
       return NextResponse.json({
         success: true,
         message: "Successfully followed store",
       });
     } else if (action === "unfollow") {
-      // Delete follow
       await prisma.follow.delete({
         where: {
           userId_sellerId: {
-            userId: user.id,
+            userId: session.user.id,
             sellerId,
           },
         },
       });
 
-      // Decrement follower count
       await prisma.seller.update({
         where: { id: sellerId },
         data: { followers: { decrement: 1 } },
       });
-
-      console.log(`✅ User ${user.email} unfollowed seller ${seller.brandName}`);
 
       return NextResponse.json({
         success: true,
@@ -112,15 +101,13 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// Check if user is following a seller
 export async function GET(req: NextRequest) {
   try {
-    const userStr = req.headers.get("x-user-data");
-    if (!userStr) {
+    const session = await auth();
+    if (!session?.user?.id) {
       return NextResponse.json({ isFollowing: false });
     }
 
-    const user = JSON.parse(userStr);
     const { searchParams } = new URL(req.url);
     const sellerId = searchParams.get("sellerId");
 
@@ -134,15 +121,13 @@ export async function GET(req: NextRequest) {
     const follow = await prisma.follow.findUnique({
       where: {
         userId_sellerId: {
-          userId: user.id,
+          userId: session.user.id,
           sellerId,
         },
       },
     });
 
-    return NextResponse.json({
-      isFollowing: !!follow,
-    });
+    return NextResponse.json({ isFollowing: !!follow });
   } catch (error: any) {
     console.error("❌ Error checking follow status:", error);
     return NextResponse.json(

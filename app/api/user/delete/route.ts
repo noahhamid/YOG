@@ -1,18 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import {prisma} from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
+import bcrypt from "bcryptjs";
 
 export async function DELETE(req: NextRequest) {
   try {
-    const userDataHeader = req.headers.get("x-user-data");
-    if (!userDataHeader) {
+    const session = await auth();
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const userData = JSON.parse(userDataHeader);
+    const body = await req.json().catch(() => ({}));
+    const { password } = body;
 
-    // Check if user exists
     const user = await prisma.user.findUnique({
-      where: { id: userData.id },
+      where: { id: session.user.id },
       include: {
         seller: {
           include: {
@@ -26,7 +28,24 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Check if user is a seller with active orders
+    // Verify password if the user has one set
+    if (user.password) {
+      if (!password) {
+        return NextResponse.json(
+          { error: "Password is required" },
+          { status: 400 }
+        );
+      }
+      const isValid = await bcrypt.compare(password, user.password);
+      if (!isValid) {
+        return NextResponse.json(
+          { error: "Incorrect password" },
+          { status: 400 }
+        );
+      }
+    }
+    // Google-only users skip password check — session already proves identity
+
     if (user.seller) {
       const pendingOrders = user.seller.orders.filter(
         (order) =>
@@ -46,15 +65,12 @@ export async function DELETE(req: NextRequest) {
       }
     }
 
-    // Set deletedAt to 30 days from now (soft delete)
     const deletionDate = new Date();
     deletionDate.setDate(deletionDate.getDate() + 30);
 
     await prisma.user.update({
-      where: { id: userData.id },
-      data: {
-        deletedAt: deletionDate,
-      },
+      where: { id: user.id },
+      data: { deletedAt: deletionDate },
     });
 
     return NextResponse.json({
@@ -68,4 +84,4 @@ export async function DELETE(req: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}

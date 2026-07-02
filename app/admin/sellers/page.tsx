@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import Navbar from "@/components/Navbar";
 
@@ -389,9 +390,9 @@ const ActionBtn = ({
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function AdminSellersPage() {
   const router = useRouter();
+  const { data: session, status: sessionStatus } = useSession();
   const [sellers, setSellers] = useState<Seller[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [filter, setFilter] = useState<FilterType>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSeller, setSelectedSeller] = useState<Seller | null>(null);
@@ -403,26 +404,21 @@ export default function AdminSellersPage() {
   const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
-    const userStr = localStorage.getItem("yog_user");
-    if (!userStr) {
+    if (sessionStatus === "loading") return;
+    if (sessionStatus === "unauthenticated") {
       router.push("/login");
       return;
     }
-    const user = JSON.parse(userStr) as { role: string };
-    if (user.role !== "ADMIN") {
+    if (session?.user?.role !== "ADMIN") {
       router.push("/");
       return;
     }
-    setIsAuthenticated(true);
     loadSellers();
-  }, [router]);
+  }, [sessionStatus, session]);
 
   const loadSellers = async () => {
     try {
-      const userStr = localStorage.getItem("yog_user");
-      const res = await fetch("/api/admin/sellers", {
-        headers: { "x-user-data": userStr ?? "" },
-      });
+      const res = await fetch("/api/admin/sellers");
       if (res.ok) {
         const data = (await res.json()) as { sellers?: Seller[] };
         setSellers(data.sellers ?? []);
@@ -437,13 +433,9 @@ export default function AdminSellersPage() {
   const handleQuickAction = async (sellerId: string, action: string) => {
     setIsProcessing(true);
     try {
-      const userStr = localStorage.getItem("yog_user");
       const res = await fetch("/api/admin/sellers/action", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-user-data": userStr ?? "",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sellerId, action }),
       });
       if (res.ok) {
@@ -461,13 +453,9 @@ export default function AdminSellersPage() {
     if (!actionModal.seller || !actionModal.action) return;
     setIsProcessing(true);
     try {
-      const userStr = localStorage.getItem("yog_user");
       const res = await fetch("/api/admin/sellers/action", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-user-data": userStr ?? "",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           sellerId: actionModal.seller.id,
           action: actionModal.action,
@@ -564,7 +552,7 @@ export default function AdminSellersPage() {
     },
   ];
 
-  if (isLoading || !isAuthenticated) {
+  if (isLoading || sessionStatus === "loading") {
     return (
       <>
         <style>{CSS}</style>

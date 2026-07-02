@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import Navbar from "@/components/Navbar";
 import Link from "next/link";
 import Image from "next/image";
@@ -171,24 +172,23 @@ const SpinnerIcon = () => (
 
 export default function FollowingPage() {
   const router = useRouter();
+  const { status: sessionStatus } = useSession();
   const [following, setFollowing] = useState<FollowedSeller[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [unfollowing, setUnfollowing] = useState<string | null>(null);
 
   useEffect(() => {
-    loadFollowing();
-  }, []);
-
-  const loadFollowing = async () => {
-    const userStr = localStorage.getItem("yog_user");
-    if (!userStr) {
+    if (sessionStatus === "loading") return;
+    if (sessionStatus === "unauthenticated") {
       router.push("/login?redirect=/following");
       return;
     }
+    loadFollowing();
+  }, [sessionStatus]);
+
+  const loadFollowing = async () => {
     try {
-      const res = await fetch("/api/following", {
-        headers: { "x-user-data": userStr },
-      });
+      const res = await fetch("/api/following");
       const data = await res.json();
       if (res.ok) setFollowing(data.following);
     } catch (e) {
@@ -199,13 +199,12 @@ export default function FollowingPage() {
   };
 
   const handleUnfollow = async (sellerId: string) => {
-    const userStr = localStorage.getItem("yog_user");
-    if (!userStr || !confirm("Unfollow this store?")) return;
+    if (!confirm("Unfollow this store?")) return;
     setUnfollowing(sellerId);
     try {
-      const res = await fetch("/api/store/follow", {
+      const res = await fetch("/api/stores/follow", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "x-user-data": userStr },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sellerId, action: "unfollow" }),
       });
       if (res.ok)

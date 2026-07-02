@@ -5,6 +5,7 @@ import { useCart } from "@/context/CartContext";
 import Navbar from "@/components/Navbar";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 
 const ArrowLeftIcon = () => (
   <svg
@@ -163,6 +164,7 @@ const inputClass =
 
 export default function CheckoutPage() {
   const router = useRouter();
+  const { data: session } = useSession();
   const { cart, updateQuantity, getCartTotal, clearCart } = useCart();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -180,12 +182,14 @@ export default function CheckoutPage() {
       router.push("/cart");
       return;
     }
-    const userStr = localStorage.getItem("yog_user");
-    if (userStr) {
-      const u = JSON.parse(userStr);
-      setFormData((p) => ({ ...p, name: u.name || "", email: u.email || "" }));
+    if (session?.user) {
+      setFormData((p) => ({
+        ...p,
+        name: session.user.name || "",
+        email: session.user.email || "",
+      }));
     }
-  }, [cart, router]);
+  }, [cart, router, session]);
 
   const deliveryFee = formData.deliveryMethod === "delivery" ? 50 : 0;
   const total = getCartTotal() + deliveryFee;

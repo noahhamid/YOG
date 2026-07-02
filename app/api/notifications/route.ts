@@ -1,20 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 
 export const dynamic = "force-dynamic";
 
-// GET - Fetch user notifications
 export async function GET(req: NextRequest) {
   try {
-    const userStr = req.headers.get("x-user-data");
-    if (!userStr) return NextResponse.json({ notifications: [] });
+    const session = await auth();
+    if (!session?.user?.id) return NextResponse.json({ notifications: [] });
 
-    const user = JSON.parse(userStr);
-
-    // ✅ Single query — get notifications and derive unread count from the result
-    // instead of two separate DB round-trips
     const notifications = await prisma.notification.findMany({
-      where: { userId: user.id },
+      where: { userId: session.user.id },
       orderBy: { createdAt: "desc" },
       take: 50,
       select: {
@@ -30,7 +26,6 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    // ✅ Count unread from the already-fetched array — no extra DB query
     const unreadCount = notifications.filter((n) => !n.read).length;
 
     return NextResponse.json({ success: true, notifications, unreadCount });
@@ -40,24 +35,23 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST - Mark notification as read
 export async function POST(req: NextRequest) {
   try {
-    const userStr = req.headers.get("x-user-data");
-    if (!userStr) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const session = await auth();
+    if (!session?.user?.id)
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { notificationId, markAllRead } = await req.json();
-    const user = JSON.parse(userStr);
 
     if (markAllRead) {
       await prisma.notification.updateMany({
-        where: { userId: user.id, read: false },
-        data:  { read: true },
+        where: { userId: session.user.id, read: false },
+        data: { read: true },
       });
     } else if (notificationId) {
       await prisma.notification.update({
-        where: { id: notificationId, userId: user.id },
-        data:  { read: true },
+        where: { id: notificationId, userId: session.user.id },
+        data: { read: true },
       });
     }
 
@@ -68,20 +62,20 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// DELETE - Delete notification
 export async function DELETE(req: NextRequest) {
   try {
-    const userStr = req.headers.get("x-user-data");
-    if (!userStr) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const session = await auth();
+    if (!session?.user?.id)
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { searchParams } = new URL(req.url);
     const notificationId = searchParams.get("id");
-    const user = JSON.parse(userStr);
 
-    if (!notificationId) return NextResponse.json({ error: "Notification ID required" }, { status: 400 });
+    if (!notificationId)
+      return NextResponse.json({ error: "Notification ID required" }, { status: 400 });
 
     await prisma.notification.delete({
-      where: { id: notificationId, userId: user.id },
+      where: { id: notificationId, userId: session.user.id },
     });
 
     return NextResponse.json({ success: true });
